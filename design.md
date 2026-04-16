@@ -70,14 +70,31 @@ What the agent needs to do: Law Assistant Agent (ChatGPT-style, not deep researc
 
 ## Stack and Technical Decisions
 
-- Data source: We have a PostgreSQL DB (1.3GB, 47K+ documents) from existing website
+### Technology Stack
+
+- **Language**: Python - Core programming language for the entire application
+- **Agent Framework**: PydanticAI - Lightweight agentic framework for building ChatGPT-style assistants with type safety
+- **LLM Model**: Claude Sonnet 4.5 (claude-sonnet-4.5) - Primary reasoning and response generation model
+- **Database**: PostgreSQL - Storage for 47K+ legal documents (1.3GB) with full-text search capabilities
+- **ORM**: SQLAlchemy - Database interaction layer for queries and data modeling
+- **Package Manager**: uv - Fast Python package installer and dependency resolver
+- **User Interface**: Chainlit - Interactive chat interface with RTL support and tool call visualization
+- **Logging**: structlog - Structured logging for detailed debugging and audit trails
+- **Configuration Management**: Pydantic Settings - Type-safe configuration from config.yaml and environment variables
+- **Retry & Resilience**: tenacity - Automatic retry logic for API calls and database operations
+- **Text Processing**: Hazm - Persian text normalization and preprocessing before database indexing
+- **Admin Panel & Observability**: Arize Phoenix - Self-hosted observability platform for traces, evals, and LLM-as-judge
+- **Deployment**: Docker Compose - Containerized deployment for PostgreSQL, Arize Phoenix, and the agent application
+
+### Data Source
+
+- We have a PostgreSQL DB (1.3GB, 47K+ documents) from existing website
   - This is a one-time migration - agent is completely separated from that website
   - We don't need the PostgreSQL anymore after migration, but we start with it
 
-- Framework: PydanticAI (simpler, lighter, better for ChatGPT-style assistant)
-- Model: Sonnet 4.5 (claude-sonnet-4.5) for the start
+### Database tool/API
 
-* Database tool/API: The agent uses DB query language/API as its tool to do search
+- The agent uses DB query language/API as its tool to do search
   - Simple query API based on tags, keywords, and summaries of metadata
   - Check only summary or related paragraph in search
   - When answering, use full versions of the docs
