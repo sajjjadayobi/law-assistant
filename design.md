@@ -20,6 +20,7 @@ What the agent needs to do: Law Assistant Agent (ChatGPT-style, not deep researc
   - Multi-hop search: Initial search → extract key terms → refined search (like Claude Code does)
   - PostgreSQL full-text search (no embeddings), it may use tags, categories and titles to narrow done the search
   - May ask clarifying questions in the middle of searches as well
+  - **See search.md for complete search architecture and agent instructions**
 
 - Context assembly: Retrieve documents intelligently
   - Most of the time: only retrieve direct answer documents
@@ -92,11 +93,15 @@ What the agent needs to do: Law Assistant Agent (ChatGPT-style, not deep researc
 - Deployment: Must run cleanly using docker compose
 - Logging: Very high detail and clean implemented logging
 
-- Observability: Very detailed but clean observability dashboard
-  - All traces
-  - Token usage
-  - Thumbs up/down feedback
-  * Anything else possible that is relavant for error analysis and managment
+- Observability: Arize Phoenix (open source, self-hosted via Docker)
+  - Single container deployment (no Redis, Clickhouse, or S3 needed)
+  - OpenTelemetry-based instrumentation
+  - All traces with filtering capabilities
+  - Token usage and cost analytics per conversation
+  - Thumbs up/down feedback integration
+  - Built-in LLM-as-Judge for evaluations
+  - Anything else possible that is relevant for error analysis and management
+  - Native support for PydanticAI framework
 
 - Configuration: config.yaml is the center of application control
   - Every single configuration there (nothing hardcoded)
@@ -115,6 +120,17 @@ What the agent needs to do: Law Assistant Agent (ChatGPT-style, not deep researc
   - Did the agent answer the user's legal question?
   - Grading: Human expert or LLM-as-judge
 - Eval harness: Reproducible environment
+
+## Admin Panel (for non-coder domain expert)
+A separate web app for domain experts to manage and improve the agent without coding.
+**Primary tool: Arize Phoenix** (handles 90% of needs)
+- View all conversations/traces with filtering (by date, user, status, etc.)
+- View token usage and costs per conversation
+- Manually grade conversations for eval (mark pass/fail)
+- Run evals and see results with dashboards
+- Review thumbs up/down feedback from users
+- LLM-as-Judge evaluation interface
+- - Add/edit questions to the golden eval set
 
 ## Engineering Practices: Based on the accelerated book
 - Git: Use git like an experienced engineer in this repo
