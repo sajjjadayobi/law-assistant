@@ -4,195 +4,308 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Law Agent project for building an AI assistant that answers questions about Iranian law using a comprehensive legal knowledge base. The agent will search through a PostgreSQL database containing legal documents (advisory opinions, court rulings, laws) and provide accurate, contextual answers.
+**Law Agent** is an AI-powered legal assistant for Iranian law built with PydanticAI and PostgreSQL. It provides ChatGPT-style conversational interactions to answer questions about Iranian legal documents using a database of 47K+ documents (1.3GB).
 
-**Stack**: Python with Claude Agent SDK (potentially with LiteLLM for multi-model support), Streamlit UI, PostgreSQL database
+**Core Capability**: The agent performs agentic multi-hop search across legal documents, synthesizes answers from multiple sources, and provides inline citations - all in Persian.
 
-**Status**: Early design phase - no code written yet, only documentation and database schema
+## Technology Stack
+
+- **Language**: Python 3.9+
+- **Agent Framework**: PydanticAI (lightweight agentic framework with type safety)
+- **LLM**: Claude Sonnet 4.5 (claude-sonnet-4.5)
+- **Database**: PostgreSQL with full-text search (no embeddings)
+- **ORM**: SQLAlchemy
+- **Package Manager**: uv (fast Python package installer)
+- **UI**: Chainlit (RTL-enabled chat interface)
+- **Logging**: structlog (structured logging)
+- **Configuration**: Pydantic Settings (type-safe config from config.yaml + env vars)
+- **Retry Logic**: tenacity
+- **Text Processing**: Hazm (Persian text normalization)
+- **Observability**: Arize Phoenix (self-hosted, OpenTelemetry-based)
+- **Deployment**: Docker Compose
 
 ## Database Architecture
 
-The knowledge base is stored in a 1.3GB PostgreSQL database (`pg_db.sql`) with a graph-based relational structure:
+### Schema Overview
 
-### Core Tables
+The database contains two main tables:
 
-1. **`pages`** - Primary document storage (advisory opinions, court rulings, laws)
-   - `page_id` (BIGINT, PK) - unique document identifier
-   - `content` (TEXT) - full HTML content in Persian
-   - `title` (VARCHAR) - document title (e.g., "نظریه مشورتی شماره...")
-   - `relations_built`, `relations_in_progress`, `relations_started_at` - processing flags
-   - `created_at`, `http_status`
+**documents** table:
+- `doc_id`: Unique identifier (BIGINT)
+- `title`: Document title in Persian
+- `doc_type`: One of: law, regulation, advisory_opinion, court_ruling, unified_precedent
+- `date`: Document date (Gregorian, extracted from Persian dates)
+- `summary`: 200-500 word summary (used for search)
+- `full_content`: Complete cleaned text (used for answering)
+- `tags`: TEXT[] array of subject classifications
+- `search_vector`: tsvector (auto-generated from title + summary)
 
-2. **`tags`** - Document classification system
-   - `tag_id` (SERIAL, PK)
-   - `tag_name` (VARCHAR) - Persian tag names
-   - `category` (VARCHAR) - classification type ('subjects', etc.)
-   - Examples: 'اساسی' (Constitutional), 'اداری' (Administrative)
-
-3. **`page_tags`** - Many-to-many junction table linking documents to tags
-   - `page_id` (FK → pages.page_id)
-   - `tag_id` (FK → tags.tag_id)
-
-4. **`relations`** - Document cross-reference graph (DAG structure)
-   - `id` (SERIAL, PK)
-   - `src_id` (FK → pages.page_id) - source document
-   - `dst_id` (FK → pages.page_id) - destination document
-   - `relation_name` (VARCHAR) - relation type in Persian:
-     - `مواد مرتبط` (Related Articles) - lateral connections
-     - `قوانین` (Laws/Legislation) - hierarchical parent-child links
+**relations** table (Directed Acyclic Graph):
+- `src_doc_id`: Source document
+- `dst_doc_id`: Destination document
+- `relation_type`: Persian relation type (e.g., 'قوانین', 'مواد مرتبط')
 
 ### Document Hierarchy
 
-The database forms a **Directed Acyclic Graph (DAG)** with hierarchical structure:
+Documents form a legal hierarchy:
+- **Laws** (law): Primary legislation - foundation
+- **Regulations** (regulation): Implementation rules and amendments
+- **Advisory Opinions** (advisory_opinion): Legal interpretations citing laws
+- **Court Rulings** (court_ruling): Case law applying laws
+- **Unified Precedents** (unified_precedent): Supreme Court unified opinions
 
+Lower-level documents (opinions, rulings) cite higher-level documents (laws) via the relations table.
+
+### Migration
+
+The database was migrated from HTML content to clean text using `migration/migrate.py`:
+- Strips all HTML tags from original `pages.content`
+- Extracts summary from `خلاصه متن` section
+- Normalizes Persian characters (ك→ک, ي→ی)
+- Infers document types from content patterns
+- Converts Persian dates to Gregorian using jdatetime
+
+Migration commands (if needed):
+```bash
+pip install psycopg2-binary beautifulsoup4 jdatetime
+python migration/migrate.py
 ```
-Level 0: Constitutional Laws (نظام اساسی)
-  ↓
-Level 1: Primary Laws & Legislation (قانون مجازات اسلامی, قانون مالیاتهای مستقیم, etc.)
-  ↓
-Level 2: Amendments & Executive Regulations
-  ↓
-Level 3: Advisory Opinions (نظریه مشورتی)
-  ↓
-Level 4: Court Rulings (احکام دیوان عدالت اداری, etc.)
+
+## Agent Search Architecture
+
+### Philosophy: Agent-Driven, Not Algorithm-Driven
+
+The search system provides simple, composable tools and lets Claude decide the search strategy. There is **no fixed multi-stage algorithm** - the agent reasons about the best search path.
+
+### Three Core Tools
+
+1. **search_documents(query, tags=None, doc_types=None, limit=20)**
+   - Full-text search on document summaries using PostgreSQL FTS
+   - Optional filters: tags (subject classifications), doc_types (law, advisory_opinion, etc.)
+   - Returns: List of DocSummary with relevance scores
+
+2. **get_document(doc_id)**
+   - Load full content of a specific document
+   - Only used when ready to read for answering
+   - Returns: Complete document with all metadata
+
+3. **get_related_documents(doc_id, relation_types=None, limit=10)**
+   - Follow citations/relations from one document to related documents
+   - Relation types: 'قوانین' (laws cited), 'مواد مرتبط' (related articles)
+   - Use to fetch parent laws or explore the legal graph
+
+### Agentic Search Strategy
+
+The agent decides at each step based on results:
+- **Initial search**: Use user keywords, optionally filter by doc_types
+- **Evaluate results**: If score > 0.8, load and answer. If 0.5-0.8, refine search. If < 0.5, extract better keywords.
+- **Multi-hop patterns**:
+  - Search → Read → Search Again (with refined keywords)
+  - Search → Follow Relations → Read (use hierarchy to get parent laws)
+  - Search → Expand → Synthesize (read multiple perspectives)
+- **Keyword discovery**: Agent reads summaries and discovers legal terminology, translates plain language to legal terms
+- **Stop when confident**: Most queries need 1-3 tool calls
+
+See `search.md` for complete search instructions (used as agent system prompt).
+
+## Key Product Requirements
+
+### Conversational Behavior
+
+- **Language**: Always respond in Persian (can use English internally)
+- **Clarifying questions**: Max 2-3 questions before answering, only when truly needed
+- **Humble transparency**: Say "I don't know" when no relevant docs found, explain what was searched
+- **Citations**: Inline numbered format `[1]`, paraphrase sources (don't quote), all citations clickable to iran.ir
+- **Follow-up suggestions**: Generate 2-3 LLM-based follow-up questions after each answer
+- **Multi-turn**: Support 5-10 turn conversations typically, hard limit 50 messages
+- **Scope**: Only answers questions about Iranian law in the database
+
+### Context Assembly
+
+- **Most queries**: Only retrieve direct answer documents
+- **When needed**: Fetch parent laws (ancestors) using relations DAG
+- **Persona adaptation**: Infer expertise from query style (Layperson vs Business/Organization), adapt per message
+
+### Error Handling
+
+- **No docs found**: Explain what was searched, ask for more context
+- **Contradictory laws**: Present both sources, explain nuance
+- **Search rounds**: 2-3 multi-hop rounds, then give best answer or say "I don't know"
+
+## Configuration Management
+
+All configuration is centralized in `config.yaml` (NOT YET CREATED):
+- Model config: primary model, temperature, max_tokens
+- Database config: host, port (credentials via env vars)
+- Search config: max_results, graph_traversal_depth
+- Conversation config: max_turns (50)
+- UI config: show_thinking, show_tool_calls, enable_feedback, example_questions
+- Document each field with comments
+- Use environment variables for secrets (DB_PASSWORD, ANTHROPIC_API_KEY)
+
+## Development Commands
+
+### Database Operations
+```bash
+# Connect to database
+psql -d law_agent
+
+# Analyze documents table (after migration)
+ANALYZE documents;
+
+# Test full-text search
+SELECT * FROM documents
+WHERE search_vector @@ to_tsquery('persian_custom', 'بیمه')
+LIMIT 10;
 ```
 
-**Key insight**: When retrieving a document, you should traverse the relation graph to fetch:
-- **Ancestors** (primary laws the document cites) - follow `dst_id` from relations
-- **Descendants** (rulings that apply the document) - follow `src_id` from relations
-- **Cross-references** (similar documents via shared tags)
+### Python Package Management
+```bash
+# Install dependencies (using uv)
+uv pip install -e .
 
-Use recursive CTEs to traverse the graph, limiting depth to 3-4 levels to manage context window.
+# Install dev dependencies
+uv pip install -e ".[dev]"
 
-## Agent Design Philosophy (from best_practices/agent.md)
+# Format code
+black . --line-length=100
 
-### Core Principles
+# Lint code
+ruff check . --fix
+```
 
-1. **Harness, not workflow** - Build agent harnesses that let Claude be agentic rather than rigid workflows
-2. **Incremental progress** - Use multi-context window workflows with state management (progress tracking, git commits)
-3. **Progressive context disclosure** - Load context on-demand via files (table_of_content.md, USER.md, AGENT.md, TOOLS.md)
-4. **Humble transparency** - Agent should say "I don't know" confidently when lacking information
-5. **Research then act** - Always verify understanding before acting; ask clarifying questions
-6. **State in code** - Use git history and file system as state management for context freshness
+### Testing
+```bash
+# Run tests
+pytest
 
-### Multi-Context Window Workflow
+# Run tests with async support
+pytest --asyncio-mode=auto
+```
 
-For long-running tasks:
-- **Initializer agent**: Set up environment (init.sh, progress.txt, initial git commit, feature list)
-- **Feature creator**: Work on ONE feature at a time, commit progress, update progress.txt, run tests
-- **Testing**: Verify end-to-end as human user would
-- Use progress.txt and git log to maintain state across context windows
+## Evaluation & Observability
 
-### Trust & Error Recovery
+### Evaluation Strategy (Eval-Driven Development)
 
-- **Say "I don't know" confidently** - This builds trust and creates a feedback loop for improving knowledge
-- **Reflection & error recovery** - Failing is acceptable if you can reflect and recover
-- **Don't repeat mistakes** - Learn from feedback and add to knowledge base
-- **Verification at every stage** - Validate work incrementally, not just at the end
+- **Golden set**: 50 QA pairs with reference answers
+- **Run frequency**: Every prompt change
+- **Metrics**: Binary task completion (pass/fail) - Did the agent answer the legal question?
+- **Grading**: Human expert or LLM-as-judge
+- **Process**: Start with error analysis → build evals from failure patterns → iterate
 
-## Evaluation Philosophy (from best_practices/eval.md)
+Key principles from `best_practices/eval.md`:
+- Start early with 20-50 simple tasks from real failures
+- Write tasks with clear reference solutions
+- Build balanced problem sets (positive and negative cases)
+- Check traces regularly, don't just trust metrics
+- Monitor for eval saturation (100% = no improvement signal)
+- Use LLM-as-judge with pass/fail + reasoning (not numerical scores)
 
-### Eval-Driven Development
+### Arize Phoenix (Observability)
 
-1. **Start early** - Begin with 20-50 simple tasks from real failures, not hundreds
-2. **Define success first** - What does "good" look like? Define this before building
-3. **Error analysis is primary** - Spend 60-80% of development time on error analysis
-4. **Binary grading** - Use pass/fail with reasoning, not numeric scores
-5. **LLM-as-judge** - Use for subjective quality assessment, aligned with human expert judgment
-6. **End-to-end first** - Evaluate entire conversation/task completion, then drill down to components
+Self-hosted platform for:
+- All conversation traces with filtering
+- Token usage and cost analytics per conversation
+- Thumbs up/down feedback integration
+- Built-in LLM-as-Judge for evaluations
+- Error analysis and management
+- Native PydanticAI framework support
 
-### Agent-Specific Eval Patterns
+Deployed via Docker Compose (single container, no Redis/Clickhouse/S3).
 
-For conversational agents (like this Law Agent):
-- **End-state outcomes** - Did the agent accomplish the user's goal?
-- **Transcript constraints** - Did it finish in <10 turns?
-- **Tone/persona alignment** - Was the response appropriate for user expertise level?
-- **Groundedness** - Are claims supported by retrieved sources?
-- **Coverage** - Did answer include key facts from authoritative sources?
-- **Source quality** - Were consulted sources authoritative?
+## Agent Engineering Best Practices
 
-### Evaluation Lifecycle
+From `best_practices/agent.md`:
 
-1. Start with manual error analysis on traces
-2. Group similar failures into categories
-3. Build automated evals for persistent issues (not trivial one-time fixes)
-4. Monitor judge alignment with human expert (aim for 80%+ agreement)
-5. Use syntactic data generation to fill gaps
-6. Iterate on both product and evals together
+### Multi-Context Window Workflows
+- **Initializer**: Set up environment, create progress.txt log, initial git commit
+- **Feature Creator**: Work on one feature at a time, commit with descriptive messages
+- **Testing**: Use browser automation for end-to-end testing
+- **State Management**: Code + git history = full state, allows context clearing
 
-## Functional Requirements
+### Progressive Disclosure
+- Load context on-demand via links in prompts
+- Don't front-load everything into context
+- Use files on disk for memory (USER.md, AGENT.md, TOOLS.md)
 
-### Agent Capabilities
+### Trust & Transparency
+- Say "I don't know" confidently when uncertain
+- Explain what was searched when failing
+- Don't make the same mistake twice - update knowledge base from feedback
 
-1. **Intro & Context Setting**
-   - Show example questions to set tone and vibe
-   - Explain capabilities clearly and concisely
+### Verification
+- Verify work at each stage
+- Write rule-based checks where possible
+- Test after implementing features
 
-2. **Clarifying Questions**
-   - Ask questions at any point, especially initially
-   - Understand user's expertise level and question intent
-   - Reject or clarify irrelevant queries
+## UI Requirements (Chainlit)
 
-3. **Knowledge Retrieval**
-   - Load table_of_content.md to understand available knowledge
-   - Search agentic-ally through database (potentially file system-based)
-   - Follow document relations to gather complete context
-   - May ask clarifying questions during search
+- RTL (right-to-left) support for Persian
+- Show agent thinking/tool calls to keep user engaged
+- Chat history section to return to old conversations
+- Thumbs up/down for responses (written to observability)
+- Show 3-5 random example questions at start
+- Must visualize all actions and model reasoning
 
-4. **Answer Synthesis**
-   - Combine retrieved documents with common sense and law knowledge
-   - Adapt answer style to user's expertise level
-   - Provide concise, clear, to-the-point responses
-   - Include follow-up question suggestions (make them clickable)
+## Deployment
 
-5. **Multi-Round Conversations**
-   - Support detailed follow-up questions
-   - Maintain context across conversation turns
-   - Show agent actions/thinking transparently
+Run cleanly using Docker Compose:
+- PostgreSQL container
+- Arize Phoenix container (observability)
+- Agent application container
 
-### UX Requirements
+Very high detail and clean logging using structlog.
 
-- **Not a blank canvas** - Show random great questions at start
-- **Clickable suggestions** - Make follow-up questions obvious and clickable
-- **Loading states** - Show what agent is doing during searches/thinking
-- **Feedback mechanism** - Thumbs up/down for responses
-- **Transparency** - Show all tool calls and reasoning steps
+## Git Workflow
 
-## Configuration
+- Use incremental commits with descriptive messages
+- Follow conventional commit style
+- Commit format should include:
+  - Clear description of changes
+  - Why the change was made (not just what)
+  - Generated with Claude Code attribution
 
-All configuration should be in `config.yaml` (nothing hardcoded):
-- Model selection (start with Claude Sonnet 4.6)
-- Database connection details
-- API keys (use environment variables)
-- UI settings (Streamlit)
-- Search/retrieval parameters
-- Prompt templates
+## Important Files
 
-## Engineering Practices
+- `design.md`: Complete functional requirements and technical decisions
+- `search.md`: Agent search architecture and instructions (used as system prompt)
+- `pg_db_doc.md`: Database schema documentation and relationship structure
+- `best_practices/agent.md`: Agent engineering principles and workflows
+- `best_practices/eval.md`: Evaluation methodology and best practices
+- `migration/migrate.py`: Database migration script (HTML → clean text)
+- `migration/README.md`: Migration documentation and validation steps
+- `pyproject.toml`: Project dependencies and metadata
 
-### Git Usage
+## Architecture Principles
 
-- Use git like an experienced engineer
-- Commit incrementally with descriptive messages
-- Use branches for features
-- Track progress in progress.txt for multi-context workflows
+1. **Agent-driven search**: No fixed algorithms, agent decides strategy based on results
+2. **Simple tools, smart agent**: Three minimal tools, complex reasoning in agent
+3. **Progressive disclosure**: Load context on-demand, don't front-load
+4. **Eval-driven development**: Build evals from error analysis, iterate continuously
+5. **Configuration as code**: Everything in config.yaml, nothing hardcoded
+6. **Observability first**: Log everything, analyze traces, build feedback loops
+7. **Humble transparency**: Say "I don't know" when uncertain, explain failures
+8. **Persian-first**: All user-facing content in Persian, internal can use English
 
-### Agent Development
+## Common Patterns
 
-- **AGENT.md** - Capture the "soul" of the agent during testing
-  - Meta-level insights from user feedback
-  - Concise principles about agent behavior
-  - Update iteratively as you learn
+### Adding a New Search Feature
+1. Update tool signature in search tools
+2. Update agent system prompt in search.md
+3. Add configuration to config.yaml
+4. Write eval cases for new behavior
+5. Test with traces in Phoenix
 
-### Tools & Stack
+### Debugging Agent Behavior
+1. Check Phoenix traces for full conversation
+2. Review tool call sequence and results
+3. Look for prompt misalignment in search.md
+4. Verify database query results manually
+5. Check for configuration issues in config.yaml
 
-- **Claude Agent SDK** (or PydanticAI if SDK is overkill)
-- **LiteLLM** - For multi-model support under Claude Agent SDK
-- **Streamlit** - Simple chat interface showing all actions/tool calls
-- **PostgreSQL** - Current data source (may migrate to MongoDB BSON later per draft.md)
-
-## Future Considerations
-
-- **Database migration**: Possibly move from PostgreSQL to MongoDB with BSON documents containing `{doc, tags, relations, relation_types}` (see draft.md)
-- **Deep research vs assistant**: Determine optimal balance between research-like exploration and quick assistant-like responses
-- **Multi-agent**: Consider if parallel sub-agents for search make sense given database size
+### Improving Answer Quality
+1. Error analysis on failed conversations
+2. Identify patterns in failures
+3. Update system prompt with specific guidance
+4. Create eval cases from failures
+5. Measure improvement with LLM-as-judge
