@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install dependencies
+        run: |
+          source $HOME/.cargo/env
+          uv pip install --system -e ".[dev]"
+      - name: Check formatting
+        run: black . --check
+      - name: Lint
+        run: ruff check .
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install dependencies
+        run: |
+          source $HOME/.cargo/env
+          uv pip install --system -e ".[dev]"
+      - name: Type check
+        run: mypy src/
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: law_agent_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install dependencies
+        run: |
+          source $HOME/.cargo/env
+          uv pip install --system -e ".[dev]"
+      - name: Load test data
+        run: |
+          if [ -f tests/data/sample_documents.sql ]; then
+            PGPASSWORD=test_password psql -h localhost -U postgres -d law_agent_test -f tests/data/sample_documents.sql
+          fi
+        env:
+          PGPASSWORD: test_password
+      - name: Run tests
+        run: pytest --cov=src/law_agent --cov-report=xml --cov-report=term
+        env:
+          DB_PASSWORD: test_password
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: law_agent_test
+          DB_USER: postgres
+          ANTHROPIC_API_KEY: test-key
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        if: github.event_name == 'pull_request'

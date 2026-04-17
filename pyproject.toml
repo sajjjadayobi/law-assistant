@@ -1,0 +1,114 @@
+[project]
+name = "law-agent"
+version = "0.1.0"
+description = "AI assistant for Iranian law using PydanticAI and PostgreSQL"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    # Database
+    "psycopg2-binary>=2.9.9",
+    "sqlalchemy>=2.0.23",
+
+    # HTML parsing & text processing (for migration)
+    "beautifulsoup4>=4.12.2",
+    "jdatetime>=5.0.0",
+    "hazm>=0.9.0",
+
+    # Agent framework
+    "pydantic-ai>=0.0.1",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+
+    # LLM integration
+    "anthropic>=0.40.0",
+
+    # Retry & resilience
+    "tenacity>=8.2.3",
+
+    # Logging
+    "structlog>=24.1.0",
+
+    # UI
+    "chainlit>=1.0.0",
+
+    # Observability
+    "arize-phoenix[evals]>=4.0.0",
+    "opentelemetry-api>=1.22.0",
+    "opentelemetry-sdk>=1.22.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.3",
+    "pytest-asyncio>=0.21.1",
+    "pytest-cov>=4.1.0",
+    "black>=23.12.1",
+    "ruff>=0.1.8",
+    "mypy>=1.7.0",
+    "pre-commit>=3.5.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+]
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+exclude = [
+    "tests/",
+    ".venv/",
+]
+
+[[tool.mypy.overrides]]
+module = "hazm.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "chainlit.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "arize.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "opentelemetry.*"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
