@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-**Current Phase**: Phase 2 (Foundation) - In Progress (Tasks 2.1, 2.2, 2.3 complete)
+**Current Phase**: Phase 2 (Foundation) - In Progress (Tasks 2.1, 2.2, 2.3, 2.4 complete)
 
 **Completed**:
 - ✅ Phase 0: Onboarding & Setup (environment documentation complete)
@@ -18,9 +18,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ Task 2.1: Project Structure initialized
 - ✅ Task 2.2: Dependency management complete (pyproject.toml, all tools configured)
 - ✅ Task 2.3: Configuration system implemented (config.yaml + Pydantic Settings, 25 tests passing)
+- ✅ Task 2.4: Structured logging setup (structlog with context management, 25 tests passing)
 
 **Next Steps**:
-- Phase 2: Foundation (logging, database connection, ORM models, tests)
+- Phase 2: Foundation (database connection, ORM models, tests)
 - Phase 3: Core Search Tools (search_documents, get_document, get_related_documents)
 - Phase 4: Agent Core (PydanticAI agent with conversation management)
 - Phase 5-8: UI, Observability, Testing, Deployment
@@ -33,9 +34,9 @@ See `docs/development/tasks.md` for complete task breakdown.
 
 1. ✅ **Task 2.1**: Initialize project structure (create `src/law_agent/` directories)
 2. ✅ **Task 2.2**: Set up pyproject.toml with dependencies (completed - 47 core + 7 dev dependencies, all tools configured)
-3. ✅ **Task 2.3**: Build configuration system (config.yaml + Pydantic Settings, 25 tests) ← **COMPLETED**
-4. **Task 2.4**: Implement structured logging (structlog setup) ← **START HERE**
-5. **Task 2.5**: Create database connection layer (SQLAlchemy)
+3. ✅ **Task 2.3**: Build configuration system (config.yaml + Pydantic Settings, 25 tests passing)
+4. ✅ **Task 2.4**: Implement structured logging (structlog setup with context, text/JSON formatters, 25 tests) ← **COMPLETED**
+5. **Task 2.5**: Create database connection layer (SQLAlchemy) ← **START HERE**
 6. **Task 2.6**: Define ORM models (Document, Relation models)
 7. **Task 2.7**: Write foundation tests
 8. **Task 2.8**: Commit Phase 2
