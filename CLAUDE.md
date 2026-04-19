@@ -440,7 +440,8 @@ Very high detail and clean logging using structlog.
 mkdir -p docs/features/my-feature-name
 cd docs/features/my-feature-name
 
-# 2. Write plan.md (design before coding!)
+# 2. MANDATORY: Write plan.md BEFORE ANY CODE
+# DO NOT skip this step - plan first, code second!
 # - What you're building
 # - Why it matters
 # - Key design decisions with alternatives considered
@@ -448,7 +449,7 @@ cd docs/features/my-feature-name
 # - Dependencies and blockers
 # - Open questions
 
-# 3. Create progress.md (update continuously!)
+# 3. Create progress.md (to update during development)
 # - Session log with time tracking
 # - What you accomplished
 # - Blockers encountered and how you solved them
@@ -458,18 +459,24 @@ cd docs/features/my-feature-name
 # 4. Start feature branch
 git checkout -b feature/my-feature-name
 
-# 5. Build incrementally with tests
+# 5. Build incrementally with tests (update progress.md DURING work!)
 # - Write test first (TDD)
 # - Implement feature
-# - Update progress.md continuously
+# - UPDATE progress.md as you go (not after!)
 
 # 6. Before committing, run all checks
 make all
 
-# 7. Commit with plan.md and progress.md
+# 7. MANDATORY: Update CLAUDE.md with completed task status
+# - Update "Project Status" section
+# - Update "What to Work On Next" section
+# - Commit CLAUDE.md changes with your feature
+
+# 8. Commit with plan.md and progress.md
 git add src/
 git add tests/
 git add docs/features/my-feature-name/  # Don't forget!
+git add CLAUDE.md  # Include updated project status!
 git commit -m "feat(scope): brief description
 
 Detailed description of changes and why.
@@ -478,9 +485,10 @@ See docs/features/my-feature-name/ for design and learnings."
 ```
 
 **Key Principles**:
-- Always write plan.md BEFORE writing code
-- Update progress.md continuously (not at the end!)
-- Commit plan.md and progress.md with code
+- **MANDATORY**: Write plan.md BEFORE writing any code (no exceptions)
+- **MANDATORY**: Update progress.md DURING implementation (not after!)
+- **MANDATORY**: Update CLAUDE.md "Project Status" section after feature completion
+- Commit plan.md, progress.md, and updated CLAUDE.md with your code
 - See `docs/development/workflow.md` for complete guide
 - See `docs/development/tasks.md` for phase breakdown
 

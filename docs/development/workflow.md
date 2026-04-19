@@ -6,13 +6,15 @@ This guide covers the complete workflow for building features in the Law Agent p
 
 ## Core Philosophy: Plan, Build, Document, Learn
 
-Every task follows this cycle:
-1. **Plan**: Write down what you'll build and why (plan.md)
-2. **Build**: Implement incrementally with tests
-3. **Document**: Keep a living progress log as you work (progress.md)
+Every task follows this cycle in strict order:
+1. **Plan**: Write down what you'll build and why (plan.md) ← **DO THIS FIRST, BEFORE ANY CODE**
+2. **Build**: Implement incrementally with tests (update progress.md DURING this phase)
+3. **Document**: Keep a living progress log as you work (progress.md) ← **UPDATE CONTINUOUSLY, NOT AT THE END**
 4. **Learn**: Capture lessons, blockers, and solutions
 
 This approach ensures knowledge transfer and helps you (and future developers) understand not just what was built, but why decisions were made and what was learned along the way.
+
+⚠️ **CRITICAL**: plan.md must be written BEFORE you start coding. progress.md must be updated DURING development, not after. See "Before Starting Any Feature" section below.
 
 ---
 
@@ -22,6 +24,17 @@ This approach ensures knowledge transfer and helps you (and future developers) u
 - The sections related to your feature
 - How your feature integrates with the overall architecture
 - The product requirements and user experience goals
+
+**MANDATORY WORKFLOW ORDER**:
+1. ✅ Read design docs
+2. ✅ Create feature documentation directory (`docs/features/my-feature/`)
+3. ✅ **WRITE plan.md** (do not skip!)
+4. ✅ **Create progress.md** (to update during work)
+5. ❌ **ONLY THEN** start writing code
+6. ✅ **Update progress.md continuously** as you work (not at the end!)
+7. ✅ Update CLAUDE.md "Project Status" when feature is complete
+
+If you write code before completing plan.md, you're doing it wrong. Plan first, code second.
 
 ---
 
@@ -48,7 +61,9 @@ cd docs/features/configuration
 
 ### Step 1.2: Write Your Plan (plan.md)
 
-**MANDATORY**: Before writing any code, create `plan.md` in your feature directory.
+**🔴 MANDATORY - DO THIS FIRST**: Before writing ANY code, create `plan.md` in your feature directory.
+
+If you skip this step or write code before completing plan.md, you're bypassing the core workflow. Plan first, code second - no exceptions.
 
 **Template**:
 
@@ -616,17 +631,29 @@ Write tests *alongside* your code, not after:
 
 ### Update progress.md as You Go
 
-**IMPORTANT**: Update progress.md throughout your session, not at the end!
+**CRITICAL**: Update progress.md DURING development, not after! This is not optional.
 
 Update when you:
-- Start a new work session (log start time, goal)
-- Complete a meaningful chunk of work (file created, test passing)
-- Encounter a blocker (document problem and solution attempts)
-- Make a decision (document what and why)
-- Have a question or learning (capture it immediately)
-- End your session (summarize accomplishments, plan next steps)
+- Start a new work session (log start time, goal, initial plan check)
+- Complete a meaningful chunk of work (file created, test passing, blocker solved)
+- Encounter a blocker (document problem, your attempts, and solution)
+- Make a decision (document what, why, and alternatives considered)
+- Have a question or learning (capture it immediately - DURING the work)
+- Learn something unexpected (write it down right away - don't forget later!)
+- End your session (summarize accomplishments, plan next steps, confidence level)
 
-**Tip**: Keep progress.md open in your editor while coding. It takes 30 seconds to add an entry, but saves hours later.
+**Why?**: You won't remember these details later. Capturing them immediately preserves the reasoning and experience for future developers (and yourself). This is how knowledge transfer happens.
+
+**How**: Keep progress.md open in your editor while coding. It takes 30 seconds to add an entry. Every entry is valuable for understanding how and why the feature evolved.
+
+**What counts as "updating DURING work"?**
+- ✅ Adding a progress entry every 15-30 minutes
+- ✅ Logging blockers as you encounter them, with solutions as you find them
+- ✅ Recording decisions and alternatives in real-time
+- ✅ Capturing learnings as you discover them
+- ❌ Writing progress.md only at the end of the day
+- ❌ Reconstructing what happened from memory
+- ❌ Generic updates without specific details
 
 ---
 
@@ -729,6 +756,7 @@ Follow these principles (from Accelerate):
 - **Small, meaningful commits**: One logical change per commit
 - **Frequent commits**: Commit working code multiple times per day
 - **Descriptive messages**: Explain *what* and *why*, not just *what*
+- **Include documentation**: Always commit plan.md, progress.md, and updated CLAUDE.md with feature code
 
 ### Commit Message Format
 
@@ -752,6 +780,41 @@ We use Conventional Commits style:
 
 ### Before Pushing
 
+**Step 1: Update CLAUDE.md Project Status**
+
+When your feature is complete, update `CLAUDE.md` to reflect the new status:
+
+```bash
+# Edit CLAUDE.md
+# 1. Update "Project Status" section
+#    - Mark completed tasks with ✅
+#    - Update "Current Phase" if needed
+#
+# 2. Update "What to Work On Next"
+#    - Move next task to "START HERE"
+#    - Update task list based on phase progress
+#
+# 3. Save and stage the file
+git add CLAUDE.md
+```
+
+**Example CLAUDE.md update**:
+```markdown
+**Current Phase**: Phase 2 (Foundation) - In Progress (Tasks 2.1, 2.2, 2.3 complete)
+
+**Completed**:
+- ✅ Phase 0: Onboarding & Setup
+- ✅ Phase 1: Database Migration
+- ✅ Task 2.1: Project Structure initialized
+- ✅ Task 2.2: Dependency management complete
+- ✅ Task 2.3: Configuration system implemented  ← NEW!
+
+**Next Steps**:
+4. **Task 2.4**: Implement structured logging (structlog setup) ← **START HERE**
+```
+
+**Step 2: Review and Commit All Documentation**
+
 ```bash
 # Review what you're committing
 git status
@@ -762,6 +825,7 @@ git add src/law_agent/config/
 git add tests/test_config.py
 git add config.yaml .env.example
 git add docs/features/configuration/  # Include plan.md and progress.md!
+git add CLAUDE.md  # Include updated project status!
 
 # Commit with descriptive message
 git commit -m "feat(config): implement type-safe configuration system
@@ -775,7 +839,7 @@ Key features:
 - Secrets only in environment variables
 - Comprehensive test suite (8 tests, 100% coverage)
 
-Resolves Task 2.3 from TASK_BREAKDOWN.md
+Resolves Task 2.3 from docs/development/tasks.md
 
 Documentation: docs/features/configuration/"
 
@@ -783,7 +847,12 @@ Documentation: docs/features/configuration/"
 git push origin feature/phase-2-configuration
 ```
 
-**IMPORTANT**: Always commit your plan.md and progress.md with your code! They are part of the feature documentation.
+**IMPORTANT**: Always commit these files with your code:
+- ✅ plan.md and progress.md (feature documentation)
+- ✅ CLAUDE.md (updated project status)
+- ✅ Your code changes and tests
+
+They are all part of the feature delivery. Keeping CLAUDE.md current helps everyone know what's completed and what's next.
 
 ---
 
