@@ -8,20 +8,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Core Capability**: The agent performs agentic multi-hop search across legal documents, synthesizes answers from multiple sources, and provides inline citations - all in Persian.
 
+## Project Status
+
+**Current Phase**: Phase 2 (Foundation) - Ready to Start
+
+**Completed**:
+- ✅ Phase 0: Onboarding & Setup (environment documentation complete)
+- ✅ Phase 1: Database Migration (47K+ documents migrated from HTML to clean text)
+
+**Next Steps**:
+- Phase 2: Foundation (project structure, config system, logging, database connection)
+- Phase 3: Core Search Tools (search_documents, get_document, get_related_documents)
+- Phase 4: Agent Core (PydanticAI agent with conversation management)
+- Phase 5-8: UI, Observability, Testing, Deployment
+
+See `docs/development/tasks.md` for complete task breakdown.
+
+### What to Work On Next (Phase 2)
+
+**Ready to Start**: Phase 2 tasks in sequential order:
+
+1. **Task 2.1**: Initialize project structure (create `src/law_agent/` directories)
+2. **Task 2.2**: Set up pyproject.toml with dependencies (already done - verify it's correct)
+3. **Task 2.3**: Build configuration system (config.yaml + Pydantic Settings)
+4. **Task 2.4**: Implement structured logging (structlog setup)
+5. **Task 2.5**: Create database connection layer (SQLAlchemy)
+6. **Task 2.6**: Define ORM models (Document, Relation models)
+7. **Task 2.7**: Write foundation tests
+8. **Task 2.8**: Commit Phase 2
+
+**Before Starting**:
+- Read `docs/development/workflow.md` (complete workflow guide)
+- Pick a task from above
+- Create `docs/features/{task-name}/plan.md` (design before coding!)
+- Follow the workflow exactly - it's designed for productivity
+
+---
+
 ## Technology Stack
 
 - **Language**: Python 3.9+
 - **Agent Framework**: PydanticAI (lightweight agentic framework with type safety)
-- **LLM**: Claude Sonnet 4.5 (claude-sonnet-4.5)
-- **Database**: PostgreSQL with full-text search (no embeddings)
-- **ORM**: SQLAlchemy
+- **LLM**: Claude Sonnet 4.5 (claude-sonnet-4.5) via anthropic SDK
+- **Database**: PostgreSQL 14+ with full-text search (no embeddings)
+- **ORM**: SQLAlchemy 2.0+
 - **Package Manager**: uv (fast Python package installer)
-- **UI**: Chainlit (RTL-enabled chat interface)
-- **Logging**: structlog (structured logging)
+- **UI**: Chainlit 1.0+ (RTL-enabled chat interface)
+- **Logging**: structlog (structured, machine-parseable logging)
 - **Configuration**: Pydantic Settings (type-safe config from config.yaml + env vars)
-- **Retry Logic**: tenacity
+- **Retry Logic**: tenacity (resilience patterns)
 - **Text Processing**: Hazm (Persian text normalization)
 - **Observability**: Arize Phoenix (self-hosted, OpenTelemetry-based)
+- **Testing**: pytest with async support
+- **Code Quality**: Black, Ruff, mypy
 - **Deployment**: Docker Compose
 
 ## Database Architecture
@@ -134,29 +173,101 @@ See `search.md` for complete search instructions (used as agent system prompt).
 
 ## Configuration Management
 
-All configuration is centralized in `config.yaml` (NOT YET CREATED):
+All configuration is centralized in `config.yaml` (Phase 2 task):
 - Model config: primary model, temperature, max_tokens
 - Database config: host, port (credentials via env vars)
 - Search config: max_results, graph_traversal_depth
 - Conversation config: max_turns (50)
 - UI config: show_thinking, show_tool_calls, enable_feedback, example_questions
-- Document each field with comments
-- Use environment variables for secrets (DB_PASSWORD, ANTHROPIC_API_KEY)
+- Each field documented with comments explaining purpose
+- Secrets (DB_PASSWORD, ANTHROPIC_API_KEY, LLM_AUTH_TOKEN) only in environment variables or .env
 
-## Development Commands
+**Database is ready**: The PostgreSQL database has been migrated and contains:
+- 47,000+ documents with clean text (HTML removed)
+- Full-text search configured and populated
+- Relations DAG for document citations
+- Ready to connect and query
+
+## Quick Start for Developers
+
+### First Time Setup
+
+```bash
+# Clone repo and enter directory
+cd law
+
+# Install dependencies
+uv pip install -e ".[dev]"
+
+# Verify database connection
+psql -d law_agent -c "SELECT COUNT(*) FROM documents;"
+
+# Run existing tests to verify setup
+pytest tests/
+```
+
+### Daily Development Commands
+
+```bash
+# Format code with Black
+make format
+
+# Lint with Ruff
+make lint
+
+# Type check with mypy
+make typecheck
+
+# Run tests
+make test
+
+# Run all checks (format, lint, typecheck, test)
+make all
+
+# Clean up build artifacts
+make clean
+```
+
+### Before Committing
+
+```bash
+# Run all checks and ensure they pass
+make all
+
+# Review changes
+git status
+git diff
+
+# Commit with descriptive message
+git add <files>
+git add docs/features/<feature-name>/  # Include plan.md and progress.md!
+git commit -m "feat(scope): description of changes"
+
+# Push to remote
+git push origin <branch-name>
+```
+
+---
+
+## Development Commands (Detailed)
 
 ### Database Operations
 ```bash
 # Connect to database
 psql -d law_agent
 
-# Analyze documents table (after migration)
-ANALYZE documents;
+# Check document count by type
+SELECT doc_type, COUNT(*) FROM documents GROUP BY doc_type;
 
-# Test full-text search
-SELECT * FROM documents
-WHERE search_vector @@ to_tsquery('persian_custom', 'بیمه')
+# Test full-text search (Persian)
+SELECT doc_id, title, ts_rank(search_vector, query) as rank
+FROM documents,
+     to_tsquery('persian_custom', 'بیمه') query
+WHERE search_vector @@ query
 LIMIT 10;
+
+# Analyze documents table for query optimization
+ANALYZE documents;
 ```
 
 ### Python Package Management
@@ -167,19 +278,31 @@ uv pip install -e .
 # Install dev dependencies
 uv pip install -e ".[dev]"
 
-# Format code
-black . --line-length=100
-
-# Lint code
-ruff check . --fix
+# Update dependencies
+uv pip install --upgrade -e ".[dev]"
 ```
 
 ### Testing
 ```bash
-# Run tests
-pytest
+# Run all tests
+pytest tests/
 
-# Run tests with async support
+# Run specific test file
+pytest tests/test_search.py
+
+# Run specific test
+pytest tests/test_search.py::test_search_documents
+
+# Run with coverage report
+pytest --cov=src/law_agent --cov-report=html tests/
+
+# Run only unit tests (fast)
+pytest tests/unit/
+
+# Run only integration tests (requires database)
+pytest tests/integration/
+
+# Run with async support
 pytest --asyncio-mode=auto
 ```
 
@@ -265,16 +388,33 @@ Very high detail and clean logging using structlog.
   - Why the change was made (not just what)
   - Generated with Claude Code attribution
 
-## Important Files
+## Key Resources
 
-- `design.md`: Complete functional requirements and technical decisions
-- `search.md`: Agent search architecture and instructions (used as system prompt)
-- `pg_db_doc.md`: Database schema documentation and relationship structure
-- `best_practices/agent.md`: Agent engineering principles and workflows
-- `best_practices/eval.md`: Evaluation methodology and best practices
-- `migration/migrate.py`: Database migration script (HTML → clean text)
-- `migration/README.md`: Migration documentation and validation steps
-- `pyproject.toml`: Project dependencies and metadata
+### For New Developers (Start Here!)
+
+1. **`docs/README.md`** - Documentation hub with complete index and onboarding path
+2. **`CLAUDE.md`** (this file) - Quick reference for project overview and commands
+3. **`docs/development/workflow.md`** - Complete developer workflow guide (Plan, Build, Document, Learn)
+4. **`docs/development/tasks.md`** - Hierarchical task breakdown for all 9 phases (~70 tasks)
+
+### Architecture & Design
+
+- **`docs/architecture/design.md`** - Complete functional requirements and technical decisions
+- **`docs/architecture/search.md`** - Agent search strategy and system prompt (becomes agent instructions)
+- **`docs/architecture/database.md`** - Database schema documentation and DAG structure
+- **`docs/architecture/migration/`** - Database migration scripts and results
+
+### Best Practices
+
+- **`docs/best-practices/agent-engineering.md`** - Multi-context workflows, state management, trust & transparency
+- **`docs/best-practices/evaluation.md`** - Eval-driven development, golden sets, LLM-as-judge patterns
+
+### Development Files
+
+- **`Makefile`** - Common development commands (format, lint, typecheck, test, all, clean)
+- **`pyproject.toml`** - Project dependencies, tool configurations (Black, Ruff, mypy, pytest)
+- **`migrate.py`** - Database migration script (HTML → clean text) - Phase 1 completed
+- **`docs/features/*/`** - Feature-specific plan.md and progress.md (living documentation)
 
 ## Architecture Principles
 
@@ -287,25 +427,140 @@ Very high detail and clean logging using structlog.
 7. **Humble transparency**: Say "I don't know" when uncertain, explain failures
 8. **Persian-first**: All user-facing content in Persian, internal can use English
 
-## Common Patterns
+## Common Development Workflows
+
+### Starting a New Feature (Required for Every Task)
+
+**IMPORTANT**: Follow the **Plan, Build, Document, Learn** approach from `docs/development/workflow.md`.
+
+```bash
+# 1. Create feature documentation directory
+mkdir -p docs/features/my-feature-name
+cd docs/features/my-feature-name
+
+# 2. Write plan.md (design before coding!)
+# - What you're building
+# - Why it matters
+# - Key design decisions with alternatives considered
+# - Success criteria checklist
+# - Dependencies and blockers
+# - Open questions
+
+# 3. Create progress.md (update continuously!)
+# - Session log with time tracking
+# - What you accomplished
+# - Blockers encountered and how you solved them
+# - Decisions made with rationale
+# - Lessons learned
+
+# 4. Start feature branch
+git checkout -b feature/my-feature-name
+
+# 5. Build incrementally with tests
+# - Write test first (TDD)
+# - Implement feature
+# - Update progress.md continuously
+
+# 6. Before committing, run all checks
+make all
+
+# 7. Commit with plan.md and progress.md
+git add src/
+git add tests/
+git add docs/features/my-feature-name/  # Don't forget!
+git commit -m "feat(scope): brief description
+
+Detailed description of changes and why.
+
+See docs/features/my-feature-name/ for design and learnings."
+```
+
+**Key Principles**:
+- Always write plan.md BEFORE writing code
+- Update progress.md continuously (not at the end!)
+- Commit plan.md and progress.md with code
+- See `docs/development/workflow.md` for complete guide
+- See `docs/development/tasks.md` for phase breakdown
+
+### Adding a New Feature to the Agent
+
+1. **Design Phase** (Task planning):
+   - Read relevant sections in `docs/architecture/design.md` and `docs/architecture/search.md`
+   - Create `docs/features/{feature-name}/plan.md` with design decisions
+   - Identify dependencies from `docs/development/tasks.md`
+
+2. **Implementation Phase**:
+   - Follow project structure: `src/law_agent/{module}/`
+   - Write tests first (unit + integration)
+   - Update progress.md as you work
+   - Use structlog for all significant operations
+
+3. **Testing Phase**:
+   - Run `make all` to verify code quality
+   - Achieve 80%+ test coverage for new code
+   - Test with real database for integration tests
+   - Update progress.md with learnings
+
+4. **Documentation Phase**:
+   - Complete progress.md final summary
+   - Capture key learnings and "for future developers" advice
+   - Reference code locations with `file.py:line-number`
+
+5. **Commit Phase**:
+   - Include plan.md and progress.md
+   - Use conventional commits format
+   - Reference task number from `docs/development/tasks.md`
 
 ### Adding a New Search Feature
-1. Update tool signature in search tools
-2. Update agent system prompt in search.md
-3. Add configuration to config.yaml
-4. Write eval cases for new behavior
-5. Test with traces in Phoenix
+
+1. Update tool signature in `src/law_agent/tools/search.py`
+2. Update agent system prompt in `docs/architecture/search.md`
+3. Add configuration parameters to `config.yaml`
+4. Write integration tests using real database
+5. Update search tool documentation
+6. Test with Phoenix traces to verify behavior
 
 ### Debugging Agent Behavior
-1. Check Phoenix traces for full conversation
-2. Review tool call sequence and results
-3. Look for prompt misalignment in search.md
-4. Verify database query results manually
-5. Check for configuration issues in config.yaml
+
+**Using Phoenix (Observability)**:
+1. Open Phoenix UI at http://localhost:6006
+2. Find the conversation trace that's failing
+3. Review tool call sequence and parameters
+4. Check token usage and execution times
+5. Inspect error spans if any
+
+**Using Logs**:
+```bash
+# View application logs
+docker-compose logs -f app
+
+# Search for specific query in logs
+docker-compose logs app | grep "بیمه"
+
+# Filter by log level
+docker-compose logs app | grep "ERROR"
+```
+
+**Manual Investigation**:
+1. Check Phoenix traces for tool call sequence
+2. Verify database query results manually with SQL
+3. Review agent system prompt in `search.md` for misalignment
+4. Check configuration issues in `config.yaml`
+5. Look at test cases for similar scenarios
 
 ### Improving Answer Quality
-1. Error analysis on failed conversations
-2. Identify patterns in failures
-3. Update system prompt with specific guidance
-4. Create eval cases from failures
-5. Measure improvement with LLM-as-judge
+
+1. **Analyze Failures**:
+   - Review failed queries in Phoenix
+   - Identify patterns (wrong tool, bad search, unclear prompt)
+
+2. **Create Test Cases**:
+   - Build eval set from failures
+   - Document expected vs actual behavior
+   - See `docs/best-practices/evaluation.md`
+
+3. **Iterate**:
+   - Update system prompt or tool behavior
+   - Run evals to measure improvement
+   - Use LLM-as-judge for quality assessment
+   - Document learnings in progress.md
