@@ -785,6 +785,33 @@ git push origin feature/phase-2-configuration
 
 **IMPORTANT**: Always commit your plan.md and progress.md with your code! They are part of the feature documentation.
 
+### After Merging to Main
+
+Once your feature branch is ready to merge:
+
+```bash
+# Update CLAUDE.md with minimal changes only
+# - Update "What to Work On Next" section with next task
+# - Update "Project Status" if phase changed
+# - Do NOT refactor or make large changes
+
+# Merge feature branch to main
+git checkout main
+git pull origin main
+git merge feature/my-feature-name
+git push origin main
+
+# Delete feature branch
+git branch -d feature/my-feature-name
+```
+
+**IMPORTANT RULES for CLAUDE.md updates**:
+1. Only update "What to Work On Next" section to point to next task
+2. Only update "Project Status" if you completed a phase
+3. Keep all other sections unchanged
+4. No refactoring or large rewrites - minimal changes only
+5. Update these sections BEFORE merging to main (in commit message reference the CLAUDE.md update)
+
 ---
 
 ## 6. Engineering Principles from Accelerate

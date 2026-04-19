@@ -10,14 +10,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-**Current Phase**: Phase 2 (Foundation) - Ready to Start
+**Current Phase**: Phase 2 (Foundation) - In Progress
 
 **Completed**:
 - ✅ Phase 0: Onboarding & Setup (environment documentation complete)
 - ✅ Phase 1: Database Migration (47K+ documents migrated from HTML to clean text)
+- ✅ Task 2.1: Project Structure (src/law_agent/ with config, database, tools, agent, ui modules)
 
 **Next Steps**:
-- Phase 2: Foundation (project structure, config system, logging, database connection)
+- Task 2.2: Set up dependencies (verify pyproject.toml)
+- Task 2.3: Configuration system (config.yaml + Pydantic Settings)
 - Phase 3: Core Search Tools (search_documents, get_document, get_related_documents)
 - Phase 4: Agent Core (PydanticAI agent with conversation management)
 - Phase 5-8: UI, Observability, Testing, Deployment
@@ -26,10 +28,10 @@ See `docs/development/tasks.md` for complete task breakdown.
 
 ### What to Work On Next (Phase 2)
 
-**Ready to Start**: Phase 2 tasks in sequential order:
+**Currently In Progress**: Task 2.2 onwards
 
-1. **Task 2.1**: Initialize project structure (create `src/law_agent/` directories)
-2. **Task 2.2**: Set up pyproject.toml with dependencies (already done - verify it's correct)
+1. ✅ **Task 2.1**: Initialize project structure ← COMPLETE
+2. **Task 2.2**: Set up pyproject.toml with dependencies (verify and document)
 3. **Task 2.3**: Build configuration system (config.yaml + Pydantic Settings)
 4. **Task 2.4**: Implement structured logging (structlog setup)
 5. **Task 2.5**: Create database connection layer (SQLAlchemy)
