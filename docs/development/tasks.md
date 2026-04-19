@@ -404,6 +404,7 @@ This document provides a complete task breakdown for building the Law Agent from
 **Goal**: Build the PydanticAI agent that orchestrates search, manages conversations, and generates cited answers.
 
 **Important**: Read PydanticAI documentation and `search.md` (the agent's system prompt) before starting.
+make all the prompts or anyfile or peice of in a folder called src/propmts/ and use yaml for formatting and varibales of it plus always verion it.
 
 ### Task 4.1: Study PydanticAI Framework
 
@@ -476,26 +477,18 @@ This document provides a complete task breakdown for building the Law Agent from
 
 ### Task 4.5: Implement Persona Detection
 
-**Description**: Detect user expertise level from query style and adapt response accordingly.
+**Description**: Detect user expertise level from query style and adapt response accordingly. tell it in the system prompt
 
 **Personas**: Layperson, Business/Organization, Legal Professional
-
-**Definition of Done**:
-- [ ] Persona detection function implemented
-- [ ] Detection based on query language and terminology
-- [ ] Persona added to conversation context
-- [ ] Response style adapts per persona
-- [ ] Unit tests for each persona type pass
-
 **Dependencies**: Task 4.4
 
 ---
 
 ### Task 4.6: Add Follow-Up Question Generation
 
-**Description**: Generate 2-3 contextual follow-up questions after each response.
+**Description**: Generate 2-3 contextual follow-up questions after each answer of current quetion.
 
-**Requirements**: Questions in Persian, relevant to response, match user persona, concise (< 15 words)
+**Requirements**: Questions in Persian, relevant to response, match user persona, concise 
 
 **Definition of Done**:
 - [ ] Follow-up generation function implemented

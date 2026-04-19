@@ -10,55 +10,50 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-**Current Phase**: Phase 3 (Core Search Tools) - Complete ✅
+**Current Phase**: Phase 4 (Agent Core) - Complete ✅
 
 **Completed**:
 - ✅ Phase 0: Onboarding & Setup (environment documentation complete)
 - ✅ Phase 1: Database Migration (47K+ documents migrated from HTML to clean text)
 - ✅ Phase 2: Foundation (configuration, logging, database connection, ORM models)
-- ✅ Task 2.1: Project Structure initialized
-- ✅ Task 2.2: Dependency management complete (pyproject.toml, all tools configured)
-- ✅ Task 2.3: Configuration system implemented (config.yaml + Pydantic Settings, 25 tests passing)
-- ✅ Task 2.4: Structured logging setup (structlog with context management, 25 tests passing)
-- ✅ Task 2.5: Database connection layer (SQLAlchemy with ORM models, 67 tests passing)
-- ✅ Task 2.6: Search tools implemented (search_documents, get_document, get_related_documents; 24 unit tests passing)
-- ✅ Task 2.7: Integration tests with real database (23 integration tests passing, 114 total tests)
-- ✅ Task 2.8: Phase 2 committed
-- ✅ Phase 3: Core Search Tools - All tasks complete (114 total tests, 47 search-specific tests)
-  - ✅ Task 3.1: PostgreSQL FTS study & implementation
-  - ✅ Task 3.2: Persian text processing (hazm normalization)
-  - ✅ Task 3.3: Search utilities built
-  - ✅ Task 3.4: search_documents() tool implemented (7 unit + 7 integration tests)
-  - ✅ Task 3.5: get_document() tool implemented (4 unit + 5 integration tests)
-  - ✅ Task 3.6: get_related_documents() tool implemented (7 unit + 5 integration tests)
-  - ✅ Task 3.7: Multi-hop search patterns tested (3 end-to-end tests + error handling)
-  - ✅ Task 3.8: Code quality checks passing (Black, Ruff, mypy, pytest)
+  - ✅ Task 2.1-2.8: All foundation tasks complete (114 total tests)
+- ✅ Phase 3: Core Search Tools (PostgreSQL FTS, Persian processing, search tools, 114 tests)
+  - ✅ Task 3.1-3.8: All search tool tasks complete (47 search-specific tests)
+- ✅ Phase 4: Agent Core - All tasks complete (191 total tests, +77 new agent tests)
+  - ✅ Task 4.1: PydanticAI framework studied
+  - ✅ Task 4.2: Law Agent created with search tools (async tool handlers, JSON returns)
+  - ✅ Task 4.3: Conversation management (state tracking, turn limits, persona)
+  - ✅ Task 4.4: Citation system (extraction, formatting, deduplication)
+  - ✅ Task 4.5: Persona detection (in system prompt, implicit per message)
+  - ✅ Task 4.6: Follow-up question generation (extraction, formatting)
+  - ✅ Task 4.7: Error handling (7 custom exceptions, Persian messages)
+  - ✅ Task 4.8: End-to-end testing (77 comprehensive unit tests, 100% pass rate)
+  - ✅ Task 4.9: Agent Core committed
 
 **Next Steps**:
-- Phase 4: Agent Core (PydanticAI agent with conversation management)
-- Phase 5-8: UI, Observability, Testing, Deployment
+- Phase 5: UI (Chainlit Interface) - RTL chat, citations, feedback
+- Phase 6-8: Observability, Testing, Deployment
 
 See `docs/development/tasks.md` for complete task breakdown.
+See `docs/features/phase-4-agent-core/` for design & implementation details.
 
-### What to Work On Next (Phase 4)
+### What to Work On Next (Phase 5)
 
-**Ready to Start**: Phase 4 - Agent Core tasks
+**Ready to Start**: Phase 5 - UI (Chainlit Interface) tasks
 
-The foundation is complete. Phase 4 will build the PydanticAI agent that orchestrates the search tools:
-1. Study PydanticAI framework patterns
-2. Create Law Agent with system prompt from search.md
-3. Build conversation management
-4. Implement citation system
-5. Detect user persona
-6. Generate follow-up questions
-7. Error handling
-8. E2E agent testing
-9. Commit Phase 4
+The agent is production-ready. Phase 5 will build the web interface:
+1. Study Chainlit framework and RTL support
+2. Create basic chat interface
+3. Add RTL (right-to-left) support for Persian
+4. Implement citation links to iran.ir documents
+5. Show example questions at start
+6. Add feedback collection (thumbs up/down)
+7. Display agent thinking and tool calls
+8. Add conversation history management
 
 **Before Starting**:
 - Read `docs/development/workflow.md` (complete workflow guide)
-- Pick a task from above
-- Create `docs/features/{task-name}/plan.md` (design before coding!)
+- Create `docs/features/phase-5-ui/plan.md` (design before coding!)
 - Follow the workflow exactly - it's designed for productivity
 
 ---
