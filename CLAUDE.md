@@ -10,11 +10,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-**Current Phase**: Phase 2 (Foundation) - In Progress (Tasks 2.1-2.7 complete)
+**Current Phase**: Phase 3 (Core Search Tools) - Complete ✅
 
 **Completed**:
 - ✅ Phase 0: Onboarding & Setup (environment documentation complete)
 - ✅ Phase 1: Database Migration (47K+ documents migrated from HTML to clean text)
+- ✅ Phase 2: Foundation (configuration, logging, database connection, ORM models)
 - ✅ Task 2.1: Project Structure initialized
 - ✅ Task 2.2: Dependency management complete (pyproject.toml, all tools configured)
 - ✅ Task 2.3: Configuration system implemented (config.yaml + Pydantic Settings, 25 tests passing)
@@ -22,27 +23,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ Task 2.5: Database connection layer (SQLAlchemy with ORM models, 67 tests passing)
 - ✅ Task 2.6: Search tools implemented (search_documents, get_document, get_related_documents; 24 unit tests passing)
 - ✅ Task 2.7: Integration tests with real database (23 integration tests passing, 114 total tests)
+- ✅ Task 2.8: Phase 2 committed
+- ✅ Phase 3: Core Search Tools - All tasks complete (114 total tests, 47 search-specific tests)
+  - ✅ Task 3.1: PostgreSQL FTS study & implementation
+  - ✅ Task 3.2: Persian text processing (hazm normalization)
+  - ✅ Task 3.3: Search utilities built
+  - ✅ Task 3.4: search_documents() tool implemented (7 unit + 7 integration tests)
+  - ✅ Task 3.5: get_document() tool implemented (4 unit + 5 integration tests)
+  - ✅ Task 3.6: get_related_documents() tool implemented (7 unit + 5 integration tests)
+  - ✅ Task 3.7: Multi-hop search patterns tested (3 end-to-end tests + error handling)
+  - ✅ Task 3.8: Code quality checks passing (Black, Ruff, mypy, pytest)
 
 **Next Steps**:
-- Phase 2: Foundation (database connection, ORM models, tests)
-- Phase 3: Core Search Tools (search_documents, get_document, get_related_documents)
 - Phase 4: Agent Core (PydanticAI agent with conversation management)
 - Phase 5-8: UI, Observability, Testing, Deployment
 
 See `docs/development/tasks.md` for complete task breakdown.
 
-### What to Work On Next (Phase 2)
+### What to Work On Next (Phase 4)
 
-**Ready to Start**: Phase 2 tasks in sequential order:
+**Ready to Start**: Phase 4 - Agent Core tasks
 
-1. ✅ **Task 2.1**: Initialize project structure (create `src/law_agent/` directories)
-2. ✅ **Task 2.2**: Set up pyproject.toml with dependencies (completed - 47 core + 7 dev dependencies, all tools configured)
-3. ✅ **Task 2.3**: Build configuration system (config.yaml + Pydantic Settings, 25 tests passing)
-4. ✅ **Task 2.4**: Implement structured logging (structlog setup with context, text/JSON formatters, 25 tests)
-5. ✅ **Task 2.5**: Create database connection layer (SQLAlchemy with ORM models, 67 tests passing)
-6. ✅ **Task 2.6**: Implement search tools (search_documents, get_document, get_related_documents; 24 unit tests passing)
-7. ✅ **Task 2.7**: Write integration tests with real database (23 integration tests passing; fixed database user config) ← **COMPLETED**
-8. **Task 2.8**: Commit Phase 2 ← **START HERE**
+The foundation is complete. Phase 4 will build the PydanticAI agent that orchestrates the search tools:
+1. Study PydanticAI framework patterns
+2. Create Law Agent with system prompt from search.md
+3. Build conversation management
+4. Implement citation system
+5. Detect user persona
+6. Generate follow-up questions
+7. Error handling
+8. E2E agent testing
+9. Commit Phase 4
 
 **Before Starting**:
 - Read `docs/development/workflow.md` (complete workflow guide)
