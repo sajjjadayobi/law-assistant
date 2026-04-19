@@ -1,0 +1,332 @@
+/* RTL (Right-to-Left) styling for Persian language support in Chainlit */
+
+:root {
+    --rtl-direction: rtl;
+    --rtl-margin-left: 0;
+    --rtl-margin-right: auto;
+    --rtl-text-align: right;
+    --rtl-float-start: right;
+    --rtl-float-end: left;
+}
+
+/* Main container and body */
+body {
+    direction: rtl;
+    text-align: right;
+}
+
+html {
+    direction: rtl;
+}
+
+/* Chat container */
+.cl-chat-interface,
+.cl-container {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Messages */
+.cl-message-container {
+    direction: rtl;
+    text-align: right;
+}
+
+.cl-message {
+    direction: rtl;
+    text-align: right;
+}
+
+/* User messages - align to left (in RTL) */
+.cl-message-user {
+    margin-right: 0;
+    margin-left: auto;
+    text-align: right;
+    direction: rtl;
+}
+
+/* Assistant messages - align to right (in RTL) */
+.cl-message-assistant {
+    margin-left: 0;
+    margin-right: auto;
+    text-align: right;
+    direction: rtl;
+}
+
+/* Input field */
+.cl-input-field,
+.cl-message-input,
+input[type="text"],
+input[type="search"],
+textarea {
+    direction: rtl;
+    text-align: right;
+    padding-right: 10px;
+    padding-left: 5px;
+}
+
+/* Buttons */
+button,
+.cl-button,
+.cl-icon-button {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Icons should be on the right in RTL */
+.cl-icon,
+.cl-button-icon {
+    margin-left: 0;
+    margin-right: 5px;
+}
+
+/* Lists and list items */
+ul,
+ol,
+li {
+    direction: rtl;
+    text-align: right;
+    padding-right: 20px;
+    padding-left: 0;
+}
+
+/* Links */
+a {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Citations */
+.citation,
+[data-citation] {
+    direction: rtl;
+    text-align: right;
+    color: #0066cc;
+    text-decoration: underline;
+}
+
+/* Code blocks */
+code,
+pre {
+    direction: ltr;
+    text-align: left;
+}
+
+/* Flexbox RTL fixes */
+.cl-flex-row,
+.flex-row,
+[display="flex"] {
+    direction: rtl;
+    justify-content: flex-start;
+    flex-direction: row-reverse;
+}
+
+.cl-flex-col,
+.flex-col,
+[display="flex"][flex-direction="column"] {
+    direction: rtl;
+}
+
+/* Chat header */
+.cl-chat-header,
+.cl-header {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Sidebar */
+.cl-sidebar,
+.cl-side-panel {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Expand/collapse controls */
+details {
+    direction: rtl;
+    text-align: right;
+}
+
+summary {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Tables */
+table {
+    direction: rtl;
+    text-align: right;
+}
+
+thead,
+tbody,
+tfoot {
+    direction: rtl;
+    text-align: right;
+}
+
+th,
+td {
+    direction: rtl;
+    text-align: right;
+    padding-right: 10px;
+    padding-left: 5px;
+}
+
+/* Form elements */
+label {
+    direction: rtl;
+    text-align: right;
+}
+
+select {
+    direction: rtl;
+    text-align: right;
+}
+
+checkbox,
+radio {
+    margin-left: 0;
+    margin-right: 5px;
+}
+
+/* Modals and dialogs */
+.cl-modal,
+.cl-dialog,
+dialog {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Steps container (tool calls) */
+.cl-step,
+.step-container,
+.tool-step {
+    direction: rtl;
+    text-align: right;
+    margin: 10px 0;
+}
+
+/* Popups and tooltips */
+.cl-popup,
+.cl-tooltip,
+.tooltip {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Tabs */
+.cl-tabs,
+[role="tablist"] {
+    direction: rtl;
+    justify-content: flex-end;
+}
+
+.cl-tab,
+[role="tab"] {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Pagination */
+.cl-pagination {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Scroll behavior for RTL */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Persian font optimization */
+@import url('https://fonts.googleapis.com/css2?family=Vazir:wght@400;500;700&display=swap');
+
+body, * {
+    font-family: 'Vazir', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Additional RTL considerations */
+[dir="ltr"] {
+    direction: ltr;
+    text-align: left;
+}
+
+[dir="rtl"] {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Ensure proper text direction for bidirectional content */
+.bidi-text {
+    unicode-bidi: embed;
+    direction: rtl;
+}
+
+/* Right-to-left overrides for specific Chainlit classes */
+.cl-message-content {
+    direction: rtl;
+    text-align: right;
+}
+
+.cl-chat-message {
+    direction: rtl;
+    text-align: right;
+}
+
+.cl-message-avatar {
+    margin-left: 10px;
+    margin-right: 0;
+}
+
+/* Margin and padding RTL adjustments */
+.cl-ml-auto {
+    margin-left: auto;
+    margin-right: 0;
+}
+
+.cl-mr-auto {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+.cl-pl-auto {
+    padding-left: 0;
+    padding-right: auto;
+}
+
+.cl-pr-auto {
+    padding-right: 0;
+    padding-left: auto;
+}
+
+/* Persian number styling (optional) */
+.persian-numbers {
+    font-variant-numeric: traditional;
+}
+
+/* Print stylesheet for RTL */
+@media print {
+    body {
+        direction: rtl;
+        text-align: right;
+    }
+
+    code, pre {
+        direction: ltr;
+        text-align: left;
+    }
+}

@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-**Current Phase**: Phase 4 (Agent Core) - Complete ✅
+**Current Phase**: Phase 5 (UI with Chainlit) - Complete ✅
 
 **Completed**:
 - ✅ Phase 0: Onboarding & Setup (environment documentation complete)
@@ -29,32 +29,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - ✅ Task 4.7: Error handling (7 custom exceptions, Persian messages)
   - ✅ Task 4.8: End-to-end testing (77 comprehensive unit tests, 100% pass rate)
   - ✅ Task 4.9: Agent Core committed
+- ✅ Phase 5: UI (Chainlit Interface) - Complete ✅ (+44 UI tests)
+  - ✅ Task 5.1: Chainlit framework setup and basic chat interface
+  - ✅ Task 5.2: RTL (right-to-left) support for Persian text (CSS-based)
+  - ✅ Task 5.3: Citation links to iran.ir documents (regex parsing + HTML formatting)
+  - ✅ Task 5.4: Example questions display at chat start (config.yaml driven)
+  - ✅ Task 5.5: Feedback collection integration with Arize Phoenix (👍/👎 buttons)
+  - ✅ Task 5.6: Agent thinking and tool calls visualization (Chainlit Steps)
+  - ✅ Task 5.7: Conversation history management (SQLite backend)
+  - ✅ Task 5.8: End-to-end testing and polish (44 comprehensive UI tests, 100% pass rate)
 
 **Next Steps**:
-- Phase 5: UI (Chainlit Interface) - RTL chat, citations, feedback
-- Phase 6-8: Observability, Testing, Deployment
+- Phase 6: Observability (Phoenix integration, eval-driven development)
+- Phase 7: Testing & Evaluation (golden set creation, LLM-as-judge)
+- Phase 8: Deployment & Production (Docker, monitoring)
 
 See `docs/development/tasks.md` for complete task breakdown.
-See `docs/features/phase-4-agent-core/` for design & implementation details.
+See `docs/features/phase-5-ui/` for design & implementation details.
 
-### What to Work On Next (Phase 5)
+### What to Work On Next (Phase 6)
 
-**Ready to Start**: Phase 5 - UI (Chainlit Interface) tasks
+**Ready to Start**: Phase 6 - Observability & Eval-Driven Development
 
-The agent is production-ready. Phase 5 will build the web interface:
-1. Study Chainlit framework and RTL support
-2. Create basic chat interface
-3. Add RTL (right-to-left) support for Persian
-4. Implement citation links to iran.ir documents
-5. Show example questions at start
-6. Add feedback collection (thumbs up/down)
-7. Display agent thinking and tool calls
-8. Add conversation history management
+The UI is production-ready. Phase 6 will set up observability:
+1. Full Arize Phoenix integration with law-agent traces
+2. Create golden eval set (50 QA pairs with reference answers)
+3. Implement LLM-as-judge evaluation framework
+4. Set up eval-driven iteration workflow
+5. Build feedback collection → Phoenix → iteration loop
 
 **Before Starting**:
-- Read `docs/development/workflow.md` (complete workflow guide)
-- Create `docs/features/phase-5-ui/plan.md` (design before coding!)
-- Follow the workflow exactly - it's designed for productivity
+- Read `docs/best-practices/evaluation.md` (eval-driven development guide)
+- Create `docs/features/phase-6-observability/plan.md` (design before coding!)
+- Review `docs/features/phase-5-ui/` for UI implementation patterns
 
 ---
 
