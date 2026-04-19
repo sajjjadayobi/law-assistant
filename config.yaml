@@ -56,6 +56,22 @@ database:
   # This field is required and must be provided via DB_PASSWORD environment variable
   password: ""
 
+  # Connection pool size (minimum number of connections to maintain)
+  # Typical range: 5-20 depending on workload
+  # Higher = more connections held, better for concurrent requests
+  # Lower = fewer resources, but slower under load
+  pool_size: 5
+
+  # Maximum overflow connections (beyond pool_size)
+  # When pool is full, create up to this many additional connections
+  # Typical range: 5-20
+  max_overflow: 10
+
+  # Enable SQL logging (for debugging)
+  # true = log all SQL queries (VERY verbose, development only)
+  # false = no query logging (production)
+  echo: false
+
 # ============================================================================
 # SEARCH CONFIGURATION
 # ============================================================================

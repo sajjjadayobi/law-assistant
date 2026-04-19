@@ -45,6 +45,13 @@ class DatabaseConfig(BaseModel):
     database: str = Field(default="law_agent", description="Database name")
     user: str = Field(default="postgres", description="Database user")
     password: str = Field(default="", description="Database password (set via DB_PASSWORD env var)")
+    pool_size: int = Field(
+        default=5, gt=0, le=100, description="Minimum number of connections in the pool"
+    )
+    max_overflow: int = Field(
+        default=10, gt=0, le=100, description="Maximum number of overflow connections"
+    )
+    echo: bool = Field(default=False, description="Log all SQL queries (for debugging)")
 
 
 class SearchConfig(BaseModel):
