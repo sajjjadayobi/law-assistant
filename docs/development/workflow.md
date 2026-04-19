@@ -560,14 +560,13 @@ This is your development journal - capture everything as it happens.
 
 ---
 
-### Step 1.4: Set Up Git Branch
+### Step 1.4: Set Up Git Branch (Local Only)
 
-Now that you have your plan, create your feature branch:
+Now that you have your plan, create your feature branch locally:
 
 ```bash
 # Always start from main
 git checkout main
-git pull origin main
 
 # Create feature branch (use descriptive name from plan)
 git checkout -b feature/phase-2-configuration
@@ -575,6 +574,8 @@ git checkout -b feature/phase-2-configuration
 # Verify you're on the right branch
 git branch --show-current
 ```
+
+**Note**: All work is local - we don't have a remote repository. Just work on your local branches and merge to main when complete.
 
 **Principles** (from Accelerate):
 - Keep branches short-lived (< 2 days ideal)
@@ -842,9 +843,6 @@ Key features:
 Resolves Task 2.3 from docs/development/tasks.md
 
 Documentation: docs/features/configuration/"
-
-# Push to remote
-git push origin feature/phase-2-configuration
 ```
 
 **IMPORTANT**: Always commit these files with your code:
@@ -853,6 +851,35 @@ git push origin feature/phase-2-configuration
 - ✅ Your code changes and tests
 
 They are all part of the feature delivery. Keeping CLAUDE.md current helps everyone know what's completed and what's next.
+
+---
+
+## 5b. Merging to Main (Local Only)
+
+**After committing your final feature commit, merge back to main**:
+
+```bash
+# Verify you're on your feature branch
+git branch --show-current
+
+# Switch to main
+git checkout main
+
+# Merge your feature branch
+git merge feature/phase-2-configuration
+
+# Verify merge succeeded
+git log --oneline -5
+
+# (Optional) Delete the feature branch after merge
+git branch -d feature/phase-2-configuration
+```
+
+**Important**:
+- All work is **local only** - there is no remote repository
+- Always merge to main when your feature is complete and all tests pass
+- This keeps main up-to-date with all completed features
+- Your feature branch should be short-lived (ideally completed in 1-2 days)
 
 ---
 
@@ -1018,8 +1045,13 @@ git checkout -b feature/my-feature
 make all                    # format, lint, typecheck, test
 git add <files>
 git add docs/features/my-feature/  # Don't forget documentation!
+git add CLAUDE.md                   # Update project status
 git commit                  # write good message!
-git push origin feature/my-feature
+
+# After feature is complete: merge to main
+git checkout main
+git merge feature/my-feature
+git branch -d feature/my-feature  # Clean up feature branch
 
 # Common commands
 make format                 # Format code with Black

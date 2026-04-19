@@ -243,11 +243,16 @@ git diff
 # Commit with descriptive message
 git add <files>
 git add docs/features/<feature-name>/  # Include plan.md and progress.md!
+git add CLAUDE.md  # Update project status
 git commit -m "feat(scope): description of changes"
 
-# Push to remote
-git push origin <branch-name>
+# After committing: merge to main and clean up feature branch
+git checkout main
+git merge <feature-branch-name>
+git branch -d <feature-branch-name>
 ```
+
+**Note**: All work is local only. Merge to main when your feature is complete.
 
 ---
 
@@ -482,6 +487,11 @@ git commit -m "feat(scope): brief description
 Detailed description of changes and why.
 
 See docs/features/my-feature-name/ for design and learnings."
+
+# 9. Merge to main (local only - no remote)
+git checkout main
+git merge feature/my-feature-name
+git branch -d feature/my-feature-name  # Clean up feature branch
 ```
 
 **Key Principles**:
