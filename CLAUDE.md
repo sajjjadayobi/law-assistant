@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-**Current Phase**: Phase 2 (Foundation) - In Progress (Tasks 2.1, 2.2, 2.3, 2.4, 2.5 complete)
+**Current Phase**: Phase 2 (Foundation) - In Progress (Tasks 2.1-2.6 complete)
 
 **Completed**:
 - ✅ Phase 0: Onboarding & Setup (environment documentation complete)
@@ -20,6 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ Task 2.3: Configuration system implemented (config.yaml + Pydantic Settings, 25 tests passing)
 - ✅ Task 2.4: Structured logging setup (structlog with context management, 25 tests passing)
 - ✅ Task 2.5: Database connection layer (SQLAlchemy with ORM models, 67 tests passing)
+- ✅ Task 2.6: Search tools implemented (search_documents, get_document, get_related_documents; 24 unit tests passing)
 
 **Next Steps**:
 - Phase 2: Foundation (database connection, ORM models, tests)
@@ -37,9 +38,9 @@ See `docs/development/tasks.md` for complete task breakdown.
 2. ✅ **Task 2.2**: Set up pyproject.toml with dependencies (completed - 47 core + 7 dev dependencies, all tools configured)
 3. ✅ **Task 2.3**: Build configuration system (config.yaml + Pydantic Settings, 25 tests passing)
 4. ✅ **Task 2.4**: Implement structured logging (structlog setup with context, text/JSON formatters, 25 tests)
-5. ✅ **Task 2.5**: Create database connection layer (SQLAlchemy with ORM models, 67 tests passing) ← **COMPLETED**
-6. **Task 2.6**: Implement search tools (search_documents, get_document, get_related_documents) ← **START HERE**
-7. **Task 2.7**: Write integration tests with real database
+5. ✅ **Task 2.5**: Create database connection layer (SQLAlchemy with ORM models, 67 tests passing)
+6. ✅ **Task 2.6**: Implement search tools (search_documents, get_document, get_related_documents; 24 unit tests passing) ← **COMPLETED**
+7. **Task 2.7**: Write integration tests with real database ← **START HERE**
 8. **Task 2.8**: Commit Phase 2
 
 **Before Starting**:
