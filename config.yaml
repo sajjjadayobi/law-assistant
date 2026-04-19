@@ -1,0 +1,145 @@
+# Law Agent Configuration
+#
+# This file contains all configuration for the Law Agent application.
+#
+# IMPORTANT: Secrets (passwords, API keys) should NEVER be put here!
+# Use environment variables instead (.env file or set in shell).
+#
+# Configuration priority (highest to lowest):
+# 1. Environment variables (DB_PASSWORD, ANTHROPIC_API_KEY, etc.)
+# 2. Values in this file (config.yaml)
+# 3. Hardcoded defaults in Pydantic models
+
+# ============================================================================
+# MODEL CONFIGURATION
+# ============================================================================
+# LLM model settings for Claude Sonnet 4.5
+model:
+  # Name of the Claude model to use
+  # See: https://docs.anthropic.com/en/docs/models/overview
+  name: "claude-sonnet-4.5"
+
+  # Temperature controls randomness/creativity (0.0 = deterministic, 2.0 = very creative)
+  # 0.0 = always same output
+  # 1.0 = balanced (recommended for legal assistant)
+  # 2.0 = maximum diversity
+  # Keep in range 0.0-2.0 per Anthropic guidelines
+  temperature: 1.0
+
+  # Maximum tokens per response
+  # Increase for longer answers, decrease to save costs
+  # Max: 16000 for safety (model supports more)
+  max_tokens: 4000
+
+# ============================================================================
+# DATABASE CONFIGURATION
+# ============================================================================
+# PostgreSQL database for legal documents
+# NOTE: password must be set via DB_PASSWORD environment variable!
+database:
+  # PostgreSQL host
+  host: "localhost"
+
+  # PostgreSQL port
+  port: 5432
+
+  # Database name
+  database: "law_agent"
+
+  # Database user
+  user: "postgres"
+
+  # Database password - SET VIA ENVIRONMENT VARIABLE
+  # Do NOT put password here! Use:
+  #   export DB_PASSWORD="your-password"
+  #   or in .env: DB_PASSWORD=your-password
+  # This field is required and must be provided via DB_PASSWORD environment variable
+  password: ""
+
+# ============================================================================
+# SEARCH CONFIGURATION
+# ============================================================================
+# Full-text search over legal documents
+search:
+  # Maximum number of documents to return per search
+  # Higher = more results to consider, but slower and higher cost
+  # Typical range: 10-50
+  max_results: 20
+
+  # Maximum depth for following document relations (citations)
+  # Example: search → related documents → their related documents
+  # Higher = more thorough but slower
+  # Typical range: 1-3
+  graph_traversal_depth: 2
+
+  # Minimum relevance score threshold (0.0-1.0)
+  # Only return documents with score >= this value
+  # Higher = stricter filtering, fewer but more relevant results
+  # Typical range: 0.2-0.5
+  min_relevance_score: 0.3
+
+# ============================================================================
+# CONVERSATION CONFIGURATION
+# ============================================================================
+# Multi-turn conversation behavior and limits
+conversation:
+  # Hard limit on conversation turns (message pairs)
+  # Used to prevent runaway costs from extended conversations
+  # Typical limit: 50 turns (100 messages)
+  # Min: 5, Max: 500
+  max_turns: 50
+
+  # Whether to use conversation history for context
+  # true = agent can reference previous messages
+  # false = agent sees only current message
+  enable_context_history: true
+
+# ============================================================================
+# UI CONFIGURATION
+# ============================================================================
+# Chainlit chat interface behavior
+ui:
+  # Show model thinking and reasoning to the user
+  # true = transparent (user sees "thinking" section)
+  # false = hidden (cleaner UI but less educational)
+  show_thinking: true
+
+  # Show tool calls and their parameters
+  # true = user sees which documents were searched, what parameters
+  # false = hidden (cleaner but less transparent)
+  show_tool_calls: true
+
+  # Enable thumbs up/down feedback buttons
+  # true = collect user feedback (sent to observability)
+  # false = no feedback (for privacy or testing)
+  enable_feedback: true
+
+  # Example questions shown to user at conversation start
+  # List of 3-5 questions in Persian to guide users
+  example_questions:
+    - "قوانین مرتبط با بیمه را بیان کنید"
+    - "مراحل ثبت شرکت چیست؟"
+    - "حقوق و تکالیف کارفرما چیست؟"
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+# Structured logging output
+logging:
+  # Log level threshold (DEBUG, INFO, WARNING, ERROR)
+  # DEBUG = very detailed (development only)
+  # INFO = normal operations (recommended for production)
+  # WARNING = only unexpected situations
+  # ERROR = only failures
+  level: "INFO"
+
+  # Log format
+  # json = machine-parseable (production, integrates with observability)
+  # text = human-readable (development, console)
+  format: "text"
+
+  # Optional file path for log output
+  # null/empty = logs to console only
+  # "/var/log/law-agent.log" = also write to file
+  # Leave null for console-only in development
+  file_path: null
