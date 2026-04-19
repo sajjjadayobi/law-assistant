@@ -47,7 +47,11 @@ database:
   database: "law_agent"
 
   # Database user
-  user: "postgres"
+  # NOTE: Set to the actual PostgreSQL user on your system
+  # On macOS with Homebrew, this is typically the current user (e.g., "divar")
+  # To find your PostgreSQL user: psql -d postgres -c "\du"
+  # Can be overridden by DB_USER environment variable (requires code change to Settings class)
+  user: "divar"
 
   # Database password - SET VIA ENVIRONMENT VARIABLE
   # Do NOT put password here! Use:
