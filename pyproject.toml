@@ -28,6 +28,9 @@ dependencies = [
     # Logging
     "structlog>=24.1.0",
 
+    # Configuration
+    "pyyaml>=6.0",
+
     # UI
     "chainlit>=1.0.0",
 
