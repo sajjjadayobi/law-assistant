@@ -3,9 +3,9 @@
 import hashlib
 import json
 import time
-from functools import wraps
-from typing import Any, Callable, Dict, Optional, TypeVar, Generic, Tuple
 from collections import OrderedDict
+from functools import wraps
+from typing import Any, Callable, Generic, Optional, TypeVar
 
 import structlog
 
@@ -26,7 +26,7 @@ class LRUCache(Generic[T]):
         """
         self.max_size = max_size
         self.ttl_seconds = ttl_seconds
-        self.cache: OrderedDict[str, Tuple[Any, float]] = OrderedDict()
+        self.cache: OrderedDict[str, tuple[Any, float]] = OrderedDict()
         self.hits = 0
         self.misses = 0
 
@@ -78,7 +78,7 @@ class LRUCache(Generic[T]):
         self.hits = 0
         self.misses = 0
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics.
 
         Returns:
@@ -217,7 +217,7 @@ class QueryCache:
         self.search_cache.clear()
         self.doc_cache.clear()
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics.
 
         Returns:

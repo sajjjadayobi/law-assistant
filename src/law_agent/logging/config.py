@@ -13,6 +13,8 @@ Usage:
 
 import logging
 import sys
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from typing import Any, TextIO, Union
 
 import structlog
@@ -97,17 +99,28 @@ def _add_context_processor(logger: object, name: str, event_dict: dict[str, Any]
 
 
 def _get_output_file(file_path: str | None) -> Union[TextIO, Any]:
-    """Get file handle for log output.
+    """Get file handle for log output with rotation support.
 
     Args:
         file_path: Path to log file, or None for stderr
 
     Returns:
-        File handle (stderr or open file)
+        File handle (stderr or rotating file handler)
     """
     if file_path:
-        # Open file in append mode
-        return open(file_path, "a", encoding="utf-8")
+        # Create directory if it doesn't exist
+        log_dir = Path(file_path).parent
+        log_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create rotating file handler for log rotation
+        # Max 10MB per file, keep 5 backup files
+        handler = RotatingFileHandler(
+            filename=file_path,
+            maxBytes=10 * 1024 * 1024,  # 10MB
+            backupCount=5,  # Keep 5 backup files
+            encoding="utf-8",
+        )
+        return handler.stream  # Return the stream for structlog
     else:
         # Log to stderr (default)
         return sys.stderr

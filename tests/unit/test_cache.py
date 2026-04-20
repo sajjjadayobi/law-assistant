@@ -1,7 +1,6 @@
 """Tests for caching utilities."""
 
 import time
-import pytest
 
 from src.law_agent.cache import LRUCache, QueryCache, get_query_cache
 

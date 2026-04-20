@@ -1,6 +1,5 @@
 """UI configuration and styling for Chainlit interface."""
 
-from typing import Dict, Any
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -18,7 +17,7 @@ class UIConfig:
     }
 
     @staticmethod
-    def get_theme() -> Dict[str, str]:
+    def get_theme() -> dict[str, str]:
         """Get theme configuration."""
         return UIConfig.THEME
 

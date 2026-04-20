@@ -1,7 +1,7 @@
 """Accessibility utilities for the Chainlit UI."""
 
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
+from typing import Any, Optional
 
 import structlog
 
@@ -108,7 +108,7 @@ class AccessibilityConfig:
     }
 
     @staticmethod
-    def get_keyboard_shortcuts() -> Dict[str, Dict[str, str]]:
+    def get_keyboard_shortcuts() -> dict[str, dict[str, str]]:
         """Get keyboard shortcuts for user assistance.
 
         Returns:
@@ -132,7 +132,7 @@ class AccessibilityConfig:
         return component
 
     @staticmethod
-    def get_error_response(error_type: str) -> Dict[str, Any]:
+    def get_error_response(error_type: str) -> dict[str, Any]:
         """Get user-friendly error message.
 
         Args:
@@ -211,7 +211,7 @@ class AccessibilityHelper:
         shortcuts = AccessibilityConfig.get_keyboard_shortcuts()
 
         help_text = "**میانبرهای صفحه کلید:**\n"
-        for action, info in shortcuts.items():
+        for _action, info in shortcuts.items():
             key = info["key"]
             desc = info["description"]
             help_text += f"• **{key}**: {desc}\n"
@@ -219,7 +219,7 @@ class AccessibilityHelper:
         return help_text
 
     @staticmethod
-    def log_accessibility_event(event_type: str, details: Dict[str, Any]) -> None:
+    def log_accessibility_event(event_type: str, details: dict[str, Any]) -> None:
         """Log accessibility-related events.
 
         Args:
@@ -249,11 +249,13 @@ class AccessibilityReport:
             issue: Issue description
             severity: Severity level (info, warning, error)
         """
-        self.issues.append({
-            "component": component,
-            "issue": issue,
-            "severity": severity,
-        })
+        self.issues.append(
+            {
+                "component": component,
+                "issue": issue,
+                "severity": severity,
+            }
+        )
 
     def add_suggestion(self, component: str, suggestion: str):
         """Add accessibility suggestion.
@@ -262,12 +264,14 @@ class AccessibilityReport:
             component: Component name
             suggestion: Suggestion description
         """
-        self.suggestions.append({
-            "component": component,
-            "suggestion": suggestion,
-        })
+        self.suggestions.append(
+            {
+                "component": component,
+                "suggestion": suggestion,
+            }
+        )
 
-    def generate_report(self) -> Dict[str, Any]:
+    def generate_report(self) -> dict[str, Any]:
         """Generate accessibility report.
 
         Returns:
@@ -302,7 +306,7 @@ class AccessibilityReport:
         Returns:
             Score out of 100
         """
-        total_issues = len(self.issues)
+        len(self.issues)
         total_suggestions = len(self.suggestions)
 
         # Start with WCAG score

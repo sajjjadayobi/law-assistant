@@ -144,7 +144,7 @@ ui:
 # ============================================================================
 # LOGGING CONFIGURATION
 # ============================================================================
-# Structured logging output
+# Structured logging output with log rotation support
 logging:
   # Log level threshold (DEBUG, INFO, WARNING, ERROR)
   # DEBUG = very detailed (development only)
@@ -157,9 +157,16 @@ logging:
   # json = machine-parseable (production, integrates with observability)
   # text = human-readable (development, console)
   format: "text"
+  # Production: Set to "json" for structured logs that integrate with observability
+  # Override via LOGGING_FORMAT environment variable
 
   # Optional file path for log output
-  # null/empty = logs to console only
-  # "/var/log/law-agent.log" = also write to file
+  # null/empty = logs to console/stderr only (recommended for Docker)
+  # "/var/log/law-agent.log" = write to file with automatic rotation
+  #
+  # Log rotation: Automatically rotates at 10MB per file, keeps 5 backups
+  # This prevents disk space issues in long-running production deployments
+  #
   # Leave null for console-only in development
+  # Production: Set via LOGGING_FILE_PATH environment variable if file logging needed
   file_path: null

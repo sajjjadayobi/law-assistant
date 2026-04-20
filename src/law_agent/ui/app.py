@@ -13,9 +13,11 @@ import os
 
 import chainlit as cl
 import structlog
+from fastapi import FastAPI
 
 from law_agent.agent import ConversationManager, LawAgent
 from law_agent.config.settings import Settings
+from law_agent.health import get_health_status, get_readiness
 from law_agent.observability import (
     initialize_feedback_client,
     initialize_tracing,
@@ -53,7 +55,7 @@ def get_agent() -> LawAgent:
         if _settings is None:
             _settings = Settings()
         _agent = LawAgent(
-            model=_settings.model.primary_model,
+            model=_settings.model.name,
             temperature=_settings.model.temperature,
         )
     return _agent
@@ -94,7 +96,7 @@ def get_settings() -> Settings:
 async def start() -> None:
     """Handle chat initialization."""
     settings = get_settings()
-    session_id = cl.user_session.get("id")
+    session_id = cl.user_session.get("id")  # type: ignore
 
     logger.info("chat_started", session_id=session_id)
 
@@ -118,20 +120,20 @@ async def start() -> None:
 چی می‌تونم برات کمک کنم؟
 """
 
-    await cl.Message(content=welcome_msg).send()
+    await cl.Message(content=welcome_msg).send()  # type: ignore
 
     # Send example questions if enabled
     if settings.ui.example_questions:
         examples_msg = "\n\n**سوالات نمونه:**\n"
         for i, question in enumerate(settings.ui.example_questions[:5], 1):
             examples_msg += f"{i}. {question}\n"
-        await cl.Message(content=examples_msg).send()
+        await cl.Message(content=examples_msg).send()  # type: ignore
 
 
 @cl.on_message
 async def main(message: cl.Message) -> None:
     """Handle incoming user messages and generate responses."""
-    session_id = cl.user_session.get("id")
+    session_id = cl.user_session.get("id")  # type: ignore
     settings = get_settings()
 
     try:
@@ -154,11 +156,11 @@ async def main(message: cl.Message) -> None:
         step_manager = get_step_manager()
 
         # Get conversation history
-        history = conv_manager.get_history()
+        history = conv_manager.get_history()  # type: ignore
 
         # Create a message for streaming response
         msg = cl.Message(content="")
-        await msg.send()
+        await msg.send()  # type: ignore
 
         # Call agent
         logger.info("calling_agent", session_id=session_id)
@@ -170,15 +172,15 @@ async def main(message: cl.Message) -> None:
         )
 
         # Add user message and agent response to history
-        conv_manager.add_user_message(user_query)
-        conv_manager.add_assistant_message(response_text)
+        conv_manager.add_user_message(user_query)  # type: ignore
+        conv_manager.add_assistant_message(response_text)  # type: ignore
 
         # Format response with clickable citations
         formatted_response = citation_formatter.format_response(response_text)
 
         # Update message with formatted response
         msg.content = formatted_response
-        await msg.update()
+        await msg.update()  # type: ignore
 
         # Show tool steps if enabled
         if settings.ui.show_tool_calls:
@@ -191,7 +193,7 @@ async def main(message: cl.Message) -> None:
                 )
                 step.input = json.dumps(step_data.get("input", {}), ensure_ascii=False)
                 step.output = json.dumps(step_data.get("output", {}), ensure_ascii=False)
-                await step.send()
+                await step.send()  # type: ignore
 
         logger.info(
             "message_processed_success",
@@ -210,7 +212,7 @@ async def main(message: cl.Message) -> None:
 
 لطفاً دوباره تلاش کنید یا سوال خود را به شکل دیگری بیان کنید.
 """
-        await cl.Message(content=error_msg).send()
+        await cl.Message(content=error_msg).send()  # type: ignore
 
 
 @cl.on_chat_end
@@ -227,7 +229,7 @@ async def handle_feedback(feedback: cl.Feedback) -> None:
     """Handle user feedback (thumbs up/down)."""
     from law_agent.observability import log_feedback_local, send_feedback_to_phoenix
 
-    session_id = cl.user_session.get("id") or "unknown"
+    session_id = cl.user_session.get("id") or "unknown"  # type: ignore
     feedback_type = "positive" if feedback.score > 0 else "negative"
     comment = getattr(feedback, "comment", None)
 
@@ -258,3 +260,34 @@ async def handle_feedback(feedback: cl.Feedback) -> None:
 
 # The app is automatically created by Chainlit when decorators are used
 # No need to explicitly instantiate it
+
+
+# ============================================================================
+# Health Check Routes
+# ============================================================================
+# These routes are used by Docker health checks and monitoring systems
+
+
+@cl.get_app()  # type: ignore
+def setup_health_routes(app: FastAPI) -> None:
+    """Set up health check routes for the FastAPI app."""
+
+    @app.get("/health", tags=["health"])
+    async def health() -> dict[str, any]:  # type: ignore
+        """
+        Health check endpoint for Docker and monitoring systems.
+
+        Returns:
+            JSON with health status of all components
+        """
+        return await get_health_status()
+
+    @app.get("/ready", tags=["health"])
+    async def readiness() -> dict[str, any]:  # type: ignore
+        """
+        Readiness check endpoint for Kubernetes and orchestration systems.
+
+        Returns:
+            JSON with readiness status (ready: true/false)
+        """
+        return await get_readiness()

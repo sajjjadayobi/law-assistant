@@ -1,12 +1,12 @@
 """Script to run load tests and generate reports."""
 
-import subprocess
-import json
 import argparse
-from pathlib import Path
-from datetime import datetime
-from typing import Optional, Dict, Any
+import json
+import subprocess
 import time
+from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 import structlog
 
@@ -50,10 +50,8 @@ class LoadTestRunner:
             True if test completed successfully
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        results_file = (
-            self.output_dir / f"{scenario_name}_{timestamp}_results.html"
-        )
-        stats_file = self.output_dir / f"{scenario_name}_{timestamp}_stats.json"
+        results_file = self.output_dir / f"{scenario_name}_{timestamp}_results.html"
+        self.output_dir / f"{scenario_name}_{timestamp}_stats.json"
 
         logger.info(
             "load_test_starting",
@@ -101,7 +99,7 @@ class LoadTestRunner:
             logger.error("load_test_error", scenario=scenario_name, error=str(e))
             return False
 
-    def run_all_scenarios(self) -> Dict[str, bool]:
+    def run_all_scenarios(self) -> dict[str, bool]:
         """Run all predefined load test scenarios.
 
         Returns:
@@ -144,10 +142,12 @@ class LoadTestRunner:
         # Find all result files
         for html_file in self.output_dir.glob("*_results.html"):
             scenario_name = html_file.stem.split("_")[0]
-            report["test_runs"].append({
-                "scenario": scenario_name,
-                "results_file": html_file.name,
-            })
+            report["test_runs"].append(
+                {
+                    "scenario": scenario_name,
+                    "results_file": html_file.name,
+                }
+            )
 
         # Save report
         report_file = self.output_dir / "load_test_report.json"
@@ -159,7 +159,7 @@ class LoadTestRunner:
         # Print summary
         self.print_summary(report)
 
-    def print_summary(self, report: Dict[str, Any]) -> None:
+    def print_summary(self, report: dict[str, Any]) -> None:
         """Print test summary to console.
 
         Args:
@@ -171,7 +171,7 @@ class LoadTestRunner:
         print(f"Timestamp: {report['timestamp']}")
         print(f"Target: {report['test_host']}")
         print(f"Results Directory: {report['results_directory']}")
-        print(f"\nTest Runs:")
+        print("\nTest Runs:")
 
         for run in report["test_runs"]:
             print(f"  - {run['scenario']}: {run['results_file']}")

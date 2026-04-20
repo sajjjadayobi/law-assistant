@@ -1,18 +1,15 @@
 """Tests for performance monitoring and profiling."""
 
-import time
-import tempfile
-from pathlib import Path
 import json
+import time
+from pathlib import Path
 
-import pytest
-
-from src.law_agent.performance.profiler import Profiler, profile_function
 from src.law_agent.performance.metrics import (
-    PerformanceMetrics,
     MetricsCollector,
+    PerformanceMetrics,
     PerformanceTimer,
 )
+from src.law_agent.performance.profiler import Profiler, profile_function
 
 
 class TestProfiler:

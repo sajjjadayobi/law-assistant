@@ -1,7 +1,8 @@
 """Database query optimization utilities."""
 
+from typing import Any
+
 import structlog
-from typing import List, Dict, Any, Optional, Tuple
 from sqlalchemy import text
 
 from .connection import get_connection
@@ -13,7 +14,7 @@ class DatabaseOptimizer:
     """Utilities for optimizing database queries and performance."""
 
     @staticmethod
-    def create_indexes() -> Dict[str, bool]:
+    def create_indexes() -> dict[str, bool]:
         """Create missing indexes for performance optimization.
 
         Returns:
@@ -92,7 +93,7 @@ class DatabaseOptimizer:
             conn.close()
 
     @staticmethod
-    def get_index_stats() -> Dict[str, Any]:
+    def get_index_stats() -> dict[str, Any]:
         """Get statistics about indexes and their usage.
 
         Returns:
@@ -118,15 +119,17 @@ class DatabaseOptimizer:
 
             stats = []
             for row in rows:
-                stats.append({
-                    "schema": row[0],
-                    "table": row[1],
-                    "index": row[2],
-                    "scans": row[3],
-                    "tuples_read": row[4],
-                    "tuples_fetched": row[5],
-                    "size": row[6],
-                })
+                stats.append(
+                    {
+                        "schema": row[0],
+                        "table": row[1],
+                        "index": row[2],
+                        "scans": row[3],
+                        "tuples_read": row[4],
+                        "tuples_fetched": row[5],
+                        "size": row[6],
+                    }
+                )
 
             logger.info("index_stats_retrieved", count=len(stats))
             return {"indexes": stats}
@@ -137,7 +140,7 @@ class DatabaseOptimizer:
             conn.close()
 
     @staticmethod
-    def get_table_stats() -> Dict[str, Any]:
+    def get_table_stats() -> dict[str, Any]:
         """Get statistics about tables.
 
         Returns:
@@ -164,15 +167,17 @@ class DatabaseOptimizer:
 
             stats = []
             for row in rows:
-                stats.append({
-                    "schema": row[0],
-                    "table": row[1],
-                    "live_rows": row[2],
-                    "dead_rows": row[3],
-                    "last_vacuum": row[4],
-                    "last_analyze": row[5],
-                    "total_size": row[6],
-                })
+                stats.append(
+                    {
+                        "schema": row[0],
+                        "table": row[1],
+                        "live_rows": row[2],
+                        "dead_rows": row[3],
+                        "last_vacuum": row[4],
+                        "last_analyze": row[5],
+                        "total_size": row[6],
+                    }
+                )
 
             logger.info("table_stats_retrieved", count=len(stats))
             return {"tables": stats}
@@ -183,7 +188,7 @@ class DatabaseOptimizer:
             conn.close()
 
     @staticmethod
-    def get_slow_queries(limit: int = 10) -> List[Dict[str, Any]]:
+    def get_slow_queries(limit: int = 10) -> list[dict[str, Any]]:
         """Get slowest queries from pg_stat_statements.
 
         Args:
@@ -214,15 +219,17 @@ class DatabaseOptimizer:
 
             slow_queries = []
             for row in rows:
-                slow_queries.append({
-                    "query": row[0][:100],  # First 100 chars
-                    "calls": row[1],
-                    "total_time_ms": round(row[2], 2),
-                    "mean_time_ms": round(row[3], 2),
-                    "max_time_ms": round(row[4], 2),
-                    "rows_returned": row[5],
-                    "cache_hit_ratio": round(row[6], 2) if row[6] else None,
-                })
+                slow_queries.append(
+                    {
+                        "query": row[0][:100],  # First 100 chars
+                        "calls": row[1],
+                        "total_time_ms": round(row[2], 2),
+                        "mean_time_ms": round(row[3], 2),
+                        "max_time_ms": round(row[4], 2),
+                        "rows_returned": row[5],
+                        "cache_hit_ratio": round(row[6], 2) if row[6] else None,
+                    }
+                )
 
             logger.info("slow_queries_retrieved", count=len(slow_queries))
             return slow_queries
@@ -233,7 +240,7 @@ class DatabaseOptimizer:
             conn.close()
 
     @staticmethod
-    def explain_query(query_str: str) -> Dict[str, Any]:
+    def explain_query(query_str: str) -> dict[str, Any]:
         """Get EXPLAIN ANALYZE output for a query.
 
         Args:
@@ -259,7 +266,7 @@ class DatabaseOptimizer:
             conn.close()
 
     @staticmethod
-    def get_missing_indexes() -> List[Dict[str, str]]:
+    def get_missing_indexes() -> list[dict[str, str]]:
         """Identify potentially missing indexes based on sequential scans.
 
         Returns:
@@ -286,14 +293,16 @@ class DatabaseOptimizer:
 
             missing = []
             for row in rows:
-                missing.append({
-                    "schema": row[0],
-                    "table": row[1],
-                    "sequential_scans": row[2],
-                    "tuples_read": row[3],
-                    "index_scans": row[4],
-                    "recommendation": f"Consider adding index on {row[1]} (seq_scan={row[2]} >> idx_scan={row[4]})",
-                })
+                missing.append(
+                    {
+                        "schema": row[0],
+                        "table": row[1],
+                        "sequential_scans": row[2],
+                        "tuples_read": row[3],
+                        "index_scans": row[4],
+                        "recommendation": f"Consider adding index on {row[1]} (seq_scan={row[2]} >> idx_scan={row[4]})",
+                    }
+                )
 
             logger.info("missing_indexes_identified", count=len(missing))
             return missing
@@ -328,10 +337,10 @@ class QueryOptimizer:
 
     @staticmethod
     def paginate(
-        query_results: List[Any],
+        query_results: list[Any],
         page: int = 1,
         page_size: int = 20,
-    ) -> Tuple[List[Any], Dict[str, int]]:
+    ) -> tuple[list[Any], dict[str, int]]:
         """Paginate query results.
 
         Args:
@@ -368,10 +377,10 @@ class QueryOptimizer:
 
     @staticmethod
     def batch_fetch(
-        ids: List[int],
+        ids: list[int],
         fetch_fn,
         batch_size: int = 100,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Fetch multiple items in batches to optimize performance.
 
         Args:
@@ -394,7 +403,7 @@ class QueryOptimizer:
         return results
 
     @staticmethod
-    def get_optimization_report() -> Dict[str, Any]:
+    def get_optimization_report() -> dict[str, Any]:
         """Generate comprehensive optimization report.
 
         Returns:

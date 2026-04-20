@@ -1,13 +1,13 @@
 """Performance metrics collection and reporting."""
 
-import time
 import json
-from dataclasses import dataclass, asdict
+import statistics
+import time
+from collections import defaultdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-from collections import defaultdict
-import statistics
+from typing import Any, Optional
 
 import structlog
 
@@ -24,7 +24,7 @@ class PerformanceMetrics:
     status: str  # "success" or "error"
     memory_mb: Optional[float] = None
     cpu_percent: Optional[float] = None
-    metadata: Dict[str, Any] = None
+    metadata: dict[str, Any] = None
 
     def __post_init__(self) -> None:
         """Initialize metadata if not provided."""
@@ -42,8 +42,8 @@ class MetricsCollector:
             output_file: File to save metrics (default: metrics.jsonl)
         """
         self.output_file = output_file or Path("metrics.jsonl")
-        self.metrics: List[PerformanceMetrics] = []
-        self._operation_times: Dict[str, List[float]] = defaultdict(list)
+        self.metrics: list[PerformanceMetrics] = []
+        self._operation_times: dict[str, list[float]] = defaultdict(list)
 
     def record(self, metric: PerformanceMetrics) -> None:
         """Record a metric.
@@ -66,7 +66,7 @@ class MetricsCollector:
             status=metric.status,
         )
 
-    def get_summary(self, operation: str) -> Dict[str, float]:
+    def get_summary(self, operation: str) -> dict[str, float]:
         """Get summary statistics for an operation.
 
         Args:
@@ -93,7 +93,7 @@ class MetricsCollector:
             "p99_ms": sorted_times[int(n * 0.99)] if n > 100 else sorted_times[-1],
         }
 
-    def get_all_summaries(self) -> Dict[str, Dict[str, float]]:
+    def get_all_summaries(self) -> dict[str, dict[str, float]]:
         """Get summary statistics for all operations.
 
         Returns:
@@ -157,7 +157,7 @@ class PerformanceTimer:
         self,
         operation: str,
         collector: Optional[MetricsCollector] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[dict[str, Any]] = None,
     ):
         """Initialize timer.
 

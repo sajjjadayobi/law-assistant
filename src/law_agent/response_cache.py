@@ -3,8 +3,8 @@
 import hashlib
 import json
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from datetime import datetime
+from typing import Any, Optional
 
 import structlog
 
@@ -147,7 +147,7 @@ class ResponseCache:
         self.cache.clear()
         self.tokens_saved = 0
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics.
 
         Returns:
@@ -164,7 +164,7 @@ class ResponseCache:
         self,
         input_cost_per_1k: float = 0.003,
         output_cost_per_1k: float = 0.015,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate estimated cost savings from cache hits.
 
         Args:
@@ -250,7 +250,7 @@ def cache_agent_response(
         response = result.get("response", "")
         citations = result.get("citations", [])
         follow_ups = result.get("follow_ups", [])
-        tokens_used = result.get("tokens_used", 0)
+        result.get("tokens_used", 0)
 
         # Estimate tokens saved if this was cached
         # Assume ~1300 tokens per response on average

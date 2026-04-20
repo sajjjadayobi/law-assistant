@@ -2,11 +2,11 @@
 
 import asyncio
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any
 
 import structlog
 
-from ..tools.search import search_documents, get_document, get_related_documents
+from ..tools.search import get_document, get_related_documents, search_documents
 from .metrics import MetricsCollector, PerformanceTimer
 
 logger = structlog.get_logger(__name__)
@@ -23,11 +23,9 @@ class BaselinePerformanceTester:
         """
         self.output_dir = output_dir
         self.output_dir.mkdir(exist_ok=True)
-        self.collector = MetricsCollector(
-            output_file=self.output_dir / "baseline_metrics.jsonl"
-        )
+        self.collector = MetricsCollector(output_file=self.output_dir / "baseline_metrics.jsonl")
 
-    async def test_search_documents(self, queries: List[str]) -> Dict[str, Any]:
+    async def test_search_documents(self, queries: list[str]) -> dict[str, Any]:
         """Test search_documents performance.
 
         Args:
@@ -56,7 +54,7 @@ class BaselinePerformanceTester:
             "results": results,
         }
 
-    async def test_get_document(self, doc_ids: List[int]) -> Dict[str, Any]:
+    async def test_get_document(self, doc_ids: list[int]) -> dict[str, Any]:
         """Test get_document performance.
 
         Args:
@@ -69,9 +67,7 @@ class BaselinePerformanceTester:
         results = []
 
         for doc_id in doc_ids:
-            with PerformanceTimer(
-                "get_document", self.collector, {"doc_id": doc_id}
-            ):
+            with PerformanceTimer("get_document", self.collector, {"doc_id": doc_id}):
                 result = await get_document(doc_id)
                 results.append(
                     {
@@ -87,7 +83,7 @@ class BaselinePerformanceTester:
             "results": results,
         }
 
-    async def test_get_related_documents(self, doc_ids: List[int]) -> Dict[str, Any]:
+    async def test_get_related_documents(self, doc_ids: list[int]) -> dict[str, Any]:
         """Test get_related_documents performance.
 
         Args:
@@ -122,10 +118,10 @@ class BaselinePerformanceTester:
 
     async def run_baseline(
         self,
-        search_queries: List[str],
-        doc_ids: List[int],
+        search_queries: list[str],
+        doc_ids: list[int],
         runs: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run complete baseline test suite.
 
         Args:
@@ -169,8 +165,8 @@ class BaselinePerformanceTester:
 
 
 async def run_baseline_from_config(
-    search_queries: List[str] = None,
-    doc_ids: List[int] = None,
+    search_queries: list[str] = None,
+    doc_ids: list[int] = None,
     runs: int = 3,
 ) -> None:
     """Run baseline tests with optional default queries and documents.

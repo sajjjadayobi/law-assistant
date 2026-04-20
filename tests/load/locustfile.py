@@ -7,9 +7,9 @@ This script simulates realistic user behavior patterns for the Law Agent.
 """
 
 import random
-from locust import HttpUser, task, between, events
 import time
-import json
+
+from locust import HttpUser, between, events, task
 
 # Sample test queries in Persian
 SAMPLE_QUERIES = [
@@ -127,9 +127,7 @@ class LawAgentUser(HttpUser):
     def on_stop(self):
         """Called when a locust user stops."""
         session_duration = time.time() - self.session_start_time
-        print(
-            f"User session ended: {self.message_count} messages in {session_duration:.1f}s"
-        )
+        print(f"User session ended: {self.message_count} messages in {session_duration:.1f}s")
 
 
 # Event handlers for tracking aggregate statistics

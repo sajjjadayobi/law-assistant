@@ -1,12 +1,12 @@
 """Search tool performance monitoring and optimization."""
 
-from typing import List, Dict, Any, Optional
 from datetime import datetime
+from typing import Any, Optional
 
 import structlog
 
 from ..cache import get_query_cache
-from .metrics import PerformanceTimer, MetricsCollector
+from .metrics import MetricsCollector, PerformanceTimer
 
 logger = structlog.get_logger(__name__)
 
@@ -27,8 +27,8 @@ class SearchPerformanceMonitor:
         self,
         query: str,
         search_fn,
-        tags: Optional[List[str]] = None,
-        doc_types: Optional[List[str]] = None,
+        tags: Optional[list[str]] = None,
+        doc_types: Optional[list[str]] = None,
         limit: int = 20,
     ) -> Any:
         """Monitor search operation with caching and metrics.
@@ -51,9 +51,7 @@ class SearchPerformanceMonitor:
         }
 
         # Check cache first
-        cached_result = self.query_cache.get_search_result(
-            query, tags, doc_types, limit
-        )
+        cached_result = self.query_cache.get_search_result(query, tags, doc_types, limit)
         if cached_result is not None:
             logger.info(
                 "search_cache_hit",
@@ -118,9 +116,9 @@ class SearchPerformanceMonitor:
         doc_id: int,
         relations_fn,
         direction: str = "outgoing",
-        relation_types: Optional[List[str]] = None,
+        relation_types: Optional[list[str]] = None,
         limit: int = 10,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Monitor relation traversal operation.
 
         Args:
@@ -154,7 +152,7 @@ class SearchPerformanceMonitor:
 
         return results if results else []
 
-    def get_performance_report(self) -> Dict[str, Any]:
+    def get_performance_report(self) -> dict[str, Any]:
         """Get performance report.
 
         Returns:
@@ -183,13 +181,13 @@ class SearchPerformanceMonitor:
         search_cache = report["cache_statistics"]["search_cache"]
         doc_cache = report["cache_statistics"]["document_cache"]
 
-        print(f"\nSearch Cache:")
+        print("\nSearch Cache:")
         print(f"  Size:     {search_cache['size']}/{search_cache['max_size']}")
         print(f"  Hits:     {search_cache['hits']}")
         print(f"  Misses:   {search_cache['misses']}")
         print(f"  Hit Rate: {search_cache['hit_rate']}%")
 
-        print(f"\nDocument Cache:")
+        print("\nDocument Cache:")
         print(f"  Size:     {doc_cache['size']}/{doc_cache['max_size']}")
         print(f"  Hits:     {doc_cache['hits']}")
         print(f"  Misses:   {doc_cache['misses']}")
@@ -214,7 +212,7 @@ class SearchOptimizationTips:
     """Provides optimization recommendations based on metrics."""
 
     @staticmethod
-    def analyze_cache_efficiency(cache_stats: Dict[str, Any]) -> List[str]:
+    def analyze_cache_efficiency(cache_stats: dict[str, Any]) -> list[str]:
         """Analyze cache efficiency and provide recommendations.
 
         Args:
@@ -234,9 +232,7 @@ class SearchOptimizationTips:
             )
 
         if search_cache["size"] == search_cache["max_size"]:
-            recommendations.append(
-                "Search cache is full - increase max_size for better retention"
-            )
+            recommendations.append("Search cache is full - increase max_size for better retention")
 
         doc_cache = cache_stats["document_cache"]
         if doc_cache["hit_rate"] < 30:
@@ -248,8 +244,8 @@ class SearchOptimizationTips:
 
     @staticmethod
     def analyze_operation_metrics(
-        metrics: Dict[str, Dict[str, float]],
-    ) -> List[str]:
+        metrics: dict[str, dict[str, float]],
+    ) -> list[str]:
         """Analyze operation performance and provide recommendations.
 
         Args:

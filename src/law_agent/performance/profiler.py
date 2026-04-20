@@ -1,11 +1,12 @@
 """Profiling utilities for identifying performance bottlenecks."""
 
 import cProfile
+import functools
 import pstats
 import time
-import functools
 from pathlib import Path
-from typing import Any, Callable, TypeVar, Optional
+from typing import Any, Callable, Optional, TypeVar
+
 import structlog
 
 logger = structlog.get_logger(__name__)

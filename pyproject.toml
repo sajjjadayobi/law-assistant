@@ -110,6 +110,21 @@ ignore_missing_imports = true
 module = "opentelemetry.*"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "mcp.*"
+ignore_missing_imports = true
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "pydantic_ai.*"
+ignore_missing_imports = true
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "traceloop.*"
+ignore_missing_imports = true
+follow_imports = "skip"
+
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = [

@@ -11,7 +11,7 @@ import structlog
 logger = structlog.get_logger(__name__)
 
 
-class LawAgentException(Exception):
+class LawAgentException(Exception):  # noqa: N818
     """Base exception for Law Agent errors."""
 
     def __init__(self, message: str, error_code: str, user_message: str):
