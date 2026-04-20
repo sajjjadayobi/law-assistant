@@ -8,6 +8,8 @@ Handles message processing, tool visualization, citations, and feedback.
 from __future__ import annotations
 
 import json
+import os
+import atexit
 
 import chainlit as cl
 import structlog
@@ -16,8 +18,25 @@ from law_agent.agent import ConversationManager, LawAgent
 from law_agent.config.settings import Settings
 from law_agent.ui.citations import CitationFormatter
 from law_agent.ui.steps import ToolStepManager
+from law_agent.observability import (
+    initialize_tracing,
+    shutdown_tracing,
+    initialize_feedback_client,
+)
 
 logger = structlog.get_logger(__name__)
+
+# Initialize observability at startup
+try:
+    initialize_tracing()
+    initialize_feedback_client(
+        phoenix_endpoint=os.getenv("PHOENIX_ENDPOINT", "http://localhost:6006")
+    )
+    logger.info("Observability initialized")
+    # Register shutdown hook
+    atexit.register(shutdown_tracing)
+except Exception as e:
+    logger.warning(f"Failed to initialize observability: {e}")
 
 # Global state
 _agent: LawAgent | None = None
@@ -199,6 +218,42 @@ async def end() -> None:
     """Handle chat session end."""
     session_id = cl.user_session.get("id")
     logger.info("chat_ended", session_id=session_id)
+    # Shutdown observability for this session
+    shutdown_tracing()
+
+
+@cl.on_message
+async def handle_feedback(feedback: cl.Feedback) -> None:
+    """Handle user feedback (thumbs up/down)."""
+    from law_agent.observability import send_feedback_to_phoenix, log_feedback_local
+
+    session_id = cl.user_session.get("id") or "unknown"
+    feedback_type = "positive" if feedback.score > 0 else "negative"
+    comment = getattr(feedback, "comment", None)
+
+    logger.info(
+        "feedback_received",
+        session_id=session_id,
+        feedback_type=feedback_type,
+        comment=comment,
+    )
+
+    # Send to Phoenix
+    success = await send_feedback_to_phoenix(
+        trace_id=session_id,
+        feedback_type=feedback_type,
+        comment=comment,
+        tags=["chainlit_ui"],
+    )
+
+    if not success:
+        # Fallback to local logging
+        log_feedback_local(
+            trace_id=session_id,
+            feedback_type=feedback_type,
+            comment=comment,
+            tags=["chainlit_ui"],
+        )
 
 
 # The app is automatically created by Chainlit when decorators are used

@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-**Current Phase**: Phase 5 (UI with Chainlit) - Complete ✅
+**Current Phase**: Phase 6 (Observability & Eval-Driven Development) - Complete ✅
 
 **Completed**:
 - ✅ Phase 0: Onboarding & Setup (environment documentation complete)
@@ -38,30 +38,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - ✅ Task 5.6: Agent thinking and tool calls visualization (Chainlit Steps)
   - ✅ Task 5.7: Conversation history management (SQLite backend)
   - ✅ Task 5.8: End-to-end testing and polish (44 comprehensive UI tests, 100% pass rate)
+- ✅ Phase 6: Observability (Arize Phoenix + Eval-Driven Development) - Complete ✅
+  - ✅ Task 6.1: Study Arize Phoenix and OpenTelemetry concepts
+  - ✅ Task 6.2: Deploy Phoenix locally with Docker Compose (docker-compose.yml, Dockerfile)
+  - ✅ Task 6.3: Instrument Law Agent with OpenTelemetry tracing (tracer.py, instrumentation.py)
+  - ✅ Task 6.4: Add token usage tracking and cost estimation (in tracer.py)
+  - ✅ Task 6.5: Integrate Chainlit feedback with Phoenix (feedback.py, UI handler)
+  - ✅ Task 6.6: Create Phoenix dashboard for metrics (traces, analytics configuration)
+  - ✅ Task 6.7: Add error tracking and monitoring (error spans in tracer)
+  - ✅ Task 6.8: Create evaluation framework - LLM-as-Judge (evaluation.py, golden set)
 
 **Next Steps**:
-- Phase 6: Observability (Phoenix integration, eval-driven development)
-- Phase 7: Testing & Evaluation (golden set creation, LLM-as-judge)
-- Phase 8: Deployment & Production (Docker, monitoring)
+- Phase 7: Testing & CI/CD (expand test coverage, CI pipeline)
+- Phase 8: Deployment & Production (refine Docker, monitoring)
 
 See `docs/development/tasks.md` for complete task breakdown.
-See `docs/features/phase-5-ui/` for design & implementation details.
+See `docs/features/phase-6-observability/` for design & implementation details.
 
-### What to Work On Next (Phase 6)
+### What to Work On Next (Phase 7)
 
-**Ready to Start**: Phase 6 - Observability & Eval-Driven Development
+**Ready to Start**: Phase 7 - Testing & CI/CD
 
-The UI is production-ready. Phase 6 will set up observability:
-1. Full Arize Phoenix integration with law-agent traces
-2. Create golden eval set (50 QA pairs with reference answers)
-3. Implement LLM-as-judge evaluation framework
-4. Set up eval-driven iteration workflow
-5. Build feedback collection → Phoenix → iteration loop
+Phase 6 completed observability infrastructure. Phase 7 will set up comprehensive testing and CI/CD:
+1. Expand unit test coverage to 80%+ for all modules
+2. Create comprehensive integration test suite
+3. Configure Black, Ruff, mypy linting and formatting
+4. Set up pre-commit hooks for local development
+5. Build GitHub Actions CI pipeline
+6. Create test data management (load/reset scripts)
 
 **Before Starting**:
-- Read `docs/best-practices/evaluation.md` (eval-driven development guide)
-- Create `docs/features/phase-6-observability/plan.md` (design before coding!)
-- Review `docs/features/phase-5-ui/` for UI implementation patterns
+- Review `docs/development/tasks.md` Task 7.1-7.7 for detailed breakdown
+- Check test coverage: `pytest --cov=src --cov-report=html tests/`
+- Run: `make all` to see current lint/type/test status
 
 ---
 
