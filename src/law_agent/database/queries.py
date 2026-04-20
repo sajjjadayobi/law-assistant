@@ -19,8 +19,6 @@ Usage:
             print(rel_doc.title)
 """
 
-from typing import Optional
-
 import structlog
 from sqlalchemy import text
 
@@ -30,7 +28,7 @@ from law_agent.database.models import Document, Relation
 logger = structlog.get_logger(__name__)
 
 
-def get_document(doc_id: int) -> Optional[Document]:
+def get_document(doc_id: int) -> Document | None:
     """Fetch a single document by ID.
 
     Args:
@@ -58,7 +56,7 @@ def get_document(doc_id: int) -> Optional[Document]:
 
 
 def get_relations(
-    doc_id: int, relation_type: Optional[str] = None, limit: int = 100
+    doc_id: int, relation_type: str | None = None, limit: int = 100
 ) -> list[Relation]:
     """Get relations originating from a document.
 
@@ -106,7 +104,7 @@ def get_relations(
 
 
 def get_related_documents(
-    doc_id: int, relation_type: Optional[str] = None, limit: int = 10
+    doc_id: int, relation_type: str | None = None, limit: int = 10
 ) -> list[Document]:
     """Get documents related to a given document by following relations.
 

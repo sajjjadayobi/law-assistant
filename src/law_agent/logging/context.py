@@ -13,20 +13,16 @@ Usage:
 """
 
 import contextvars
-from typing import Any, Optional
+from typing import Any
 
 # Context variables for request/conversation tracking
 # These are thread-safe and async-safe (PEP 567)
-conversation_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+conversation_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "conversation_id", default=None
 )
-user_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("user_id", default=None)
-session_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
-    "session_id", default=None
-)
-request_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
-    "request_id", default=None
-)
+user_id: contextvars.ContextVar[str | None] = contextvars.ContextVar("user_id", default=None)
+session_id: contextvars.ContextVar[str | None] = contextvars.ContextVar("session_id", default=None)
+request_id: contextvars.ContextVar[str | None] = contextvars.ContextVar("request_id", default=None)
 
 
 def set_context(**kwargs: Any) -> None:

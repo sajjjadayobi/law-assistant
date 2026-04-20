@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Optional
 
 import structlog
 
@@ -35,7 +34,7 @@ class Citation:
     doc_id: int
     doc_title: str
     doc_type: str
-    doc_date: Optional[str] = None
+    doc_date: str | None = None
 
     def format_as_reference(self) -> str:
         """Format citation as a reference line.
@@ -99,13 +98,13 @@ class CitationExtractor:
             List of citation numbers found, deduplicated and sorted
         """
         matches = CitationExtractor.CITATION_PATTERN.findall(text)
-        citation_numbers = sorted(set(int(m) for m in matches))
+        citation_numbers = sorted({int(m) for m in matches})
         return citation_numbers
 
     @staticmethod
     def build_citations(
         cited_docs: dict[int, dict],
-        citation_numbers: Optional[list[int]] = None,
+        citation_numbers: list[int] | None = None,
     ) -> list[Citation]:
         """Build Citation objects from document data.
 
@@ -241,7 +240,7 @@ class ResponsePostProcessor:
     @staticmethod
     def add_followup_questions(
         response_text: str,
-        followup_questions: Optional[list[str]] = None,
+        followup_questions: list[str] | None = None,
     ) -> str:
         """Add follow-up questions to response.
 
@@ -265,8 +264,8 @@ class ResponsePostProcessor:
     @staticmethod
     def postprocess_response(
         response_text: str,
-        cited_docs: Optional[dict[int, dict]] = None,
-        followup_questions: Optional[list[str]] = None,
+        cited_docs: dict[int, dict] | None = None,
+        followup_questions: list[str] | None = None,
     ) -> str:
         """Complete post-processing of agent response.
 

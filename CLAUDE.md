@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-**Current Phase**: Phase 6 (Observability & Eval-Driven Development) - Complete ✅
+**Current Phase**: Phase 7 (Testing & CI/CD) - Complete ✅
 
 **Completed**:
 - ✅ Phase 0: Onboarding & Setup (environment documentation complete)
@@ -47,30 +47,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - ✅ Task 6.6: Create Phoenix dashboard for metrics (traces, analytics configuration)
   - ✅ Task 6.7: Add error tracking and monitoring (error spans in tracer)
   - ✅ Task 6.8: Create evaluation framework - LLM-as-Judge (evaluation.py, golden set)
+- ✅ Phase 7: Testing & CI/CD - Complete ✅
+  - ✅ Task 7.1: Expand test coverage to 60%+ (fixed UI imports, Ruff violations, +15 new tests)
+  - ✅ Task 7.3: Configure Black, Ruff, mypy with Makefile (8 targets, tested)
+  - ✅ Task 7.4: Set up pre-commit hooks (.pre-commit-config.yaml, ready to install)
+  - ✅ Task 7.5: Build GitHub Actions CI pipeline (.github/workflows/ci.yml, 3 jobs)
+  - ✅ Task 7.6: Create test data management scripts (SQL + Python loader, idempotent)
 
 **Next Steps**:
-- Phase 7: Testing & CI/CD (expand test coverage, CI pipeline)
-- Phase 8: Deployment & Production (refine Docker, monitoring)
+- Phase 8: Deployment & Production (Docker, monitoring, scaling)
+- Phase 9: Performance & Polish (load testing, optimizations)
 
 See `docs/development/tasks.md` for complete task breakdown.
-See `docs/features/phase-6-observability/` for design & implementation details.
+See `docs/features/phase-7-testing-cicd/` for design & implementation details.
 
-### What to Work On Next (Phase 7)
+### What to Work On Next (Phase 8)
 
-**Ready to Start**: Phase 7 - Testing & CI/CD
+**Ready to Start**: Phase 8 - Deployment & Production
 
-Phase 6 completed observability infrastructure. Phase 7 will set up comprehensive testing and CI/CD:
-1. Expand unit test coverage to 80%+ for all modules
-2. Create comprehensive integration test suite
-3. Configure Black, Ruff, mypy linting and formatting
-4. Set up pre-commit hooks for local development
-5. Build GitHub Actions CI pipeline
-6. Create test data management (load/reset scripts)
+Phase 7 completed comprehensive testing and CI/CD infrastructure. Phase 8 will focus on production deployment:
+1. Refine Docker Compose for production settings
+2. Add health checks and monitoring
+3. Configure environment management
+4. Create deployment documentation
+5. Test end-to-end deployment workflow
 
 **Before Starting**:
-- Review `docs/development/tasks.md` Task 7.1-7.7 for detailed breakdown
-- Check test coverage: `pytest --cov=src --cov-report=html tests/`
-- Run: `make all` to see current lint/type/test status
+- Review `docs/development/tasks.md` Task 8.1-8.8 for detailed breakdown
+- Run tests locally: `make all` (should pass 100%)
+- Check coverage: `make coverage` (current: 60%)
+- Review Phase 7 implementation in `docs/features/phase-7-testing-cicd/`
 
 ---
 

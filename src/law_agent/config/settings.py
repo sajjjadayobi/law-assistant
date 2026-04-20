@@ -9,7 +9,7 @@ Secrets (DB_PASSWORD, ANTHROPIC_API_KEY) should only be set via environment vari
 """
 
 from pathlib import Path
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Union
 
 import yaml
 from pydantic import BaseModel, Field
@@ -29,10 +29,10 @@ class ModelConfig(BaseModel):
     max_tokens: int = Field(
         default=4000, gt=0, le=16000, description="Maximum tokens for model response"
     )
-    base_url: Optional[str] = Field(
+    base_url: str | None = Field(
         default=None, description="Custom LLM API endpoint URL (optional, for development)"
     )
-    auth_token: Optional[str] = Field(
+    auth_token: str | None = Field(
         default=None, description="Authentication token for custom LLM endpoint (optional)"
     )
 
@@ -110,7 +110,7 @@ class LoggingConfig(BaseModel):
     format: Literal["json", "text"] = Field(
         default="text", description="Log format (json for production, text for development)"
     )
-    file_path: Optional[str] = Field(
+    file_path: str | None = Field(
         default=None, description="Path to log file (if None, logs to console only)"
     )
 

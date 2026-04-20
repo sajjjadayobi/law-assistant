@@ -42,7 +42,6 @@ dependencies = [
     "opentelemetry-instrumentation-requests>=0.43b0",
     "opentelemetry-instrumentation-sqlalchemy>=0.43b0",
     "opentelemetry-instrumentation-httpx>=0.43b0",
-    "opentelemetry-instrumentation-psycopg2>=0.43b0",
     "httpx>=0.25.0",
 ]
 

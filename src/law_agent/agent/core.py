@@ -16,7 +16,6 @@ from __future__ import annotations
 import json
 import uuid
 from pathlib import Path
-from typing import Optional
 
 import structlog
 import yaml
@@ -59,7 +58,7 @@ class LawAgent:
     def __init__(
         self,
         model: str = "claude-sonnet-4-5",
-        system_prompt_path: Optional[Path] = None,
+        system_prompt_path: Path | None = None,
         temperature: float = 0.0,
     ):
         """Initialize the Law Agent.
@@ -134,8 +133,8 @@ class LawAgent:
     async def _search_documents_tool(
         ctx: RunContext,
         query: str,
-        tags: Optional[list[str]] = None,
-        doc_types: Optional[list[str]] = None,
+        tags: list[str] | None = None,
+        doc_types: list[str] | None = None,
         limit: int = 20,
     ) -> str:
         """Tool: Search documents using full-text search.
@@ -260,7 +259,7 @@ class LawAgent:
     async def _get_related_documents_tool(
         ctx: RunContext,
         doc_id: int,
-        relation_types: Optional[list[str]] = None,
+        relation_types: list[str] | None = None,
         limit: int = 10,
     ) -> str:
         """Tool: Get related documents via citation graph.
@@ -333,8 +332,8 @@ class LawAgent:
     async def run(
         self,
         user_query: str,
-        conversation_history: Optional[list[ModelMessage]] = None,
-        conversation_id: Optional[str] = None,
+        conversation_history: list[ModelMessage] | None = None,
+        conversation_id: str | None = None,
     ) -> str:
         """Run agent to answer a user query.
 

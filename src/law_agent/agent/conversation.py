@@ -13,7 +13,6 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
 
 import structlog
 from pydantic_ai.messages import ModelMessage
@@ -39,7 +38,7 @@ class ConversationState:
     updated_at: datetime
     message_history: list[ModelMessage] = field(default_factory=list)
     turn_count: int = 0
-    user_persona: Optional[str] = None  # 'layperson', 'business', 'legal_professional', or None
+    user_persona: str | None = None  # 'layperson', 'business', 'legal_professional', or None
 
     def add_message(self, message: ModelMessage) -> None:
         """Add a message to conversation history.
@@ -107,7 +106,7 @@ class ConversationManager:
 
         logger.info("conversation_manager_initialized", max_turns=max_turns)
 
-    def create_conversation(self, conversation_id: Optional[str] = None) -> ConversationState:
+    def create_conversation(self, conversation_id: str | None = None) -> ConversationState:
         """Create a new conversation.
 
         Args:
@@ -137,7 +136,7 @@ class ConversationManager:
         logger.info("conversation_created", conversation_id=conversation_id)
         return state
 
-    def get_conversation(self, conversation_id: str) -> Optional[ConversationState]:
+    def get_conversation(self, conversation_id: str) -> ConversationState | None:
         """Retrieve existing conversation.
 
         Args:

@@ -13,7 +13,7 @@ Usage:
 
 import logging
 import sys
-from typing import Any, Optional, TextIO, Union
+from typing import Any, TextIO, Union
 
 import structlog
 
@@ -96,7 +96,7 @@ def _add_context_processor(logger: object, name: str, event_dict: dict[str, Any]
     return event_dict
 
 
-def _get_output_file(file_path: Optional[str]) -> Union[TextIO, Any]:
+def _get_output_file(file_path: str | None) -> Union[TextIO, Any]:
     """Get file handle for log output.
 
     Args:

@@ -7,22 +7,22 @@ Handles message processing, tool visualization, citations, and feedback.
 
 from __future__ import annotations
 
+import atexit
 import json
 import os
-import atexit
 
 import chainlit as cl
 import structlog
 
 from law_agent.agent import ConversationManager, LawAgent
 from law_agent.config.settings import Settings
-from law_agent.ui.citations import CitationFormatter
-from law_agent.ui.steps import ToolStepManager
 from law_agent.observability import (
+    initialize_feedback_client,
     initialize_tracing,
     shutdown_tracing,
-    initialize_feedback_client,
 )
+from law_agent.ui.citations import CitationFormatter
+from law_agent.ui.steps import ToolStepManager
 
 logger = structlog.get_logger(__name__)
 
@@ -225,7 +225,7 @@ async def end() -> None:
 @cl.on_message
 async def handle_feedback(feedback: cl.Feedback) -> None:
     """Handle user feedback (thumbs up/down)."""
-    from law_agent.observability import send_feedback_to_phoenix, log_feedback_local
+    from law_agent.observability import log_feedback_local, send_feedback_to_phoenix
 
     session_id = cl.user_session.get("id") or "unknown"
     feedback_type = "positive" if feedback.score > 0 else "negative"

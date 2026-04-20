@@ -20,8 +20,6 @@ All tools use the existing database query functions from database/queries.py and
 results in Pydantic models for type safety and JSON serialization.
 """
 
-from typing import Optional
-
 import structlog
 from hazm import Normalizer
 
@@ -36,8 +34,8 @@ _normalizer = Normalizer()
 
 def search_documents(
     query: str,
-    tags: Optional[list[str]] = None,
-    doc_types: Optional[list[str]] = None,
+    tags: list[str] | None = None,
+    doc_types: list[str] | None = None,
     limit: int = 20,
 ) -> list[DocSummary]:
     """Search for documents using full-text search.
@@ -222,7 +220,7 @@ def get_document(doc_id: int) -> FullDocument:
 
 def get_related_documents(
     doc_id: int,
-    relation_types: Optional[list[str]] = None,
+    relation_types: list[str] | None = None,
     limit: int = 10,
 ) -> list[DocSummary]:
     """Get documents related to a specific document via citations/references.

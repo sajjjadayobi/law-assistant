@@ -1,30 +1,51 @@
-.PHONY: format lint typecheck test all clean help
+.PHONY: help install format lint typecheck test coverage clean all
 
 help:
-	@echo "Available commands:"
-	@echo "  make format     - Format code with Black"
-	@echo "  make lint       - Lint code with Ruff"
-	@echo "  make typecheck  - Type check with mypy"
-	@echo "  make test       - Run tests with pytest"
-	@echo "  make all        - Run all checks (format, lint, typecheck, test)"
-	@echo "  make clean      - Remove build artifacts and cache files"
+	@echo "Law Agent - Development Commands"
+	@echo "================================="
+	@echo ""
+	@echo "Setup:"
+	@echo "  make install       Install project with dev dependencies"
+	@echo ""
+	@echo "Code Quality:"
+	@echo "  make format        Format code with Black"
+	@echo "  make lint          Check and fix code with Ruff"
+	@echo "  make typecheck     Type check with mypy"
+	@echo ""
+	@echo "Testing:"
+	@echo "  make test          Run all tests"
+	@echo "  make coverage      Generate coverage report (HTML)"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  make all           Run format, lint, typecheck, and test"
+	@echo "  make clean         Clean build artifacts and cache"
+
+install:
+	uv pip install -e ".[dev]"
 
 format:
+	@echo "Formatting code with Black..."
 	black .
 
 lint:
+	@echo "Linting with Ruff..."
 	ruff check . --fix
 
 typecheck:
+	@echo "Type checking with mypy..."
 	mypy src/
 
 test:
-	pytest tests/
+	@echo "Running tests..."
+	pytest tests/ -v
 
-all: format lint typecheck test
-	@echo "All checks passed!"
+coverage:
+	@echo "Generating coverage report..."
+	pytest tests/ --cov=src --cov-report=html --cov-report=term-missing
+	@echo "Coverage report generated: htmlcov/index.html"
 
 clean:
+	@echo "Cleaning build artifacts..."
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
@@ -32,4 +53,8 @@ clean:
 	find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete
 	rm -rf htmlcov/ .coverage coverage.xml
-	@echo "Cleaned up build artifacts and cache files"
+	@echo "✓ Cleanup complete"
+
+all: format lint typecheck test
+	@echo ""
+	@echo "✅ All checks passed!"

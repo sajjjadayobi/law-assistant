@@ -11,7 +11,6 @@ and format them.
 from __future__ import annotations
 
 import re
-from typing import Optional
 
 import structlog
 
@@ -35,7 +34,7 @@ class FollowupQuestionExtractor:
     QUESTION_PATTERN = re.compile(r"(?:•|-|\d+\.)\s*(.+?)(?=\n|$)", re.UNICODE)
 
     @staticmethod
-    def extract_followup_section(response_text: str) -> Optional[str]:
+    def extract_followup_section(response_text: str) -> str | None:
         """Extract follow-up questions section from response.
 
         Args:

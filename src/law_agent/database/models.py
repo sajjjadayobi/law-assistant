@@ -18,7 +18,7 @@ Relationships (Document.relations_to, Document.relations_from):
 - مواد مرتبط (related articles): Related documents at same level
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import (
     ARRAY,
@@ -111,7 +111,7 @@ class Document(Base):
         """String representation for debugging."""
         return f"<Document(doc_id={self.doc_id}, title={self.title[:50]}, type={self.doc_type})>"
 
-    def get_related_documents(self, relation_type: Optional[str] = None) -> list["Document"]:
+    def get_related_documents(self, relation_type: str | None = None) -> list["Document"]:
         """Get documents related to this one.
 
         Args:
