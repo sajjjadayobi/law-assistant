@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-**Current Phase**: Phase 9 (Performance & Polish) - Complete ✅
+**Current Phase**: Phase 8 (Deployment & Production) - Complete ✅
 
 **Completed**:
 - ✅ Phase 0: Onboarding & Setup (environment documentation complete)
@@ -62,30 +62,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - ✅ Task 9.6: UI/UX polish and accessibility (WCAG AA compliance, RTL support)
   - ✅ Task 9.7: Documentation and performance guide (comprehensive PERFORMANCE.md)
   - ✅ Task 9.8: Performance regression testing (baseline tracking, automated alerts)
+- ✅ Phase 8: Deployment & Production - Complete ✅
+  - ✅ Task 8.1: Multi-stage Dockerfile (builder+runtime, non-root user, <500MB image)
+  - ✅ Task 8.2: Docker Compose setup (PostgreSQL, Phoenix, App with health checks)
+  - ✅ Task 8.3: Environment configuration (.env.example, secrets management)
+  - ✅ Task 8.4: Health check endpoints (/health, /ready for orchestration)
+  - ✅ Task 8.5: Production logging (JSON format, log rotation, configurable)
+  - ✅ Task 8.6: Deployment documentation (900+ line comprehensive guide)
+  - ✅ Task 8.7: Testing & validation (formatting, linting, type checks)
+  - ✅ Task 8.8: Final commit (all deployment files, production-ready)
 
 **Next Steps**:
-- Phase 8: Deployment & Production (Docker, health checks, production config)
 - Phase 10: Scalability & Infrastructure (Kubernetes, Redis, multi-region)
 
 See `docs/development/tasks.md` for complete task breakdown.
-See `docs/features/phase-9-performance-polish/` for design & implementation details.
+See `docs/features/phase-8-deployment/` for deployment guide and design decisions.
+See `docs/features/phase-9-performance-polish/` for performance optimization details.
 
-### What to Work On Next (Phase 8)
+### What to Work On Next (Phase 10)
 
-**Ready to Start**: Phase 8 - Deployment & Production
+**Ready to Start**: Phase 10 - Scalability & Infrastructure
 
-Phase 9 completed comprehensive performance optimization and polishing. Phase 8 will focus on production deployment:
-1. Create multi-stage Dockerfile for Law Agent
-2. Build complete Docker Compose setup (PostgreSQL, Phoenix, App)
-3. Configure environment variables for production
-4. Add health checks for all services
-5. Test end-to-end deployment workflow
+Phase 8 completed production deployment setup. Phase 10 will focus on:
+1. Kubernetes deployment (Helm charts)
+2. Redis integration for distributed caching
+3. Database replication and failover
+4. Multi-region deployment strategy
+5. Service mesh integration (Istio)
+6. Auto-scaling configuration
+7. Cost optimization
 
 **Before Starting**:
-- Review `docs/development/tasks.md` Task 8.1-8.8 for detailed breakdown
-- Run tests locally: `make all` (should pass 100%)
-- Check performance baselines: `python -c "import asyncio; from src.law_agent.performance.baseline import run_baseline_from_config; asyncio.run(run_baseline_from_config())"`
-- Review Phase 9 optimizations in `docs/features/phase-9-performance-polish/PERFORMANCE.md`
+- Review `docs/development/tasks.md` Task 10.1-10.8 (when created)
+- Review Phase 8 deployment guide: `docs/features/phase-8-deployment/DEPLOYMENT.md`
+- Understand current performance baselines from Phase 9
+- Review Docker Compose setup in Phase 8
 
 ---
 
