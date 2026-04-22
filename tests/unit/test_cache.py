@@ -2,7 +2,7 @@
 
 import time
 
-from src.law_agent.cache import LRUCache, QueryCache, get_query_cache
+from law_agent.cache import LRUCache, QueryCache, get_query_cache
 
 
 class TestLRUCache:

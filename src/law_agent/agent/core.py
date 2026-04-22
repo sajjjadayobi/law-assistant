@@ -14,6 +14,7 @@ Each call to run() should include conversation history and conversation ID.
 from __future__ import annotations
 
 import json
+import os
 import uuid
 from pathlib import Path
 
@@ -21,7 +22,9 @@ import structlog
 import yaml
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.messages import ModelMessage
+from pydantic_ai.models.openai import OpenAIModel
 
+from law_agent.config.settings import get_settings
 from law_agent.tools.search import (
     DocumentNotFoundError,
     get_document,
@@ -72,6 +75,26 @@ class LawAgent:
         self.model = model
         self.temperature = temperature
 
+        # Load settings to get LLM credentials (LLM_AUTH_TOKEN, LLM_BASE_URL)
+        settings = get_settings()
+
+        # Store settings for model initialization
+        self.settings = settings
+
+        # For custom LLM endpoints, use OpenAI-compatible provider
+        if settings.model.base_url:
+            # Custom endpoint (like LiteLLM) - use OpenAI provider
+            logger.info("using_custom_llm_endpoint", base_url=settings.model.base_url)
+            # Set environment variables for OpenAI provider
+            if settings.model.auth_token:
+                os.environ["OPENAI_API_KEY"] = settings.model.auth_token
+            os.environ["OPENAI_BASE_URL"] = settings.model.base_url
+        else:
+            # Default Anthropic endpoint
+            if settings.model.auth_token and not os.getenv("ANTHROPIC_API_KEY"):
+                os.environ["ANTHROPIC_API_KEY"] = settings.model.auth_token
+                logger.info("set_anthropic_api_key_from_llm_auth_token")
+
         # Load system prompt from YAML
         if system_prompt_path is None:
             system_prompt_path = Path(__file__).parent.parent / "prompts" / "system_prompt.yaml"
@@ -87,6 +110,8 @@ class LawAgent:
             model=model,
             temperature=temperature,
             system_prompt_path=str(system_prompt_path),
+            has_auth_token=bool(settings.model.auth_token),
+            has_base_url=bool(settings.model.base_url),
         )
 
     def _load_system_prompt(self) -> None:
@@ -118,8 +143,16 @@ class LawAgent:
 
     def _create_agent(self) -> None:
         """Create PydanticAI agent with search tools."""
+        # If custom base_url is set, use OpenAI-compatible provider
+        if self.settings.model.base_url:
+            # OpenAI provider with custom endpoint (base_url set via OPENAI_BASE_URL env var)
+            model_instance = OpenAIModel(model_name=self.model)
+        else:
+            # Default: let PydanticAI infer the model provider
+            model_instance = self.model
+
         self.agent = Agent(
-            model=self.model,
+            model=model_instance,
             system_prompt=self.system_prompt,
             tools=[
                 self._search_documents_tool,
@@ -362,11 +395,11 @@ class LawAgent:
 
             # Run agent with conversation history
             result = await self.agent.run(
-                user_message=user_query,
+                user_query,
                 message_history=conversation_history or [],
             )
 
-            response_text = result.data
+            response_text = result.output
 
             logger.info(
                 "law_agent_run_success",

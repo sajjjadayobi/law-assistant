@@ -4,12 +4,12 @@ import json
 import time
 from pathlib import Path
 
-from src.law_agent.performance.metrics import (
+from law_agent.performance.metrics import (
     MetricsCollector,
     PerformanceMetrics,
     PerformanceTimer,
 )
-from src.law_agent.performance.profiler import Profiler, profile_function
+from law_agent.performance.profiler import Profiler, profile_function
 
 
 class TestProfiler:

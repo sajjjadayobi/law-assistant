@@ -13,11 +13,9 @@ import os
 
 import chainlit as cl
 import structlog
-from fastapi import FastAPI
 
 from law_agent.agent import ConversationManager, LawAgent
 from law_agent.config.settings import Settings
-from law_agent.health import get_health_status, get_readiness
 from law_agent.observability import (
     initialize_feedback_client,
     initialize_tracing,
@@ -53,7 +51,7 @@ def get_agent() -> LawAgent:
     global _agent, _settings
     if _agent is None:
         if _settings is None:
-            _settings = Settings()
+            _settings = Settings.from_yaml()
         _agent = LawAgent(
             model=_settings.model.name,
             temperature=_settings.model.temperature,
@@ -88,7 +86,7 @@ def get_settings() -> Settings:
     """Get or initialize settings."""
     global _settings
     if _settings is None:
-        _settings = Settings()
+        _settings = Settings.from_yaml()
     return _settings
 
 
@@ -155,8 +153,11 @@ async def main(message: cl.Message) -> None:
         citation_formatter = get_citation_formatter()
         step_manager = get_step_manager()
 
-        # Get conversation history
-        history = conv_manager.get_history()  # type: ignore
+        # Get or create conversation state
+        conv_state = conv_manager.get_or_create_conversation(session_id)
+
+        # Get conversation history from state
+        history = conv_state.message_history
 
         # Create a message for streaming response
         msg = cl.Message(content="")
@@ -171,9 +172,8 @@ async def main(message: cl.Message) -> None:
             conversation_id=session_id,
         )
 
-        # Add user message and agent response to history
-        conv_manager.add_user_message(user_query)  # type: ignore
-        conv_manager.add_assistant_message(response_text)  # type: ignore
+        # TODO: Add proper message history management
+        # For now, the agent maintains its own history internally
 
         # Format response with clickable citations
         formatted_response = citation_formatter.format_response(response_text)
@@ -224,38 +224,40 @@ async def end() -> None:
     shutdown_tracing()
 
 
-@cl.on_message
-async def handle_feedback(feedback: cl.Feedback) -> None:
-    """Handle user feedback (thumbs up/down)."""
-    from law_agent.observability import log_feedback_local, send_feedback_to_phoenix
-
-    session_id = cl.user_session.get("id") or "unknown"  # type: ignore
-    feedback_type = "positive" if feedback.score > 0 else "negative"
-    comment = getattr(feedback, "comment", None)
-
-    logger.info(
-        "feedback_received",
-        session_id=session_id,
-        feedback_type=feedback_type,
-        comment=comment,
-    )
-
-    # Send to Phoenix
-    success = await send_feedback_to_phoenix(
-        trace_id=session_id,
-        feedback_type=feedback_type,
-        comment=comment,
-        tags=["chainlit_ui"],
-    )
-
-    if not success:
-        # Fallback to local logging
-        log_feedback_local(
-            trace_id=session_id,
-            feedback_type=feedback_type,
-            comment=comment,
-            tags=["chainlit_ui"],
-        )
+# TODO: Implement feedback handler when Chainlit feedback API is available
+# Currently disabled because it was conflicting with message handler
+# @cl.on_feedback
+# async def handle_feedback(feedback: cl.Feedback) -> None:
+#     """Handle user feedback (thumbs up/down)."""
+#     from law_agent.observability import log_feedback_local, send_feedback_to_phoenix
+#
+#     session_id = cl.user_session.get("id") or "unknown"  # type: ignore
+#     feedback_type = "positive" if feedback.score > 0 else "negative"
+#     comment = getattr(feedback, "comment", None)
+#
+#     logger.info(
+#         "feedback_received",
+#         session_id=session_id,
+#         feedback_type=feedback_type,
+#         comment=comment,
+#     )
+#
+#     # Send to Phoenix
+#     success = await send_feedback_to_phoenix(
+#         trace_id=session_id,
+#         feedback_type=feedback_type,
+#         comment=comment,
+#         tags=["chainlit_ui"],
+#     )
+#
+#     if not success:
+#         # Fallback to local logging
+#         log_feedback_local(
+#             trace_id=session_id,
+#             feedback_type=feedback_type,
+#             comment=comment,
+#             tags=["chainlit_ui"],
+#         )
 
 
 # The app is automatically created by Chainlit when decorators are used
@@ -266,28 +268,31 @@ async def handle_feedback(feedback: cl.Feedback) -> None:
 # Health Check Routes
 # ============================================================================
 # These routes are used by Docker health checks and monitoring systems
+#
+# NOTE: The @cl.get_app() decorator doesn't exist in current Chainlit version.
+# Health checks are accessible via separate health.py module for now.
+# TODO: Implement proper FastAPI app access for health check routes
 
+# @cl.get_app()  # type: ignore
+# def setup_health_routes(app: FastAPI) -> None:
+#     """Set up health check routes for the FastAPI app."""
 
-@cl.get_app()  # type: ignore
-def setup_health_routes(app: FastAPI) -> None:
-    """Set up health check routes for the FastAPI app."""
+#     @app.get("/health", tags=["health"])
+#     async def health() -> dict[str, any]:  # type: ignore
+#         """
+#         Health check endpoint for Docker and monitoring systems.
 
-    @app.get("/health", tags=["health"])
-    async def health() -> dict[str, any]:  # type: ignore
-        """
-        Health check endpoint for Docker and monitoring systems.
+#         Returns:
+#             JSON with health status of all components
+#         """
+#         return await get_health_status()
 
-        Returns:
-            JSON with health status of all components
-        """
-        return await get_health_status()
+#     @app.get("/ready", tags=["health"])
+#     async def readiness() -> dict[str, any]:  # type: ignore
+#         """
+#         Readiness check endpoint for Kubernetes and orchestration systems.
 
-    @app.get("/ready", tags=["health"])
-    async def readiness() -> dict[str, any]:  # type: ignore
-        """
-        Readiness check endpoint for Kubernetes and orchestration systems.
-
-        Returns:
-            JSON with readiness status (ready: true/false)
-        """
-        return await get_readiness()
+#         Returns:
+#             JSON with readiness status (ready: true/false)
+#         """
+#         return await get_readiness()

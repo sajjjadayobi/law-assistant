@@ -5,9 +5,11 @@ Uses Pydantic Settings to load configuration from:
 1. config.yaml (defaults)
 2. Environment variables (overrides)
 
-Secrets (DB_PASSWORD, ANTHROPIC_API_KEY) should only be set via environment variables.
+Secrets (DB_PASSWORD, LLM_AUTH_TOKEN) should only be set via environment variables.
+Model-agnostic: Uses LLM_AUTH_TOKEN and LLM_BASE_URL instead of provider-specific keys.
 """
 
+import os
 from pathlib import Path
 from typing import Any, Literal, Union
 
@@ -30,11 +32,25 @@ class ModelConfig(BaseModel):
         default=4000, gt=0, le=16000, description="Maximum tokens for model response"
     )
     base_url: str | None = Field(
-        default=None, description="Custom LLM API endpoint URL (optional, for development)"
+        default=None, description="Custom LLM API endpoint URL (reads from LLM_BASE_URL env var)"
     )
     auth_token: str | None = Field(
-        default=None, description="Authentication token for custom LLM endpoint (optional)"
+        default=None, description="Authentication token for LLM (reads from LLM_AUTH_TOKEN env var)"
     )
+
+    def __init__(self, **data: Any):
+        """Initialize ModelConfig and load from environment variables."""
+        # Load from environment variables (model-agnostic)
+        if "base_url" not in data and os.getenv("LLM_BASE_URL"):
+            data["base_url"] = os.getenv("LLM_BASE_URL")
+        if "auth_token" not in data and os.getenv("LLM_AUTH_TOKEN"):
+            data["auth_token"] = os.getenv("LLM_AUTH_TOKEN")
+
+        # Fallback to legacy ANTHROPIC_API_KEY for backwards compatibility
+        if "auth_token" not in data and os.getenv("ANTHROPIC_API_KEY"):
+            data["auth_token"] = os.getenv("ANTHROPIC_API_KEY")
+
+        super().__init__(**data)
 
 
 class DatabaseConfig(BaseModel):

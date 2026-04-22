@@ -6,18 +6,18 @@
 # Use environment variables instead (.env file or set in shell).
 #
 # Configuration priority (highest to lowest):
-# 1. Environment variables (DB_PASSWORD, ANTHROPIC_API_KEY, etc.)
+# 1. Environment variables (DB_PASSWORD, LLM_AUTH_TOKEN, LLM_BASE_URL, etc.)
 # 2. Values in this file (config.yaml)
 # 3. Hardcoded defaults in Pydantic models
 
 # ============================================================================
 # MODEL CONFIGURATION
 # ============================================================================
-# LLM model settings for Claude Sonnet 4.5
+# LLM model settings (model-agnostic)
 model:
-  # Name of the Claude model to use
-  # See: https://docs.anthropic.com/en/docs/models/overview
-  name: "claude-sonnet-4.5"
+  # Name of the LLM model to use
+  # For custom endpoints, use the model name supported by your provider
+  name: "grok-4-1-fast-reasoning"
 
   # Temperature controls randomness/creativity (0.0 = deterministic, 2.0 = very creative)
   # 0.0 = always same output

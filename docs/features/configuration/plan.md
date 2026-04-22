@@ -53,7 +53,7 @@ Every component needs configuration (database credentials, model settings, searc
 - [ ] Pydantic models defined: ModelConfig, DatabaseConfig, SearchConfig, ConversationConfig, UIConfig, LoggingConfig
 - [ ] Settings class loads from YAML and env vars correctly
 - [ ] Environment variables override YAML values (tested)
-- [ ] Secrets (DB_PASSWORD, ANTHROPIC_API_KEY) only in environment variables
+- [ ] Secrets (DB_PASSWORD, LLM_AUTH_TOKEN) only in environment variables (model-agnostic)
 - [ ] .env.example template created with comments
 - [ ] Can instantiate Settings() without errors
 - [ ] Unit tests pass: config loading, validation, env override

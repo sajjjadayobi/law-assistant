@@ -69,8 +69,11 @@ services:
       DB_PORT: "5432"
       DB_NAME: law_agent
 
-      # Anthropic API
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # LLM API (Model-Agnostic)
+      LLM_AUTH_TOKEN: ${LLM_AUTH_TOKEN}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      # Backwards compatibility
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
       # OpenTelemetry
       OTEL_EXPORTER_OTLP_ENDPOINT: http://phoenix:4317

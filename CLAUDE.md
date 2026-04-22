@@ -235,7 +235,7 @@ All configuration is centralized in `config.yaml` (Phase 2 task):
 - Conversation config: max_turns (50)
 - UI config: show_thinking, show_tool_calls, enable_feedback, example_questions
 - Each field documented with comments explaining purpose
-- Secrets (DB_PASSWORD, ANTHROPIC_API_KEY, LLM_AUTH_TOKEN) only in environment variables or .env
+- Secrets (DB_PASSWORD, LLM_AUTH_TOKEN) only in environment variables or .env (LLM_BASE_URL optional for custom endpoints)
 
 **Database is ready**: The PostgreSQL database has been migrated and contains:
 - 47,000+ documents with clean text (HTML removed)

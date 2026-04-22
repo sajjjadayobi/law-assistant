@@ -16,7 +16,7 @@ from typing import Any
 import structlog
 from sqlalchemy import text
 
-from law_agent.database.connection import engine
+from law_agent.database.connection import _get_engine
 
 logger = structlog.get_logger(__name__)
 
@@ -29,6 +29,7 @@ async def check_database_health() -> dict[str, Any]:
         Dictionary with status and details
     """
     try:
+        engine = _get_engine()
         with engine.connect() as connection:
             result = connection.execute(text("SELECT 1"))
             if result.fetchone():
@@ -36,6 +37,12 @@ async def check_database_health() -> dict[str, Any]:
                     "status": "healthy",
                     "component": "database",
                     "message": "Database connection successful",
+                }
+            else:
+                return {
+                    "status": "unhealthy",
+                    "component": "database",
+                    "message": "Database query returned no results",
                 }
     except Exception as e:
         logger.error("database_health_check_failed", error=str(e))

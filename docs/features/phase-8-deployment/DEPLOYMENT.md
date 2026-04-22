@@ -71,8 +71,9 @@ Update `.env` with your actual values:
 # Database
 DB_PASSWORD=your-secure-db-password
 
-# LLM API
-ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxx
+# LLM API (Model-Agnostic)
+LLM_AUTH_TOKEN=your-llm-api-key-here
+LLM_BASE_URL=  # Optional: custom endpoint
 
 # Optional: Observability
 LOGGING_FORMAT=json  # For production
@@ -163,8 +164,9 @@ DB_HOST=postgres              # Docker service name
 DB_PORT=5432
 DB_NAME=law_agent
 
-# LLM API
-ANTHROPIC_API_KEY=sk-ant-...
+# LLM API (Model-Agnostic)
+LLM_AUTH_TOKEN=your-llm-api-key
+LLM_BASE_URL=  # Optional: custom endpoint
 
 # Logging
 LOGGING_FORMAT=json            # For production
@@ -391,7 +393,7 @@ cp .env.example .env
 nano .env
 
 # Verify secrets are set
-grep -E "DB_PASSWORD|ANTHROPIC_API_KEY" .env | head -2
+grep -E "DB_PASSWORD|LLM_AUTH_TOKEN" .env | head -2
 ```
 
 #### 3. Build and Deploy
