@@ -68,6 +68,11 @@ traces/
 observability/
 *.trace
 
+# Migration (one-time use, database already migrated)
+migration/
+migrate.py
+*.migration
+
 # Docker
 .dockerignore
 
@@ -80,9 +85,11 @@ config.prod.yaml
 memory/
 scratchpad*.md
 
-# Chainlit
+# Chainlit & UI artifacts
 .chainlit/
 .files/
+public/
+chainlit.md
 
 # Test artifacts
 .pytest_cache/
@@ -90,6 +97,9 @@ scratchpad*.md
 htmlcov/
 .tox/
 .hypothesis/
+.prof
+*.prof
+cProfile_stats.txt
 
 # Evaluation results
 eval_results/
@@ -134,4 +144,6 @@ Temporary Items
 # *.csv
 # *.json
 # *.jsonl
-migrate.py
+
+# Profiling data
+profiles/
