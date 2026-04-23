@@ -20,6 +20,32 @@ This approach ensures knowledge transfer and helps you (and future developers) u
 
 ## Before Starting Any Feature
 
+### For Developers Continuing Someone Else's Work
+
+**MANDATORY**: Before starting work on a feature that someone else started, you MUST read:
+
+1. **The progress.md of the previous developer**
+   - Understand what was accomplished
+   - Learn what blockers were encountered and how they were solved
+   - Read "Key Learnings" and "For Future Developers" sections
+   - This is your fastest path to understanding the feature
+   - Time: ~10-15 minutes, saves hours of debugging
+
+2. **The git log messages (commit history)**
+   - Review commit messages using `git log --oneline docs/features/my-feature/` or similar
+   - Messages explain the WHY behind changes
+   - Understand decision-making process from the commit messages
+   - See what changed and when using `git log -p` for specific commits
+
+3. **The plan.md** (to understand original design intent)
+   - See what success criteria were planned
+   - Understand key design decisions and alternatives considered
+   - Identify any deviations from the original plan
+
+**Why this matters**: The previous developer spent hours learning and solving problems. Their progress.md and git messages preserve that knowledge. Starting without reading them means you'll waste time re-learning what they already solved.
+
+### Starting New Work
+
 **MANDATORY**: Read `design.md` before starting any new feature. Pay special attention to:
 - The sections related to your feature
 - How your feature integrates with the overall architecture
@@ -27,12 +53,14 @@ This approach ensures knowledge transfer and helps you (and future developers) u
 
 **MANDATORY WORKFLOW ORDER**:
 1. ✅ Read design docs
-2. ✅ Create feature documentation directory (`docs/features/my-feature/`)
-3. ✅ **WRITE plan.md** (do not skip!)
-4. ✅ **Create progress.md** (to update during work)
-5. ❌ **ONLY THEN** start writing code
-6. ✅ **Update progress.md continuously** as you work (not at the end!)
-7. ✅ Update CLAUDE.md "Project Status" when feature is complete
+2. ✅ Read previous developer's progress.md (if this is continuing work)
+3. ✅ Check git log messages (if this is continuing work)
+4. ✅ Create feature documentation directory (`docs/features/my-feature/`)
+5. ✅ **WRITE plan.md** (do not skip!)
+6. ✅ **Create progress.md** (to update during work)
+7. ❌ **ONLY THEN** start writing code
+8. ✅ **Update progress.md continuously** as you work (not at the end!)
+9. ✅ Update CLAUDE.md "Project Status" when feature is complete
 
 If you write code before completing plan.md, you're doing it wrong. Plan first, code second.
 
@@ -750,6 +778,35 @@ Fix all issues before committing.
 ---
 
 ## 5. Committing Changes
+
+### Pre-Commit: Documentation Check (MANDATORY)
+
+**Before you commit, you MUST complete this checklist:**
+
+- [ ] **progress.md updated with learnings**
+  - Final Summary section completed
+  - Key Learnings documented (at least 3 specific, actionable items)
+  - "For Future Developers" section completed
+  - All blockers documented with solutions
+  - Total time estimated
+  - If you skip this, the knowledge is lost forever
+
+- [ ] **All success criteria in plan.md met**
+  - Review plan.md and verify each criterion is complete
+  - Document any deviations and explain why
+
+- [ ] **Code quality checks pass**
+  - Run `make all` (format, lint, typecheck, test)
+  - All tests passing
+  - No TODOs or FIXMEs left in code
+
+- [ ] **Progress.md is meaningful**
+  - Not generic ("fixed bug", "added feature")
+  - Contains specific details about what was learned
+  - Includes blocker solutions that future developers can benefit from
+  - Shows the actual development journey, not just the end result
+
+**Why this matters**: progress.md is your gift to the next developer (including future you). It captures the knowledge and reasoning that happened during development. Without it, all that learning is wasted. The commit message is the WHAT, progress.md is the WHY and HOW.
 
 ### Commit Strategy
 
