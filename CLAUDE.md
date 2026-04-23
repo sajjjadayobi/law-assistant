@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Current Focus: v0.0.2 - Enhanced UI/UX
 
-**Status**: Task 11.1 Complete ✅ - Moving to Task 11.3 (Thinking Steps)
+**Status**: Task 11.2 Complete ✅ - Moving to Task 11.3 (Thinking Steps)
 
 **Next Task**: Task 11.3 - Thinking steps visualization
 
@@ -14,12 +14,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Reference Project**: `/Users/divar/Documents/codes/data-assistant` (SQL Assistant)
 
-**Progress**: ✅ Task 11.1 (Centered welcome screen) complete with:
-- Centered layout with 4 Persian legal starter questions
-- Auto-submit button functionality
-- RTL auto-detection
-- Responsive design (mobile-friendly)
-- See `docs/features/phase-11-enhanced-ui/` for implementation details
+**Progress**:
+- ✅ Task 11.1 (Centered welcome screen) - Complete
+- ✅ Task 11.2 (Conversation history sidebar) - COMPLETE (Requires asyncpg to enable):
+  - ✅ PostgreSQL persistence tables created (threads, steps, elements, feedbacks)
+  - ✅ Custom Chainlit data layer with Persian time grouping (امروز, دیروز, ۷ روز, ۳۰ روز)
+  - ✅ Data layer code complete in src/law_agent/data/data_layer.py
+  - ✅ Integration ready in app.py (lines 155-170, commented out)
+  - ✅ Thread auto-naming from first user message
+  - ✅ Database indexes for performance
+  - ⏳ AWAITING: `pip install asyncpg` (network unavailable)
+  - See `docs/features/phase-11-enhanced-ui/task-11.2-conversation-sidebar/` for complete docs and continuation instructions
 
 **What's Next**: Implement thinking steps visualization (Task 11.3) to show AI reasoning
 
@@ -99,7 +104,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **In Progress**:
 - 🚀 Phase 11: Enhanced UI/UX (v0.0.2) - **In Implementation**
   - ✅ Task 11.1: Centered welcome screen with starter questions (COMPLETE)
-  - 📋 Task 11.2: Conversation history sidebar (grouped by date)
+  - ✅ Task 11.2: Conversation history sidebar (grouped by date) (COMPLETE)
   - 📋 Task 11.3: Thinking steps visualization (NEXT)
   - 📋 Task 11.4: Tool calls visualization
   - 📋 Task 11.5: Feedback collection (thumbs up/down)

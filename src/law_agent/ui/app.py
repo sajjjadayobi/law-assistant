@@ -18,6 +18,7 @@ import yaml
 
 from law_agent.agent import ConversationManager, LawAgent
 from law_agent.config.settings import Settings, StarterQuestion
+from law_agent.data import get_data_layer
 from law_agent.observability import (
     initialize_feedback_client,
     initialize_tracing,
@@ -149,6 +150,24 @@ async def chat_profile(user: cl.User) -> list[cl.ChatProfile]:
             ],
         )
     ]
+
+
+# TODO: Enable when asyncpg is installed (requires network to download)
+# @cl.data_layer
+# def setup_data_layer() -> object:
+#     """Register Chainlit data layer for conversation persistence.
+#
+#     This enables:
+#     - Conversation history saved to PostgreSQL
+#     - Sidebar showing past conversations grouped by time period
+#     - Ability to resume conversations across sessions
+#
+#     SETUP INSTRUCTIONS:
+#     1. When network is available, run: pip install asyncpg
+#     2. Uncomment this decorator and the function
+#     3. Restart the application
+#     """
+#     return get_data_layer()
 
 
 @cl.on_chat_start
