@@ -1,0 +1,17 @@
+# Starter Questions for Law Agent UI
+#
+# These questions appear as clickable buttons in the centered welcome screen.
+# Format:
+#   - message: Full question text (also used as button label)
+#     icon: Path to SVG icon file in public/ directory
+#
+# Modify these to customize your starter questions without code changes.
+# Icon paths are relative to public/ directory (served at /public/*)
+
+starters:
+  - message: "حقوق و تکالیف مستأجر در قانون چیست؟"
+    icon: "/public/tenant-rights.svg"
+  - message: "مدت مرخصی زایمان طبق قانون کار چقدر است؟"
+    icon: "/public/maternity-leave.svg"
+  - message: "شرایط ثبت شرکت با مسئولیت محدود چیست؟"
+    icon: "/public/company-registration.svg"

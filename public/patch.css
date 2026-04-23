@@ -1,0 +1,75 @@
+/* ==================== Vazirmatn Font Setup ==================== */
+@import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@master/Vazirmatn-font-face.css');
+
+/* Apply Vazirmatn to entire app */
+* {
+    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ==================== RTL Support for Persian Text ==================== */
+/* Chainlit 2.11 handles centered welcome and starter buttons natively */
+/* This CSS focuses on Persian text direction and styling enhancements */
+
+/* Auto-detect Persian text and apply RTL direction */
+p,
+span,
+div[class*="message"],
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    text-align: start;
+    direction: auto;
+}
+
+/* Input fields support both RTL and LTR */
+input,
+textarea {
+    text-align: start;
+    direction: auto;
+    font-family: 'Vazirmatn', inherit;
+}
+
+/* Code blocks always LTR */
+code,
+pre,
+.language-sql,
+.language-python,
+.language-json {
+    direction: ltr !important;
+    text-align: left !important;
+    font-family: 'Courier New', monospace;
+}
+
+/* Persian text styling */
+[dir="rtl"] {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Message content right alignment for RTL */
+.message-content,
+.prose {
+    text-align: start;
+}
+
+/* Fix margins for RTL content */
+.prose ul,
+.prose ol {
+    padding-inline-start: 1.5em;
+    padding-inline-end: 0;
+}
+
+/* Starter button styling (Chainlit renders them) */
+.cl-starter {
+    min-width: 200px;
+    font-family: 'Vazirmatn', inherit;
+}
+
+/* Ensure proper spacing in messages */
+.cl-message {
+    margin: 0.5rem 0;
+}

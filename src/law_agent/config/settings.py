@@ -101,6 +101,13 @@ class ConversationConfig(BaseModel):
     )
 
 
+class StarterQuestion(BaseModel):
+    """A starter question for the Chainlit welcome screen."""
+
+    message: str = Field(..., description="Full question text (used as button label)")
+    icon: str = Field(default="/public/law.svg", description="Path to SVG icon for the starter button")
+
+
 class UIConfig(BaseModel):
     """Configuration for Chainlit UI."""
 
@@ -113,7 +120,7 @@ class UIConfig(BaseModel):
             "مراحل ثبت شرکت چیست؟",
             "حقوق و تکالیف کارفرما چیست؟",
         ],
-        description="Example questions to show users at startup",
+        description="Example questions to show users at startup (legacy)",
     )
 
 

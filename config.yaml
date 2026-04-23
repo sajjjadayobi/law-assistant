@@ -134,12 +134,15 @@ ui:
   # false = no feedback (for privacy or testing)
   enable_feedback: true
 
-  # Example questions shown to user at conversation start
+  # Example questions shown to user at conversation start (legacy, for reference)
   # List of 3-5 questions in Persian to guide users
   example_questions:
     - "قوانین مرتبط با بیمه را بیان کنید"
     - "مراحل ثبت شرکت چیست؟"
     - "حقوق و تکالیف کارفرما چیست؟"
+
+  # Starter questions are now loaded from: prompts/starters.yaml
+  # See that file to customize the starter questions
 
 # ============================================================================
 # LOGGING CONFIGURATION

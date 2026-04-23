@@ -10,12 +10,14 @@ from __future__ import annotations
 import atexit
 import json
 import os
+from pathlib import Path
 
 import chainlit as cl
 import structlog
+import yaml
 
 from law_agent.agent import ConversationManager, LawAgent
-from law_agent.config.settings import Settings
+from law_agent.config.settings import Settings, StarterQuestion
 from law_agent.observability import (
     initialize_feedback_client,
     initialize_tracing,
@@ -90,9 +92,77 @@ def get_settings() -> Settings:
     return _settings
 
 
+def load_starters() -> list[StarterQuestion]:
+    """Load starter questions from prompts/starters.yaml.
+
+    Returns:
+        List of StarterQuestion objects with SVG icons
+    """
+    starters_file = Path(__file__).parent.parent / "prompts" / "starters.yaml"
+
+    if not starters_file.exists():
+        logger.warning(f"Starters file not found at {starters_file}, using defaults")
+        return [
+            StarterQuestion(
+                message="حقوق و تکالیف مستأجر در قانون چیست؟",
+                icon="/public/tenant-rights.svg"
+            ),
+            StarterQuestion(
+                message="مدت مرخصی زایمان طبق قانون کار چقدر است؟",
+                icon="/public/maternity-leave.svg"
+            ),
+            StarterQuestion(
+                message="شرایط ثبت شرکت با مسئولیت محدود چیست؟",
+                icon="/public/company-registration.svg"
+            ),
+        ]
+
+    with open(starters_file) as f:
+        data = yaml.safe_load(f)
+
+    starters = []
+    for item in data.get("starters", []):
+        starters.append(StarterQuestion(**item))
+
+    return starters
+
+
+@cl.set_chat_profiles
+async def chat_profile(user: cl.User) -> list[cl.ChatProfile]:
+    """Define Law Assistant chat profile with description and starters.
+
+    This displays the agent description below the logo and provides starter buttons.
+    """
+    starters = load_starters()
+    return [
+        cl.ChatProfile(
+            name="Law Assistant",
+            markdown_description="دستیار حقوقی هوشمند برای پاسخ به سوالات درباره قوانین ایران 📜",
+            icon="/public/logo.svg",
+            starters=[
+                cl.Starter(
+                    label=q.message,
+                    message=q.message,
+                    icon=q.icon,
+                )
+                for q in starters
+            ],
+        )
+    ]
+
+
 @cl.on_chat_start
 async def start() -> None:
-    """Handle chat initialization."""
+    """Handle chat initialization with centered welcome screen.
+
+    Chainlit 2.11 automatically displays:
+    - Custom Law Agent logo (from config.toml logo_file_url)
+    - Starter question buttons (defined via @cl.set_starters)
+    - Centered layout when chat is empty
+
+    Note: Do NOT send messages here - they break the centered layout.
+    Chainlit handles everything natively.
+    """
     settings = get_settings()
     session_id = cl.user_session.get("id")  # type: ignore
 
@@ -100,32 +170,6 @@ async def start() -> None:
 
     # Initialize conversation manager for this session
     get_conversation_manager(session_id)
-
-    # Send welcome message in Persian
-    welcome_msg = """
-سلام! 👋
-
-من دستیار حقوقی هوشمند هستم که برای پاسخ به سوالات شما درباره قوانین ایران آماده‌ام.
-
-می‌تونید هر سوالی درباره:
-- قوانین و مقررات
-- حقوق و تکالیف شهروندان
-- مسائل قانونی تجاری
-- و دیگر مسائل حقوقی
-
-رو بپرسید و من براتون جواب می‌دم.
-
-چی می‌تونم برات کمک کنم؟
-"""
-
-    await cl.Message(content=welcome_msg).send()  # type: ignore
-
-    # Send example questions if enabled
-    if settings.ui.example_questions:
-        examples_msg = "\n\n**سوالات نمونه:**\n"
-        for i, question in enumerate(settings.ui.example_questions[:5], 1):
-            examples_msg += f"{i}. {question}\n"
-        await cl.Message(content=examples_msg).send()  # type: ignore
 
 
 @cl.on_message
