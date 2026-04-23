@@ -166,14 +166,20 @@ async def main(message: cl.Message) -> None:
         # Call agent
         logger.info("calling_agent", session_id=session_id)
 
-        response_text = await agent.run(
+        response_text, updated_history = await agent.run(
             user_query=user_query,
             conversation_history=history,
             conversation_id=session_id,
         )
 
-        # TODO: Add proper message history management
-        # For now, the agent maintains its own history internally
+        # Update conversation state with the complete message history
+        # This ensures follow-up questions have full context
+        conv_state.message_history = updated_history
+        logger.info(
+            "conversation_state_updated",
+            session_id=session_id,
+            message_count=len(updated_history),
+        )
 
         # Format response with clickable citations
         formatted_response = citation_formatter.format_response(response_text)

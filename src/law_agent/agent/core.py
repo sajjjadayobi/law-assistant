@@ -367,7 +367,7 @@ class LawAgent:
         user_query: str,
         conversation_history: list[ModelMessage] | None = None,
         conversation_id: str | None = None,
-    ) -> str:
+    ) -> tuple[str, list[ModelMessage]]:
         """Run agent to answer a user query.
 
         Args:
@@ -378,7 +378,9 @@ class LawAgent:
                            If None, generates new UUID
 
         Returns:
-            Agent's response in Persian with citations and follow-up questions
+            Tuple of (response_text, updated_message_history)
+            - response_text: Agent's response in Persian with citations and follow-up questions
+            - updated_message_history: Complete conversation history including current exchange
 
         Raises:
             Exception: If agent fails (logged and re-raised)
@@ -400,14 +402,17 @@ class LawAgent:
             )
 
             response_text = result.output
+            # Get the complete updated message history including this exchange
+            updated_history = result.all_messages()
 
             logger.info(
                 "law_agent_run_success",
                 conversation_id=conversation_id,
                 response_length=len(response_text),
+                message_history_length=len(updated_history),
             )
 
-            return response_text
+            return response_text, updated_history
 
         except Exception as e:
             logger.exception(
