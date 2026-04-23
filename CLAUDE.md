@@ -2,6 +2,22 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
+## 🎯 Current Focus: v0.0.2 - Enhanced UI/UX
+
+**Status**: Planning Complete ✅ - Ready for implementation
+
+**Next Task**: Start Phase 11A with Task 11.1 (Centered welcome screen)
+
+**Implementation Guide**: `docs/development/v0.0.2-tasks.md` (comprehensive, with exact code references)
+
+**Reference Project**: `/Users/divar/Documents/codes/data-assistant` (SQL Assistant)
+
+**What's Missing**: The UI features marked complete in old Phase 5 are NOT actually working yet (thinking steps, tool visualization, conversation history, feedback). Phase 11 will implement all of these properly by adapting patterns from data-assistant.
+
+---
+
 ## Project Overview
 
 **Law Agent** is an AI-powered legal assistant for Iranian law built with PydanticAI and PostgreSQL. It provides ChatGPT-style conversational interactions to answer questions about Iranian legal documents using a database of 47K+ documents (1.3GB).
@@ -10,7 +26,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-**Current Phase**: Phase 8 (Deployment & Production) - Complete ✅
+**Current Version**: v0.0.1
+**Current Phase**: Phase 11 (Enhanced UI/UX) - v0.0.2 - In Planning 📋
 
 **Completed**:
 - ✅ Phase 0: Onboarding & Setup (environment documentation complete)
@@ -29,14 +46,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - ✅ Task 4.7: Error handling (7 custom exceptions, Persian messages)
   - ✅ Task 4.8: End-to-end testing (77 comprehensive unit tests, 100% pass rate)
   - ✅ Task 4.9: Agent Core committed
-- ✅ Phase 5: UI (Chainlit Interface) - Complete ✅ (+44 UI tests)
+- ⚠️ Phase 5: UI (Chainlit Interface) - **Partially Complete** (+44 UI tests)
   - ✅ Task 5.1: Chainlit framework setup and basic chat interface
   - ✅ Task 5.2: RTL (right-to-left) support for Persian text (CSS-based)
   - ✅ Task 5.3: Citation links to iran.ir documents (regex parsing + HTML formatting)
   - ✅ Task 5.4: Example questions display at chat start (config.yaml driven)
-  - ✅ Task 5.5: Feedback collection integration with Arize Phoenix (👍/👎 buttons)
-  - ✅ Task 5.6: Agent thinking and tool calls visualization (Chainlit Steps)
-  - ✅ Task 5.7: Conversation history management (SQLite backend)
+  - ❌ Task 5.5: Feedback collection (👍/👎 buttons) - **Handler exists but commented out**
+  - ❌ Task 5.6: Agent thinking and tool calls visualization - **Not working yet**
+  - ❌ Task 5.7: Conversation history sidebar - **Not implemented**
   - ✅ Task 5.8: End-to-end testing and polish (44 comprehensive UI tests, 100% pass rate)
 - ✅ Phase 6: Observability (Arize Phoenix + Eval-Driven Development) - Complete ✅
   - ✅ Task 6.1: Study Arize Phoenix and OpenTelemetry concepts
@@ -72,31 +89,77 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - ✅ Task 8.7: Testing & validation (formatting, linting, type checks)
   - ✅ Task 8.8: Final commit (all deployment files, production-ready)
 
-**Next Steps**:
+**In Progress**:
+- 📋 Phase 11: Enhanced UI/UX (v0.0.2) - **Planning Complete, Ready to Implement**
+  - 📋 Task 11.1: Centered welcome screen with starter questions
+  - 📋 Task 11.2: Conversation history sidebar (grouped by date)
+  - 📋 Task 11.3: Thinking steps visualization
+  - 📋 Task 11.4: Tool calls visualization
+  - 📋 Task 11.5: Feedback collection (thumbs up/down)
+  - 📋 Task 11.6: Share conversations
+  - 📋 Task 11.7: Export to Markdown
+  - 📋 Task 11.8: Retry failed messages
+  - 📋 Task 11.9: Browser notifications
+  - 📋 Task 11.10: Copy to clipboard
+  - 📋 Task 11.11: RTL and Persian UI polish
+  - 📋 Task 11.12: Response streaming
+
+**Next Steps After v0.0.2**:
 - Phase 10: Scalability & Infrastructure (Kubernetes, Redis, multi-region)
 
-See `docs/development/tasks.md` for complete task breakdown.
-See `docs/features/phase-8-deployment/` for deployment guide and design decisions.
-See `docs/features/phase-9-performance-polish/` for performance optimization details.
+**Documentation**:
+- See `docs/development/tasks.md` for complete task breakdown
+- See `docs/development/v0.0.2-tasks.md` for Phase 11 detailed implementation guide
+- See `docs/features/phase-8-deployment/` for deployment guide and design decisions
+- See `docs/features/phase-9-performance-polish/` for performance optimization details
 
-### What to Work On Next (Phase 10)
+### What to Work On Next (Phase 11 - v0.0.2)
 
-**Ready to Start**: Phase 10 - Scalability & Infrastructure
+**Ready to Start**: Phase 11 - Enhanced UI/UX (v0.0.2) ⭐
 
-Phase 8 completed production deployment setup. Phase 10 will focus on:
-1. Kubernetes deployment (Helm charts)
-2. Redis integration for distributed caching
-3. Database replication and failover
-4. Multi-region deployment strategy
-5. Service mesh integration (Istio)
-6. Auto-scaling configuration
-7. Cost optimization
+**Status**: Planning Complete ✅ - Ready for implementation
+
+Phase 11 completes the missing UI features from Phase 5 by implementing a polished user experience matching the data-assistant SQL Assistant profile. This transforms the law agent from functional to delightful.
+
+**High-Priority Features** (Phase 11A - Week 1-2):
+1. ⭐ Centered welcome screen with starter questions (like ChatGPT)
+2. ⭐ Thinking steps visualization (show AI reasoning)
+3. ⭐ Tool calls visualization (show search operations)
+4. ⭐ Conversation history sidebar (grouped by date)
+5. ⭐ Response streaming (token-by-token)
+
+**User Engagement** (Phase 11B - Week 3):
+6. Feedback collection (thumbs up/down) - re-enable commented handler
+7. Retry failed messages action button
+8. RTL and Persian UI polish
+
+**Sharing & Export** (Phase 11C - Week 4):
+9. Share conversations (read-only links)
+10. Export to Markdown
+11. Browser notifications
+12. Copy to clipboard
+
+**Reference Project**: `/Users/divar/Documents/codes/data-assistant` (SQL Assistant)
+
+**Estimated Time**: 36-48 hours (4-6 weeks at 8-10 hours/week)
 
 **Before Starting**:
-- Review `docs/development/tasks.md` Task 10.1-10.8 (when created)
-- Review Phase 8 deployment guide: `docs/features/phase-8-deployment/DEPLOYMENT.md`
-- Understand current performance baselines from Phase 9
-- Review Docker Compose setup in Phase 8
+- ✅ Read `docs/development/v0.0.2-tasks.md` - **Comprehensive implementation guide**
+- ✅ Review data-assistant codebase at `/Users/divar/Documents/codes/data-assistant`
+- ✅ Each task has exact file references with line numbers to copy from
+- ✅ No guessing needed - just study reference implementation and adapt
+- ⚠️ Follow the implementation order (Phase 11A → 11B → 11C)
+
+**Key Files to Study in data-assistant**:
+1. `src/profiles/sql_assistant_v3/profile.py` - Profile structure with starters
+2. `src/profiles/sql_assistant_v3/agents/sql_assistant.py` - Thinking steps extraction
+3. `src/profiles/sql_assistant_v3/tools/execute_sql.py` - Tool visualization with @cl.step
+4. `src/datasource/postgres/chainlit_data_layer.py` - Conversation history backend
+5. `public/patch.js` - UI customizations (share button, export, RTL)
+6. `public/patch.css` - RTL styling
+
+**After Phase 11**:
+- Phase 10: Scalability & Infrastructure (Kubernetes, Redis, multi-region)
 
 ---
 
@@ -423,12 +486,27 @@ From `best_practices/agent.md`:
 
 ## UI Requirements (Chainlit)
 
-- RTL (right-to-left) support for Persian
-- Show agent thinking/tool calls to keep user engaged
-- Chat history section to return to old conversations
-- Thumbs up/down for responses (written to observability)
-- Show 3-5 random example questions at start
-- Must visualize all actions and model reasoning
+**Currently Implemented (v0.0.1)**:
+- ✅ Basic RTL (right-to-left) support for Persian text
+- ✅ Citation links to iran.ir documents (clickable)
+- ✅ Example questions at chat start (from config.yaml)
+- ✅ Basic chat interface with message history in session
+
+**Planned for v0.0.2 (Phase 11)**:
+- 📋 Enhanced RTL polish with auto-direction detection
+- 📋 Centered welcome screen with starter question buttons
+- 📋 Agent thinking visualization (show reasoning process)
+- 📋 Tool calls visualization (show search operations)
+- 📋 Conversation history sidebar (persistent across sessions, grouped by date)
+- 📋 Thumbs up/down feedback (re-enable commented handler)
+- 📋 Share conversations (read-only links)
+- 📋 Export to Markdown
+- 📋 Response streaming (token-by-token)
+- 📋 Retry failed messages
+- 📋 Browser notifications
+- 📋 Copy to clipboard
+
+**Reference**: See `docs/development/v0.0.2-tasks.md` for implementation details
 
 ## Deployment
 
@@ -454,8 +532,10 @@ Very high detail and clean logging using structlog.
 
 1. **`docs/README.md`** - Documentation hub with complete index and onboarding path
 2. **`CLAUDE.md`** (this file) - Quick reference for project overview and commands
-3. **`docs/development/workflow.md`** - Complete developer workflow guide (Plan, Build, Document, Learn)
-4. **`docs/development/tasks.md`** - Hierarchical task breakdown for all 9 phases (~70 tasks)
+3. **`docs/development/v0.0.2-tasks.md`** - **Current work: Phase 11 implementation guide** ⭐
+4. **`docs/development/workflow.md`** - Complete developer workflow guide (Plan, Build, Document, Learn)
+5. **`docs/development/tasks.md`** - Hierarchical task breakdown for all phases
+6. **`docs/development/future.md`** - Future plans and v0.0.2 overview
 
 ### Architecture & Design
 
