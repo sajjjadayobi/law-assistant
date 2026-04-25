@@ -356,7 +356,13 @@ make all
 
 # Clean up build artifacts
 make clean
+
+# Debug Chainlit UI/UX changes (automated with Playwright)
+/chainlit-ui-debugger welcome-screen    # Test specific feature
+/chainlit-ui-debugger all               # Full UI test suite
 ```
+
+**UI Testing Skill**: Created `.claude/skills/chainlit-ui-debugger/` for automated Chainlit testing. No more manual screenshots needed - tests welcome screen, chat, sidebar, RTL text, responsiveness, thinking steps, and tool calls. Generates screenshots and visual regression reports automatically.
 
 ### Before Committing
 
