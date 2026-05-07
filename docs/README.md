@@ -77,6 +77,13 @@ Guides for building and contributing to the project.
   - Dependencies and success criteria
   - Designed for junior developers
 
+- **[`development/v0.0.2-tasks.md`](development/v0.0.2-tasks.md)** - Phase 11 (Enhanced UI/UX) detailed guide
+  - ✅ Task 11.1: Centered welcome screen
+  - ✅ Task 11.2: Conversation history sidebar (auth + Persian UI)
+  - 📋 Task 11.3: Thinking steps visualization ← **current**
+  - Exact code examples and file references for each task
+  - Key learnings from completed tasks
+
 **Also see**: [`../CLAUDE.md`](../CLAUDE.md) in the project root - Instructions for Claude Code with project overview, tech stack, and development patterns.
 
 ---
@@ -111,21 +118,22 @@ Each feature has its own directory with:
 - `plan.md` - Design decisions, alternatives, success criteria
 - `progress.md` - Development journal with learnings and blockers
 
-**Example structure**:
+**Phase 11 features (current work)**:
 ```
-features/
-├── configuration/
+features/phase-11-enhanced-ui/
+├── task-11.2-conversation-sidebar/
 │   ├── plan.md
-│   └── progress.md
-├── search-tools/
-│   ├── plan.md
-│   └── progress.md
-└── agent-core/
-    ├── plan.md
-    └── progress.md
+│   ├── progress.md          ← key learnings on Chainlit DB schema
+│   └── screenshots/         ← proof screenshots (8 + 9 show Persian UI)
+└── (task-11.3 coming next)
 ```
 
-**Note**: This directory will be populated as features are built. See [`development/workflow.md`](development/workflow.md) for how to create feature documentation.
+**Key learnings in `task-11.2-conversation-sidebar/progress.md`**:
+- Chainlit requires camelCase columns + TEXT timestamps (not TIMESTAMP)
+- Auth callback + JWT secret needed for per-user history
+- Never override `execute_sql()` — parent handles it
+
+See [`development/workflow.md`](development/workflow.md) for how to create feature documentation.
 
 ---
 

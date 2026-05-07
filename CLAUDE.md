@@ -6,34 +6,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Current Focus: v0.0.2 - Enhanced UI/UX
 
-**Status**: Task 11.2 FULLY VERIFIED ✅ - Moving to Task 11.3 (Thinking Steps)
+**Status**: Task 11.3 — Thinking Steps Visualization
 
-**Next Task**: Task 11.3 - Thinking steps visualization
+**Next Task**: Task 11.3 - Show AI reasoning steps while searching legal documents
 
-**Implementation Guide**: `docs/development/v0.0.2-tasks.md` (comprehensive, with exact code references)
+**Implementation Guide**: `docs/development/v0.0.2-tasks.md` (Task 11.3 section has exact code)
 
 **Reference Project**: `/Users/divar/Documents/codes/data-assistant` (SQL Assistant)
 
 **Progress**:
 - ✅ Task 11.1 (Centered welcome screen) - Complete
-- ✅ Task 11.2 (Conversation history sidebar) - FULLY WORKING ✅:
-  - ✅ Tables recreated with camelCase schema (Chainlit standard)
-  - ✅ `createdAt` stored as TEXT (ISO string), not TIMESTAMP
-  - ✅ Users table added for authentication
-  - ✅ data_layer.py simplified: 139 lines (was 843) - follows data-assistant pattern
-  - ✅ `@cl.password_auth_callback` added to app.py for user authentication
-  - ✅ `CHAINLIT_AUTH_SECRET` added to .env
-  - ✅ Thread auto-naming from first user message (tested E2E)
-  - ✅ Sidebar shows conversations grouped by time (Today/Yesterday)
-  - ✅ Persian RTL text in sidebar verified
-  - ✅ E2E test: login → send Persian message → thread in DB → sidebar shows it
-  - See `docs/features/phase-11-enhanced-ui/task-11.2-conversation-sidebar/progress.md`
-  - **Key lessons**: Chainlit requires camelCase columns + TEXT timestamps + auth callback
-  - ✅ Database indexes for performance
-  - ✅ Sidebar ready: conversations persist to PostgreSQL and appear grouped by time
-  - See `docs/features/phase-11-enhanced-ui/task-11.2-conversation-sidebar/` for complete docs
+- ✅ Task 11.2 (Conversation history sidebar) - Complete:
+  - camelCase schema + TEXT timestamps + `@cl.password_auth_callback` + `fa-IR.json` translations
+  - Persian empty state: "هنوز گفتگویی ندارید / اولین سوال حقوقی خود را بپرسید"
+  - Time groups: امروز / دیروز / ۷ روز گذشته / ۳۰ روز گذشته
+  - See `docs/features/phase-11-enhanced-ui/task-11.2-conversation-sidebar/`
+- 📋 Task 11.3 (Thinking steps) - **START HERE**
+- 📋 Task 11.4–11.12 - Pending
 
-**What's Next**: Implement thinking steps visualization (Task 11.3) to show AI reasoning
+**Key Setup Facts** (needed before starting 11.3):
+- Server start: load `.env` via Python (bash expansion breaks `$` in JWT secret)
+- Auth: `CHAINLIT_AUTH_SECRET` in `.env`, `@cl.password_auth_callback` in `app.py`
+- DB schema: camelCase (`"createdAt"` TEXT, `"threadId"` TEXT) in `users/threads/steps/elements/feedbacks`
+- Translation: `.chainlit/translations/fa-IR.json`, language `= "fa-IR"` in `.chainlit/config.toml`
+
+**What's Next for Task 11.3**:
+- Show "در حال فکر کردن..." collapsible step while agent reasons
+- Use `@cl.step(name="در حال فکر کردن", type="tool", default_open=True)`
+- Switch `agent.run()` → `agent.iter()` to access `CallToolsNode` and `ThinkingPart`
+- Reference: `data-assistant/src/profiles/sql_assistant_v3/agents/sql_assistant.py` lines 51-147
 
 ---
 
@@ -111,8 +112,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **In Progress**:
 - 🚀 Phase 11: Enhanced UI/UX (v0.0.2) - **In Implementation**
   - ✅ Task 11.1: Centered welcome screen with starter questions (COMPLETE)
-  - ✅ Task 11.2: Conversation history sidebar (grouped by date) (COMPLETE)
-  - 📋 Task 11.3: Thinking steps visualization (NEXT)
+  - ✅ Task 11.2: Conversation history sidebar — COMPLETE (auth + Persian UI + camelCase DB)
+  - 📋 Task 11.3: Thinking steps visualization ← **NEXT**
   - 📋 Task 11.4: Tool calls visualization
   - 📋 Task 11.5: Feedback collection (thumbs up/down)
   - 📋 Task 11.6: Share conversations
