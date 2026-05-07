@@ -11,32 +11,31 @@ import json
 import subprocess
 import sys
 import time
-import os
-from pathlib import Path
-from dataclasses import dataclass, asdict
-from typing import Optional, List, Dict, Any
+from dataclasses import asdict, dataclass
 from datetime import datetime
-import hashlib
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 try:
-    from playwright.async_api import async_playwright, Browser, Page
+    from playwright.async_api import Browser, Page, async_playwright
 except ImportError:
     print("Installing Playwright...")
     subprocess.run([sys.executable, "-m", "pip", "install", "playwright", "-q"])
     subprocess.run([sys.executable, "-m", "playwright", "install", "-q"])
-    from playwright.async_api import async_playwright, Browser, Page
+    from playwright.async_api import Browser, Page, async_playwright
 
 try:
-    from PIL import Image, ImageDraw, ImageChops
+    from PIL import Image, ImageChops, ImageDraw
 except ImportError:
     print("Installing Pillow...")
     subprocess.run([sys.executable, "-m", "pip", "install", "pillow", "-q"])
-    from PIL import Image, ImageDraw, ImageChops
+    from PIL import Image, ImageChops
 
 
 @dataclass
 class TestResult:
     """Result of a single test case"""
+
     name: str
     category: str
     status: str  # "PASS", "FAIL", "SKIP"
@@ -94,7 +93,17 @@ class ChainlitUITester:
             raise FileNotFoundError("app.py not found in current directory")
 
         self.app_process = subprocess.Popen(
-            [sys.executable, "-m", "chainlit", "run", str(app_file), "--host", "localhost", "--port", "8000"],
+            [
+                sys.executable,
+                "-m",
+                "chainlit",
+                "run",
+                str(app_file),
+                "--host",
+                "localhost",
+                "--port",
+                "8000",
+            ],
             cwd=cwd,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -189,24 +198,28 @@ class ChainlitUITester:
                     box_center = bbox["x"] + bbox["width"] / 2
                     is_centered = abs(center_x - box_center) < 100
 
-                    self.results.append(TestResult(
-                        name="Welcome screen centered",
-                        category="welcome-screen",
-                        status="PASS" if is_centered else "FAIL",
-                        message=f"Welcome screen {'is' if is_centered else 'is not'} centered",
-                        duration_ms=(time.time() - start_time) * 1000,
-                        screenshot_path=await self._save_screenshot(page, "welcome-screen")
-                    ))
+                    self.results.append(
+                        TestResult(
+                            name="Welcome screen centered",
+                            category="welcome-screen",
+                            status="PASS" if is_centered else "FAIL",
+                            message=f"Welcome screen {'is' if is_centered else 'is not'} centered",
+                            duration_ms=(time.time() - start_time) * 1000,
+                            screenshot_path=await self._save_screenshot(page, "welcome-screen"),
+                        )
+                    )
 
             # Check starter questions visible
             questions = await page.locator('[data-testid="starter-question"]').count()
-            self.results.append(TestResult(
-                name="Starter questions visible",
-                category="welcome-screen",
-                status="PASS" if questions > 0 else "FAIL",
-                message=f"Found {questions} starter questions",
-                duration_ms=(time.time() - start_time) * 1000,
-            ))
+            self.results.append(
+                TestResult(
+                    name="Starter questions visible",
+                    category="welcome-screen",
+                    status="PASS" if questions > 0 else "FAIL",
+                    message=f"Found {questions} starter questions",
+                    duration_ms=(time.time() - start_time) * 1000,
+                )
+            )
 
             # Check each question is clickable
             for i in range(min(questions, 3)):
@@ -214,26 +227,30 @@ class ChainlitUITester:
                     await page.locator(f'[data-testid="starter-question"] >> nth={i}').click()
                     await page.wait_for_load_state("networkidle", timeout=2000)
 
-                    self.results.append(TestResult(
-                        name=f"Starter question {i+1} clickable",
-                        category="welcome-screen",
-                        status="PASS",
-                        message="Question clicked and chat started",
-                        duration_ms=(time.time() - start_time) * 1000,
-                    ))
+                    self.results.append(
+                        TestResult(
+                            name=f"Starter question {i+1} clickable",
+                            category="welcome-screen",
+                            status="PASS",
+                            message="Question clicked and chat started",
+                            duration_ms=(time.time() - start_time) * 1000,
+                        )
+                    )
                     break  # Only test first one to save time
                 except:
                     pass
 
         except Exception as e:
-            self.results.append(TestResult(
-                name="Welcome screen test",
-                category="welcome-screen",
-                status="FAIL",
-                message=str(e),
-                duration_ms=(time.time() - start_time) * 1000,
-                error=str(e)
-            ))
+            self.results.append(
+                TestResult(
+                    name="Welcome screen test",
+                    category="welcome-screen",
+                    status="FAIL",
+                    message=str(e),
+                    duration_ms=(time.time() - start_time) * 1000,
+                    error=str(e),
+                )
+            )
         finally:
             await page.close()
 
@@ -248,21 +265,25 @@ class ChainlitUITester:
             # Find input box
             input_box = await page.locator('input[placeholder*="Message"]')
             if await input_box.is_visible():
-                self.results.append(TestResult(
-                    name="Chat input visible",
-                    category="chat",
-                    status="PASS",
-                    message="Message input field is visible",
-                    duration_ms=(time.time() - start_time) * 1000,
-                ))
+                self.results.append(
+                    TestResult(
+                        name="Chat input visible",
+                        category="chat",
+                        status="PASS",
+                        message="Message input field is visible",
+                        duration_ms=(time.time() - start_time) * 1000,
+                    )
+                )
             else:
-                self.results.append(TestResult(
-                    name="Chat input visible",
-                    category="chat",
-                    status="FAIL",
-                    message="Message input field not found",
-                    duration_ms=(time.time() - start_time) * 1000,
-                ))
+                self.results.append(
+                    TestResult(
+                        name="Chat input visible",
+                        category="chat",
+                        status="FAIL",
+                        message="Message input field not found",
+                        duration_ms=(time.time() - start_time) * 1000,
+                    )
+                )
 
             # Test sending message
             await input_box.fill("سلام، چطور می‌تونید کمک کنید؟")
@@ -274,24 +295,28 @@ class ChainlitUITester:
 
                 # Check message appears
                 messages = await page.locator('[role="article"]').count()
-                self.results.append(TestResult(
-                    name="Message sends",
-                    category="chat",
-                    status="PASS" if messages > 0 else "FAIL",
-                    message=f"Found {messages} messages in chat",
-                    duration_ms=(time.time() - start_time) * 1000,
-                    screenshot_path=await self._save_screenshot(page, "chat-interface")
-                ))
+                self.results.append(
+                    TestResult(
+                        name="Message sends",
+                        category="chat",
+                        status="PASS" if messages > 0 else "FAIL",
+                        message=f"Found {messages} messages in chat",
+                        duration_ms=(time.time() - start_time) * 1000,
+                        screenshot_path=await self._save_screenshot(page, "chat-interface"),
+                    )
+                )
 
         except Exception as e:
-            self.results.append(TestResult(
-                name="Chat interface test",
-                category="chat",
-                status="FAIL",
-                message=str(e),
-                duration_ms=(time.time() - start_time) * 1000,
-                error=str(e)
-            ))
+            self.results.append(
+                TestResult(
+                    name="Chat interface test",
+                    category="chat",
+                    status="FAIL",
+                    message=str(e),
+                    duration_ms=(time.time() - start_time) * 1000,
+                    error=str(e),
+                )
+            )
         finally:
             await page.close()
 
@@ -306,42 +331,50 @@ class ChainlitUITester:
             # Check sidebar exists
             sidebar = await page.locator('[role="complementary"]')
             if await sidebar.is_visible():
-                self.results.append(TestResult(
-                    name="Sidebar visible",
-                    category="sidebar",
-                    status="PASS",
-                    message="Conversation history sidebar is visible",
-                    duration_ms=(time.time() - start_time) * 1000,
-                    screenshot_path=await self._save_screenshot(page, "sidebar")
-                ))
+                self.results.append(
+                    TestResult(
+                        name="Sidebar visible",
+                        category="sidebar",
+                        status="PASS",
+                        message="Conversation history sidebar is visible",
+                        duration_ms=(time.time() - start_time) * 1000,
+                        screenshot_path=await self._save_screenshot(page, "sidebar"),
+                    )
+                )
 
                 # Check for date grouping (امروز, دیروز, etc.)
-                date_groups = await page.locator('text=/امروز|دیروز|روز|ماه/').count()
-                self.results.append(TestResult(
-                    name="Sidebar date grouping",
-                    category="sidebar",
-                    status="PASS" if date_groups > 0 else "SKIP",
-                    message=f"Found {date_groups} date group headers",
-                    duration_ms=(time.time() - start_time) * 1000,
-                ))
+                date_groups = await page.locator("text=/امروز|دیروز|روز|ماه/").count()
+                self.results.append(
+                    TestResult(
+                        name="Sidebar date grouping",
+                        category="sidebar",
+                        status="PASS" if date_groups > 0 else "SKIP",
+                        message=f"Found {date_groups} date group headers",
+                        duration_ms=(time.time() - start_time) * 1000,
+                    )
+                )
             else:
-                self.results.append(TestResult(
-                    name="Sidebar visible",
-                    category="sidebar",
-                    status="SKIP",
-                    message="Sidebar not found (may require asyncpg)",
-                    duration_ms=(time.time() - start_time) * 1000,
-                ))
+                self.results.append(
+                    TestResult(
+                        name="Sidebar visible",
+                        category="sidebar",
+                        status="SKIP",
+                        message="Sidebar not found (may require asyncpg)",
+                        duration_ms=(time.time() - start_time) * 1000,
+                    )
+                )
 
         except Exception as e:
-            self.results.append(TestResult(
-                name="Sidebar test",
-                category="sidebar",
-                status="FAIL",
-                message=str(e),
-                duration_ms=(time.time() - start_time) * 1000,
-                error=str(e)
-            ))
+            self.results.append(
+                TestResult(
+                    name="Sidebar test",
+                    category="sidebar",
+                    status="FAIL",
+                    message=str(e),
+                    duration_ms=(time.time() - start_time) * 1000,
+                    error=str(e),
+                )
+            )
         finally:
             await page.close()
 
@@ -357,42 +390,50 @@ class ChainlitUITester:
             main_content = await page.locator('main, [role="main"]')
             if await main_content.is_visible():
                 # Get computed direction
-                direction = await main_content.evaluate("el => window.getComputedStyle(el).direction")
+                direction = await main_content.evaluate(
+                    "el => window.getComputedStyle(el).direction"
+                )
 
-                self.results.append(TestResult(
-                    name="RTL text direction",
-                    category="rtl-text",
-                    status="PASS" if direction == "rtl" else "WARN",
-                    message=f"Text direction is '{direction}'",
-                    duration_ms=(time.time() - start_time) * 1000,
-                    screenshot_path=await self._save_screenshot(page, "rtl-text")
-                ))
+                self.results.append(
+                    TestResult(
+                        name="RTL text direction",
+                        category="rtl-text",
+                        status="PASS" if direction == "rtl" else "WARN",
+                        message=f"Text direction is '{direction}'",
+                        duration_ms=(time.time() - start_time) * 1000,
+                        screenshot_path=await self._save_screenshot(page, "rtl-text"),
+                    )
+                )
 
             # Check for Persian characters rendering
             try:
                 await page.goto(self.base_url + "?test=persian", wait_until="domcontentloaded")
-                persian_text = await page.locator('text=/[ا-ی]/').count()
+                persian_text = await page.locator("text=/[ا-ی]/").count()
 
                 if persian_text > 0:
-                    self.results.append(TestResult(
-                        name="Persian characters render",
-                        category="rtl-text",
-                        status="PASS",
-                        message=f"Found {persian_text} Persian characters",
-                        duration_ms=(time.time() - start_time) * 1000,
-                    ))
+                    self.results.append(
+                        TestResult(
+                            name="Persian characters render",
+                            category="rtl-text",
+                            status="PASS",
+                            message=f"Found {persian_text} Persian characters",
+                            duration_ms=(time.time() - start_time) * 1000,
+                        )
+                    )
             except:
                 pass
 
         except Exception as e:
-            self.results.append(TestResult(
-                name="RTL text test",
-                category="rtl-text",
-                status="FAIL",
-                message=str(e),
-                duration_ms=(time.time() - start_time) * 1000,
-                error=str(e)
-            ))
+            self.results.append(
+                TestResult(
+                    name="RTL text test",
+                    category="rtl-text",
+                    status="FAIL",
+                    message=str(e),
+                    duration_ms=(time.time() - start_time) * 1000,
+                    error=str(e),
+                )
+            )
         finally:
             await page.close()
 
@@ -415,24 +456,30 @@ class ChainlitUITester:
                 main = await page.locator('main, [role="main"]')
                 is_visible = await main.is_visible()
 
-                self.results.append(TestResult(
-                    name=f"Responsive layout ({device_type})",
-                    category="responsiveness",
-                    status="PASS" if is_visible else "FAIL",
-                    message=f"Main content visible at {viewport['width']}x{viewport['height']}",
-                    duration_ms=(time.time() - start_time) * 1000,
-                    screenshot_path=await self._save_screenshot(page, f"responsive-{device_type}")
-                ))
+                self.results.append(
+                    TestResult(
+                        name=f"Responsive layout ({device_type})",
+                        category="responsiveness",
+                        status="PASS" if is_visible else "FAIL",
+                        message=f"Main content visible at {viewport['width']}x{viewport['height']}",
+                        duration_ms=(time.time() - start_time) * 1000,
+                        screenshot_path=await self._save_screenshot(
+                            page, f"responsive-{device_type}"
+                        ),
+                    )
+                )
 
             except Exception as e:
-                self.results.append(TestResult(
-                    name=f"Responsive test ({device_type})",
-                    category="responsiveness",
-                    status="FAIL",
-                    message=str(e),
-                    duration_ms=(time.time() - start_time) * 1000,
-                    error=str(e)
-                ))
+                self.results.append(
+                    TestResult(
+                        name=f"Responsive test ({device_type})",
+                        category="responsiveness",
+                        status="FAIL",
+                        message=str(e),
+                        duration_ms=(time.time() - start_time) * 1000,
+                        error=str(e),
+                    )
+                )
             finally:
                 await page.close()
 
@@ -445,25 +492,31 @@ class ChainlitUITester:
             await page.goto(self.base_url, wait_until="domcontentloaded")
 
             # Look for thinking step elements
-            thinking_steps = await page.locator('[data-testid="thinking-step"], [role="status"]').count()
+            thinking_steps = await page.locator(
+                '[data-testid="thinking-step"], [role="status"]'
+            ).count()
 
-            self.results.append(TestResult(
-                name="Thinking steps display",
-                category="thinking-steps",
-                status="PASS" if thinking_steps > 0 else "SKIP",
-                message=f"Found {thinking_steps} thinking step elements",
-                duration_ms=(time.time() - start_time) * 1000,
-            ))
+            self.results.append(
+                TestResult(
+                    name="Thinking steps display",
+                    category="thinking-steps",
+                    status="PASS" if thinking_steps > 0 else "SKIP",
+                    message=f"Found {thinking_steps} thinking step elements",
+                    duration_ms=(time.time() - start_time) * 1000,
+                )
+            )
 
         except Exception as e:
-            self.results.append(TestResult(
-                name="Thinking steps test",
-                category="thinking-steps",
-                status="FAIL",
-                message=str(e),
-                duration_ms=(time.time() - start_time) * 1000,
-                error=str(e)
-            ))
+            self.results.append(
+                TestResult(
+                    name="Thinking steps test",
+                    category="thinking-steps",
+                    status="FAIL",
+                    message=str(e),
+                    duration_ms=(time.time() - start_time) * 1000,
+                    error=str(e),
+                )
+            )
         finally:
             await page.close()
 
@@ -476,26 +529,34 @@ class ChainlitUITester:
             await page.goto(self.base_url, wait_until="domcontentloaded")
 
             # Look for tool call elements
-            tool_calls = await page.locator('[data-testid="tool-call"], [role="region"]:has-text("tool")').count()
+            tool_calls = await page.locator(
+                '[data-testid="tool-call"], [role="region"]:has-text("tool")'
+            ).count()
 
-            self.results.append(TestResult(
-                name="Tool calls display",
-                category="tool-calls",
-                status="PASS" if tool_calls > 0 else "SKIP",
-                message=f"Found {tool_calls} tool call elements",
-                duration_ms=(time.time() - start_time) * 1000,
-                screenshot_path=await self._save_screenshot(page, "tool-calls") if tool_calls > 0 else None
-            ))
+            self.results.append(
+                TestResult(
+                    name="Tool calls display",
+                    category="tool-calls",
+                    status="PASS" if tool_calls > 0 else "SKIP",
+                    message=f"Found {tool_calls} tool call elements",
+                    duration_ms=(time.time() - start_time) * 1000,
+                    screenshot_path=(
+                        await self._save_screenshot(page, "tool-calls") if tool_calls > 0 else None
+                    ),
+                )
+            )
 
         except Exception as e:
-            self.results.append(TestResult(
-                name="Tool calls test",
-                category="tool-calls",
-                status="FAIL",
-                message=str(e),
-                duration_ms=(time.time() - start_time) * 1000,
-                error=str(e)
-            ))
+            self.results.append(
+                TestResult(
+                    name="Tool calls test",
+                    category="tool-calls",
+                    status="FAIL",
+                    message=str(e),
+                    duration_ms=(time.time() - start_time) * 1000,
+                    error=str(e),
+                )
+            )
         finally:
             await page.close()
 
@@ -514,33 +575,39 @@ class ChainlitUITester:
                 diff_score = self._compare_images(current_path, baseline_path)
 
                 status = "PASS" if diff_score < 5 else ("WARN" if diff_score < 15 else "FAIL")
-                self.results.append(TestResult(
-                    name="Visual regression",
-                    category="visual-regression",
-                    status=status,
-                    message=f"Image diff score: {diff_score:.1f}%",
-                    duration_ms=(time.time() - start_time) * 1000,
-                ))
+                self.results.append(
+                    TestResult(
+                        name="Visual regression",
+                        category="visual-regression",
+                        status=status,
+                        message=f"Image diff score: {diff_score:.1f}%",
+                        duration_ms=(time.time() - start_time) * 1000,
+                    )
+                )
             else:
                 # First run - establish baseline
                 self._copy_screenshot(current_path, baseline_path)
-                self.results.append(TestResult(
-                    name="Visual regression baseline",
-                    category="visual-regression",
-                    status="SKIP",
-                    message="Baseline established (first run)",
-                    duration_ms=(time.time() - start_time) * 1000,
-                ))
+                self.results.append(
+                    TestResult(
+                        name="Visual regression baseline",
+                        category="visual-regression",
+                        status="SKIP",
+                        message="Baseline established (first run)",
+                        duration_ms=(time.time() - start_time) * 1000,
+                    )
+                )
 
         except Exception as e:
-            self.results.append(TestResult(
-                name="Visual regression test",
-                category="visual-regression",
-                status="FAIL",
-                message=str(e),
-                duration_ms=(time.time() - start_time) * 1000,
-                error=str(e)
-            ))
+            self.results.append(
+                TestResult(
+                    name="Visual regression test",
+                    category="visual-regression",
+                    status="FAIL",
+                    message=str(e),
+                    duration_ms=(time.time() - start_time) * 1000,
+                    error=str(e),
+                )
+            )
         finally:
             await page.close()
 
@@ -553,6 +620,7 @@ class ChainlitUITester:
     def _copy_screenshot(self, src: str, dst: Path) -> None:
         """Copy screenshot for baseline"""
         import shutil
+
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(src, dst)
 
@@ -578,9 +646,9 @@ class ChainlitUITester:
     def generate_report(self) -> str:
         """Generate test report"""
         report_lines = [
-            "\n" + "="*60,
+            "\n" + "=" * 60,
             "🧪 CHAINLIT UI/UX TEST REPORT",
-            "="*60,
+            "=" * 60,
             f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
             "",
         ]
@@ -596,10 +664,14 @@ class ChainlitUITester:
         for category, counts in sorted(categories.items()):
             total = sum(counts.values())
             passed = counts["PASS"]
-            emoji = "✅" if counts["FAIL"] == 0 and counts["WARN"] == 0 else "⚠️" if counts["WARN"] > 0 else "❌"
+            emoji = (
+                "✅"
+                if counts["FAIL"] == 0 and counts["WARN"] == 0
+                else "⚠️" if counts["WARN"] > 0 else "❌"
+            )
             report_lines.append(f"{emoji} {category.upper()}: {passed}/{total} passed")
 
-        report_lines.extend(["", "DETAILED RESULTS:", "-"*60])
+        report_lines.extend(["", "DETAILED RESULTS:", "-" * 60])
 
         # Detailed results
         for result in self.results:
@@ -620,36 +692,42 @@ class ChainlitUITester:
         warned = sum(1 for r in self.results if r.status == "WARN")
         skipped = sum(1 for r in self.results if r.status == "SKIP")
 
-        report_lines.extend([
-            "-"*60,
-            "SUMMARY",
-            f"Total Tests: {total_tests}",
-            f"✅ Passed: {passed}",
-            f"❌ Failed: {failed}",
-            f"⚠️  Warned: {warned}",
-            f"⏭️  Skipped: {skipped}",
-            f"Success Rate: {(passed/max(total_tests-skipped, 1)*100):.1f}%",
-            "="*60,
-        ])
+        report_lines.extend(
+            [
+                "-" * 60,
+                "SUMMARY",
+                f"Total Tests: {total_tests}",
+                f"✅ Passed: {passed}",
+                f"❌ Failed: {failed}",
+                f"⚠️  Warned: {warned}",
+                f"⏭️  Skipped: {skipped}",
+                f"Success Rate: {(passed/max(total_tests-skipped, 1)*100):.1f}%",
+                "=" * 60,
+            ]
+        )
 
         report = "\n".join(report_lines)
 
         # Save JSON report
         report_file = self.debug_dir / "report.json"
         with open(report_file, "w") as f:
-            json.dump({
-                "timestamp": datetime.now().isoformat(),
-                "base_url": self.base_url,
-                "summary": {
-                    "total": total_tests,
-                    "passed": passed,
-                    "failed": failed,
-                    "warned": warned,
-                    "skipped": skipped,
-                    "success_rate": passed / max(total_tests - skipped, 1),
+            json.dump(
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "base_url": self.base_url,
+                    "summary": {
+                        "total": total_tests,
+                        "passed": passed,
+                        "failed": failed,
+                        "warned": warned,
+                        "skipped": skipped,
+                        "success_rate": passed / max(total_tests - skipped, 1),
+                    },
+                    "results": [r.to_dict() for r in self.results],
                 },
-                "results": [r.to_dict() for r in self.results],
-            }, f, indent=2)
+                f,
+                indent=2,
+            )
 
         return report
 

@@ -105,7 +105,9 @@ class StarterQuestion(BaseModel):
     """A starter question for the Chainlit welcome screen."""
 
     message: str = Field(..., description="Full question text (used as button label)")
-    icon: str = Field(default="/public/law.svg", description="Path to SVG icon for the starter button")
+    icon: str = Field(
+        default="/public/law.svg", description="Path to SVG icon for the starter button"
+    )
 
 
 class UIConfig(BaseModel):

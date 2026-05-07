@@ -11,6 +11,7 @@ import atexit
 import json
 import os
 from pathlib import Path
+from typing import Optional
 
 import chainlit as cl
 import structlog
@@ -105,16 +106,15 @@ def load_starters() -> list[StarterQuestion]:
         logger.warning(f"Starters file not found at {starters_file}, using defaults")
         return [
             StarterQuestion(
-                message="حقوق و تکالیف مستأجر در قانون چیست؟",
-                icon="/public/tenant-rights.svg"
+                message="حقوق و تکالیف مستأجر در قانون چیست؟", icon="/public/tenant-rights.svg"
             ),
             StarterQuestion(
                 message="مدت مرخصی زایمان طبق قانون کار چقدر است؟",
-                icon="/public/maternity-leave.svg"
+                icon="/public/maternity-leave.svg",
             ),
             StarterQuestion(
                 message="شرایط ثبت شرکت با مسئولیت محدود چیست؟",
-                icon="/public/company-registration.svg"
+                icon="/public/company-registration.svg",
             ),
         ]
 
@@ -126,6 +126,12 @@ def load_starters() -> list[StarterQuestion]:
         starters.append(StarterQuestion(**item))
 
     return starters
+
+
+@cl.password_auth_callback
+async def auth_callback(username: str, password: str) -> Optional[cl.User]:
+    """Accept any username/password to enable per-user conversation history."""
+    return cl.User(identifier=username, metadata={"role": "user"})
 
 
 @cl.set_chat_profiles
@@ -152,22 +158,19 @@ async def chat_profile(user: cl.User) -> list[cl.ChatProfile]:
     ]
 
 
-# TODO: Enable when asyncpg is installed (requires network to download)
-# @cl.data_layer
-# def setup_data_layer() -> object:
-#     """Register Chainlit data layer for conversation persistence.
-#
-#     This enables:
-#     - Conversation history saved to PostgreSQL
-#     - Sidebar showing past conversations grouped by time period
-#     - Ability to resume conversations across sessions
-#
-#     SETUP INSTRUCTIONS:
-#     1. When network is available, run: pip install asyncpg
-#     2. Uncomment this decorator and the function
-#     3. Restart the application
-#     """
-#     return get_data_layer()
+@cl.data_layer
+def setup_data_layer() -> object:
+    """Register Chainlit data layer for conversation persistence.
+
+    This enables:
+    - Conversation history saved to PostgreSQL
+    - Sidebar showing past conversations grouped by time period
+    - Ability to resume conversations across sessions
+    """
+    logger.info("setup_data_layer called")
+    layer = get_data_layer()
+    logger.info(f"data_layer returned: {type(layer).__name__}")
+    return layer
 
 
 @cl.on_chat_start

@@ -33,7 +33,7 @@ dependencies = [
     "pyyaml>=6.0",
 
     # UI
-    "chainlit>=1.0.0",
+    "chainlit==2.9.3",
 
     # Observability
     "arize-phoenix[evals]>=4.0.0",

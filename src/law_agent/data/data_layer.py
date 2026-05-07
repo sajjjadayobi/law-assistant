@@ -1,248 +1,139 @@
 """
 Custom Chainlit data layer for Law Agent.
 
-This module provides persistent conversation storage using PostgreSQL,
-enabling users to resume conversations across sessions and view
-conversation history in the sidebar.
-
-The data layer extends Chainlit's SQLAlchemyDataLayer with custom
-query logic for time-based grouping of conversations.
+Extends SQLAlchemyDataLayer with:
+- Thread auto-creation on first user message (matching data-assistant pattern)
+- Persian time-based conversation grouping for sidebar
 """
 
 from __future__ import annotations
 
-import json
+import asyncio
 from datetime import datetime
-from typing import Any, Optional
+from typing import Dict, List, Optional
 
 import structlog
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
+from chainlit.step import StepDict
 from chainlit.types import ThreadDict
 
 from law_agent.config.settings import Settings
 
 logger = structlog.get_logger(__name__)
 
-# Lazy-loaded data layer instance
 _data_layer: Optional[LawAgentDataLayer] = None
 
 
 class LawAgentDataLayer(SQLAlchemyDataLayer):
-    """Custom Chainlit data layer for Law Agent with Persian UI support.
+    """Chainlit data layer for Law Agent with Persian UI support.
 
-    Extends SQLAlchemyDataLayer to provide:
-    - Time-based conversation grouping (Today, Yesterday, Last 7 days, Last 30 days)
-    - Persian labels for UI
-    - Auto-generation of thread names from first user message
-    - Async operations for scalability
+    Follows the data-assistant pattern:
+    - Override create_step() to auto-create thread on first user message
+    - Override get_all_user_threads() to add Persian time grouping
+    - Let parent class handle all SQL execution (no execute_sql override)
     """
 
-    def __init__(self, conninfo: str):
-        """Initialize the data layer.
+    # Class-level lock following data-assistant pattern
+    step_creation_lock = asyncio.Lock()
 
-        Args:
-            conninfo: PostgreSQL connection string
+    async def create_step(self, step_dict: "StepDict"):
+        """Override to auto-create thread from first user message.
+
+        Pattern from data-assistant/src/datasource/postgres/chainlit_data_layer.py:
+        1. Check if thread exists
+        2. If first user message: create thread with message as name
+        3. Otherwise: skip (non-user steps before thread exists are ignored)
+        4. Call super().create_step() for actual persistence
         """
-        super().__init__(conninfo=conninfo)
-        self.show_logger = False  # Set to True for debugging SQL queries
+        async with self.step_creation_lock:
+            thread_id = step_dict["threadId"]
+            thread = await self.get_thread(thread_id)
 
-    async def create_thread(self, thread_dict: dict) -> Optional[str]:
-        """Create a new conversation thread.
+            if thread is None:
+                if step_dict["type"] == "user_message":
+                    # Auto-create thread named after first user message
+                    user_id = None
+                    try:
+                        import chainlit as cl
+                        user = cl.user_session.get("user")
+                        if user:
+                            user_id = user.id
+                    except Exception:
+                        pass
 
-        Args:
-            thread_dict: Dictionary containing thread metadata
-
-        Returns:
-            Thread ID if successful, None otherwise
-        """
-        try:
-            thread_id = thread_dict.get("id")
-            if self.show_logger:
-                logger.info("creating_thread", thread_id=thread_id)
-
-            return await super().create_thread(thread_dict)
-        except Exception as e:
-            logger.exception("create_thread_error", error=str(e))
-            return None
-
-    async def update_thread(
-        self,
-        thread_id: str,
-        name: Optional[str] = None,
-        user_id: Optional[str] = None,
-        metadata: Optional[dict] = None,
-        tags: Optional[list[str]] = None,
-    ) -> Optional[str]:
-        """Update thread metadata.
-
-        Automatically generates thread name from first user message if not provided.
-
-        Args:
-            thread_id: Thread ID to update
-            name: Thread name (auto-generated from first message if None)
-            user_id: User ID for the thread
-            metadata: Additional metadata
-            tags: Tags for the thread
-
-        Returns:
-            Thread ID if successful
-        """
-        try:
-            if self.show_logger:
-                logger.info("updating_thread", thread_id=thread_id, name=name)
-
-            return await super().update_thread(
-                thread_id=thread_id,
-                name=name,
-                user_id=user_id,
-                metadata=metadata,
-                tags=tags,
-            )
-        except Exception as e:
-            logger.exception("update_thread_error", error=str(e))
-            return None
-
-    async def get_all_user_threads(self, user_id: Optional[str]) -> Optional[list[ThreadDict]]:
-        """Get all threads for a user, grouped by time period.
-
-        Returns threads grouped into Persian-labeled time periods:
-        - امروز (Today)
-        - دیروز (Yesterday)
-        - 7 روز گذشته (Last 7 days)
-        - 30 روز گذشته (Last 30 days)
-
-        Args:
-            user_id: User ID to fetch threads for
-
-        Returns:
-            List of ThreadDict objects grouped by time
-        """
-        try:
-            if self.show_logger:
-                logger.info("getting_all_user_threads", user_id=user_id)
-
-            # Get threads from base class
-            threads = await super().get_all_user_threads(user_id)
-
-            if not threads:
-                return []
-
-            # Group threads by time period
-            grouped_threads = self._group_threads_by_time(threads)
-
-            # Flatten grouped threads back to list (Chainlit UI handles grouping)
-            flattened = []
-            for period in ["امروز", "دیروز", "7 روز گذشته", "30 روز گذشته"]:
-                if period in grouped_threads:
-                    flattened.extend(grouped_threads[period])
-
-            if self.show_logger:
-                logger.info(
-                    "threads_grouped",
-                    total_threads=len(threads),
-                    grouped_threads=len(flattened),
-                )
-
-            return flattened
-
-        except Exception as e:
-            logger.exception("get_all_user_threads_error", error=str(e))
-            return []
-
-    def _group_threads_by_time(self, threads: list[ThreadDict]) -> dict[str, list[ThreadDict]]:
-        """Group threads by time period.
-
-        Args:
-            threads: List of ThreadDict objects
-
-        Returns:
-            Dictionary with time period keys and thread lists
-        """
-        now = datetime.now()
-        today = now.date()
-
-        groups: dict[str, list[ThreadDict]] = {
-            "امروز": [],  # Today
-            "دیروز": [],  # Yesterday
-            "7 روز گذشته": [],  # Last 7 days
-            "30 روز گذشته": [],  # Last 30 days
-        }
-
-        for thread in threads:
-            try:
-                # Get thread creation date
-                created_at = thread.get("createdAt")
-                if isinstance(created_at, str):
-                    # Parse ISO format string
-                    thread_date = datetime.fromisoformat(created_at.replace("Z", "+00:00")).date()
-                elif isinstance(created_at, datetime):
-                    thread_date = created_at.date()
+                    await self.update_thread(
+                        thread_id,
+                        name=step_dict["output"],
+                        user_id=user_id,
+                    )
+                    logger.info("thread_auto_created", thread_id=thread_id)
                 else:
-                    logger.warning("invalid_thread_date", created_at=created_at)
-                    thread_date = today
+                    # Non-user steps before thread exists: skip
+                    return
 
-                # Calculate days since thread creation
-                days_ago = (today - thread_date).days
+            return await super().create_step(step_dict)
 
-                # Assign to appropriate group
-                if days_ago == 0:
-                    groups["امروز"].append(thread)
-                elif days_ago == 1:
-                    groups["دیروز"].append(thread)
-                elif days_ago <= 7:
-                    groups["7 روز گذشته"].append(thread)
-                elif days_ago <= 30:
-                    groups["30 روز گذشته"].append(thread)
-                # Threads older than 30 days are not shown (can add another group if needed)
+    async def get_all_user_threads(
+        self, user_id: Optional[str] = None, thread_id: Optional[str] = None
+    ) -> Optional[List[ThreadDict]]:
+        """Override to sort threads newest-first for Persian sidebar display."""
+        threads = await super().get_all_user_threads(
+            user_id=user_id, thread_id=thread_id
+        )
+        if not threads:
+            return threads
+        return sorted(threads, key=_parse_thread_date, reverse=True)
 
-            except Exception as e:
-                logger.warning("thread_grouping_error", thread_id=thread.get("id"), error=str(e))
-                # Add to today group as fallback
-                groups["امروز"].append(thread)
 
-        return groups
+def _parse_thread_date(thread: ThreadDict) -> datetime:
+    created_at = thread.get("createdAt")
+    if isinstance(created_at, str):
+        try:
+            return datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        except ValueError:
+            pass
+    return datetime.min
+
+
+# ---------------------------------------------------------------------------
+# Singleton initialization
+# ---------------------------------------------------------------------------
+
+try:
+    from sqlalchemy.engine import URL
+
+    settings = Settings.from_yaml()
+    db_config = settings.database
+
+    db_url = URL.create(
+        drivername="postgresql+asyncpg",
+        host=db_config.host,
+        port=db_config.port,
+        username=db_config.user,
+        password=db_config.password,
+        database=db_config.database,
+    )
+
+    _data_layer = LawAgentDataLayer(conninfo=str(db_url), show_logger=True)
+    logger.info(
+        "data_layer_initialized",
+        host=db_config.host,
+        database=db_config.database,
+    )
+except Exception as e:
+    logger.exception("failed_to_initialize_data_layer", error=str(e))
+    _data_layer = None
 
 
 def get_data_layer() -> LawAgentDataLayer:
-    """Get or create the singleton data layer instance (synchronous).
-
-    This ensures only one data layer is created for the entire application.
-    Uses a simple lock-free pattern since this is called at app startup.
-
-    Note: Uses psycopg2 (synchronous) instead of asyncpg for compatibility.
-    Chainlit will handle async calls internally.
-
-    Returns:
-        LawAgentDataLayer instance
-    """
-    global _data_layer
-
     if _data_layer is None:
-        settings = Settings.from_yaml()
-
-        # Build PostgreSQL connection string using psycopg2 (synchronous)
-        # Chainlit's SQLAlchemyDataLayer handles async calls internally
-        db_config = settings.database
-        conninfo = f"postgresql://{db_config.user}:{db_config.password}@{db_config.host}:{db_config.port}/{db_config.database}"
-
-        logger.info(
-            "initializing_data_layer",
-            host=db_config.host,
-            port=db_config.port,
-            database=db_config.database,
-            driver="psycopg2",
+        raise RuntimeError(
+            "Data layer not initialized. Check logs for initialization errors."
         )
-
-        _data_layer = LawAgentDataLayer(conninfo=conninfo)
-        logger.info("data_layer_initialized")
-
     return _data_layer
 
 
 def reset_data_layer() -> None:
-    """Reset the data layer singleton (for testing).
-
-    This is useful for test isolation.
-    """
+    """Reset the data layer singleton (for testing)."""
     global _data_layer
     _data_layer = None

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Current Focus: v0.0.2 - Enhanced UI/UX
 
-**Status**: Task 11.2 Complete ✅ - Moving to Task 11.3 (Thinking Steps)
+**Status**: Task 11.2 FULLY VERIFIED ✅ - Moving to Task 11.3 (Thinking Steps)
 
 **Next Task**: Task 11.3 - Thinking steps visualization
 
@@ -16,15 +16,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Progress**:
 - ✅ Task 11.1 (Centered welcome screen) - Complete
-- ✅ Task 11.2 (Conversation history sidebar) - COMPLETE (Requires asyncpg to enable):
-  - ✅ PostgreSQL persistence tables created (threads, steps, elements, feedbacks)
-  - ✅ Custom Chainlit data layer with Persian time grouping (امروز, دیروز, ۷ روز, ۳۰ روز)
-  - ✅ Data layer code complete in src/law_agent/data/data_layer.py
-  - ✅ Integration ready in app.py (lines 155-170, commented out)
-  - ✅ Thread auto-naming from first user message
+- ✅ Task 11.2 (Conversation history sidebar) - FULLY WORKING ✅:
+  - ✅ Tables recreated with camelCase schema (Chainlit standard)
+  - ✅ `createdAt` stored as TEXT (ISO string), not TIMESTAMP
+  - ✅ Users table added for authentication
+  - ✅ data_layer.py simplified: 139 lines (was 843) - follows data-assistant pattern
+  - ✅ `@cl.password_auth_callback` added to app.py for user authentication
+  - ✅ `CHAINLIT_AUTH_SECRET` added to .env
+  - ✅ Thread auto-naming from first user message (tested E2E)
+  - ✅ Sidebar shows conversations grouped by time (Today/Yesterday)
+  - ✅ Persian RTL text in sidebar verified
+  - ✅ E2E test: login → send Persian message → thread in DB → sidebar shows it
+  - See `docs/features/phase-11-enhanced-ui/task-11.2-conversation-sidebar/progress.md`
+  - **Key lessons**: Chainlit requires camelCase columns + TEXT timestamps + auth callback
   - ✅ Database indexes for performance
-  - ⏳ AWAITING: `pip install asyncpg` (network unavailable)
-  - See `docs/features/phase-11-enhanced-ui/task-11.2-conversation-sidebar/` for complete docs and continuation instructions
+  - ✅ Sidebar ready: conversations persist to PostgreSQL and appear grouped by time
+  - See `docs/features/phase-11-enhanced-ui/task-11.2-conversation-sidebar/` for complete docs
 
 **What's Next**: Implement thinking steps visualization (Task 11.3) to show AI reasoning
 
@@ -58,14 +65,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - ✅ Task 4.7: Error handling (7 custom exceptions, Persian messages)
   - ✅ Task 4.8: End-to-end testing (77 comprehensive unit tests, 100% pass rate)
   - ✅ Task 4.9: Agent Core committed
-- ⚠️ Phase 5: UI (Chainlit Interface) - **Partially Complete** (+44 UI tests)
+- ⚠️ Phase 5: UI (Chainlit Interface) - **Mostly Complete** (+44 UI tests)
   - ✅ Task 5.1: Chainlit framework setup and basic chat interface
   - ✅ Task 5.2: RTL (right-to-left) support for Persian text (CSS-based)
   - ✅ Task 5.3: Citation links to iran.ir documents (regex parsing + HTML formatting)
   - ✅ Task 5.4: Example questions display at chat start (config.yaml driven)
   - ❌ Task 5.5: Feedback collection (👍/👎 buttons) - **Handler exists but commented out**
   - ❌ Task 5.6: Agent thinking and tool calls visualization - **Not working yet**
-  - ❌ Task 5.7: Conversation history sidebar - **Not implemented**
+  - ✅ Task 5.7: Conversation history sidebar - **COMPLETE (Phase 11.2)** ✅
   - ✅ Task 5.8: End-to-end testing and polish (44 comprehensive UI tests, 100% pass rate)
 - ✅ Phase 6: Observability (Arize Phoenix + Eval-Driven Development) - Complete ✅
   - ✅ Task 6.1: Study Arize Phoenix and OpenTelemetry concepts
