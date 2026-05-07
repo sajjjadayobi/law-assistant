@@ -86,7 +86,7 @@ memory/
 scratchpad*.md
 
 # Chainlit & UI artifacts
-.chainlit/
+.chainlit/*.db
 .files/
 public/
 chainlit.md

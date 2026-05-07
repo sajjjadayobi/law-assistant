@@ -101,7 +101,7 @@ name = "Law Assistant"
 
 # Force a specific language for all users (e.g., "en-US", "he-IL", "fr-FR")
 # If not set, the browser's language will be used
-# language = "en-US"
+language = "fa-IR"
 
 # layout = "wide"
 
