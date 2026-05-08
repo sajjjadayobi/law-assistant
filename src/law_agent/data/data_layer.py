@@ -73,6 +73,19 @@ class LawAgentDataLayer(SQLAlchemyDataLayer):
 
             return await super().create_step(step_dict)
 
+    async def upsert_feedback(self, feedback) -> str:
+        """Persist feedback to DB and log it. Follows data-assistant pattern."""
+        label = "👍 مفید" if feedback.value == 1 else "👎 نامفید"
+        logger.info(
+            "feedback_persisted",
+            thread_id=getattr(feedback, "threadId", None),
+            for_id=feedback.forId,
+            value=feedback.value,
+            label=label,
+            comment=feedback.comment,
+        )
+        return await super().upsert_feedback(feedback)
+
     async def get_all_user_threads(
         self, user_id: Optional[str] = None, thread_id: Optional[str] = None
     ) -> Optional[List[ThreadDict]]:

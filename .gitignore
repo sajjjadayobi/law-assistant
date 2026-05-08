@@ -65,7 +65,6 @@ logs/
 
 # Observability & traces
 traces/
-observability/
 *.trace
 
 # Migration (one-time use, database already migrated)

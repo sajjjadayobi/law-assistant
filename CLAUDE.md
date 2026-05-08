@@ -17,6 +17,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Progress**:
 - ✅ Task 11.1 (Centered welcome screen) - Complete
 - ✅ Task 11.2 (Conversation history sidebar) - Complete
+- ✅ Task 11.5 (Feedback 👍/👎) - **Complete**:
+  - DB: `upsert_feedback` override in data layer → `feedbacks` table
+  - Phoenix: `POST /v1/span_annotations` with span_id from `_session_span_ids` dict
+  - `user_feedback μ 1.00` appears in Phoenix dashboard header
+  - Dialog flow: click button → "ثبت نظر" dialog → submits feedback
+  - Fix: `logging.info("%s", val)` not `logging.info("msg", key=val)` (Python compat)
+  - See `docs/features/phase-11-enhanced-ui/task-11.5-feedback/`
 - ✅ Task 11.3 (Thinking steps + UI polish) - **Complete**:
   - Steps appear BEFORE the final answer (`cl.Message().send()` moved after `agent.run()`)
   - `agent.run()` → `agent.iter()` to access `CallToolsNode`

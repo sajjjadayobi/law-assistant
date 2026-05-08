@@ -16,6 +16,7 @@ from typing import Optional
 import chainlit as cl
 import structlog
 import yaml
+from opentelemetry import trace as otel_trace
 
 from law_agent.agent import ConversationManager, LawAgent
 from law_agent.config.settings import Settings, StarterQuestion
@@ -48,6 +49,8 @@ _conversation_managers: dict[str, ConversationManager] = {}
 _citation_formatter: CitationFormatter | None = None
 _step_manager: ToolStepManager | None = None
 _settings: Settings | None = None
+# Maps session_id → last OTel span_id hex string (for Phoenix feedback annotation)
+_session_span_ids: dict[str, str] = {}
 
 
 def get_agent() -> LawAgent:
@@ -225,15 +228,22 @@ async def main(message: cl.Message) -> None:
         # Get conversation history from state
         history = conv_state.message_history
 
-        # Run agent — thinking and tool steps appear during execution
-        # The final cl.Message is sent AFTER, so steps appear before the answer
+        # Run agent inside an explicit OTel span so we can capture the span_id
+        # for Phoenix feedback annotations later.
         logger.info("calling_agent", session_id=session_id)
+        _tracer = otel_trace.get_tracer("law-agent-ui")
+        with _tracer.start_as_current_span("user_turn") as _span:
+            _ctx = _span.get_span_context()
+            if _ctx.is_valid:
+                _span_hex = format(_ctx.span_id, "016x")
+                _session_span_ids[session_id] = _span_hex
+                logger.info("span_id_stored", session_id=session_id, span_id=_span_hex)
 
-        response_text, updated_history = await agent.run(
-            user_query=user_query,
-            conversation_history=history,
-            conversation_id=session_id,
-        )
+            response_text, updated_history = await agent.run(
+                user_query=user_query,
+                conversation_history=history,
+                conversation_id=session_id,
+            )
 
         # Update conversation state
         conv_state.message_history = updated_history
@@ -289,40 +299,46 @@ async def end() -> None:
     shutdown_tracing()
 
 
-# TODO: Implement feedback handler when Chainlit feedback API is available
-# Currently disabled because it was conflicting with message handler
-# @cl.on_feedback
-# async def handle_feedback(feedback: cl.Feedback) -> None:
-#     """Handle user feedback (thumbs up/down)."""
-#     from law_agent.observability import log_feedback_local, send_feedback_to_phoenix
-#
-#     session_id = cl.user_session.get("id") or "unknown"  # type: ignore
-#     feedback_type = "positive" if feedback.score > 0 else "negative"
-#     comment = getattr(feedback, "comment", None)
-#
-#     logger.info(
-#         "feedback_received",
-#         session_id=session_id,
-#         feedback_type=feedback_type,
-#         comment=comment,
-#     )
-#
-#     # Send to Phoenix
-#     success = await send_feedback_to_phoenix(
-#         trace_id=session_id,
-#         feedback_type=feedback_type,
-#         comment=comment,
-#         tags=["chainlit_ui"],
-#     )
-#
-#     if not success:
-#         # Fallback to local logging
-#         log_feedback_local(
-#             trace_id=session_id,
-#             feedback_type=feedback_type,
-#             comment=comment,
-#             tags=["chainlit_ui"],
-#         )
+@cl.on_feedback
+async def handle_feedback(feedback: cl.Feedback) -> None:
+    """Handle user feedback (👍/👎).
+
+    DB persistence is handled automatically by the data layer's upsert_feedback.
+    This handler adds logging and optional Phoenix integration.
+    """
+    session_id = cl.user_session.get("id") or "unknown"  # type: ignore
+    is_positive = feedback.value == 1
+    label = "مفید بود 👍" if is_positive else "مفید نبود 👎"
+
+    logger.info(
+        "feedback_received",
+        session_id=session_id,
+        value=feedback.value,
+        label=label,
+        for_id=feedback.forId,
+        thread_id=getattr(feedback, "threadId", None),
+        comment=feedback.comment,
+    )
+
+    # Send to Phoenix as a span annotation (best-effort — Phoenix may be offline)
+    span_id: str | None = _session_span_ids.get(session_id)
+    logger.info("feedback_phoenix_attempt", session_id=session_id, span_id=span_id)
+    if span_id:
+        try:
+            from law_agent.observability.feedback import get_feedback_client
+            client = get_feedback_client()
+            if client:
+                sent = await client.send_feedback(
+                    span_id=span_id,
+                    feedback_type="positive" if is_positive else "negative",
+                    comment=feedback.comment,
+                )
+                if sent:
+                    logger.info("feedback_sent_to_phoenix", span_id=span_id)
+        except Exception as e:
+            logger.debug("feedback_phoenix_unavailable", error=str(e))
+    else:
+        logger.debug("feedback_no_span_id_available")
 
 
 # The app is automatically created by Chainlit when decorators are used
