@@ -1,6 +1,31 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database (shared by app and Phoenix)
+  postgres:
+    image: postgres:15-alpine
+    container_name: law-agent-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: law_agent
+      POSTGRES_INITDB_ARGS: "-c shared_preload_libraries=pg_stat_statements"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./docs/architecture/migration/schema.sql:/docker-entrypoint-initdb.d/02-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - law-agent-network
+    command: postgres -c log_statement=all
+
   # Phoenix Observability Platform
   phoenix:
     image: arizehq/phoenix:latest
@@ -8,7 +33,7 @@ services:
     ports:
       - "6006:6006"  # UI
       - "4317:4317"  # OTLP gRPC
-      - "9090:9090"  # Prometheus metrics (optional)
+      - "9090:9090"  # Prometheus metrics
     environment:
       PHOENIX_WORKING_DIR: /phoenix-data
       PHOENIX_SQL_DATABASE_URL: postgresql://phoenix:phoenix_password@postgres:5432/phoenix
@@ -28,31 +53,7 @@ services:
     networks:
       - law-agent-network
 
-  # PostgreSQL for Phoenix data storage
-  postgres:
-    image: postgres:15-alpine
-    container_name: law-agent-postgres
-    environment:
-      POSTGRES_DB: law_agent
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_password
-      # Create phoenix database
-      POSTGRES_INITDB_ARGS: >
-        -c shared_preload_libraries=pg_stat_statements
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - law-agent-network
-
-  # Law Agent Application (Chainlit + Agent)
+  # Law Agent Application (Chainlit + PydanticAI Agent)
   app:
     build:
       context: .
@@ -61,50 +62,63 @@ services:
     ports:
       - "8000:8000"  # Chainlit UI
     environment:
-      # Database
-      DATABASE_URL: postgresql://postgres:postgres_password@postgres:5432/law_agent
+      # Database Configuration
       DB_USER: postgres
       DB_PASSWORD: postgres_password
       DB_HOST: postgres
       DB_PORT: "5432"
       DB_NAME: law_agent
+      DATABASE_URL: postgresql://postgres:postgres_password@postgres:5432/law_agent
 
-      # LLM API (Model-Agnostic)
+      # Chainlit Configuration
+      CHAINLIT_AUTH_SECRET: ${CHAINLIT_AUTH_SECRET:-dev-secret-key-change-in-production}
+      CHAINLIT_HOST: 0.0.0.0
+      CHAINLIT_PORT: 8000
+
+      # LLM API Configuration (model-agnostic via LiteLLM)
+      LLM_BASE_URL: ${LLM_BASE_URL}
       LLM_AUTH_TOKEN: ${LLM_AUTH_TOKEN}
-      LLM_BASE_URL: ${LLM_BASE_URL:-}
-      # Backwards compatibility
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
-      # OpenTelemetry
+      # OpenTelemetry & Phoenix Integration
       OTEL_EXPORTER_OTLP_ENDPOINT: http://phoenix:4317
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
       OTEL_SERVICE_NAME: law-agent
-      OTEL_RESOURCE_ATTRIBUTES: service.name=law-agent,service.version=1.0.0
+      OTEL_RESOURCE_ATTRIBUTES: service.name=law-agent,service.version=0.0.2
 
-      # Application
-      LOG_LEVEL: INFO
-      CHAINLIT_HOST: 0.0.0.0
-      CHAINLIT_PORT: 8000
+      # Logging & Application Configuration
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOGGING_FORMAT: ${LOGGING_FORMAT:-text}
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+
     depends_on:
       postgres:
         condition: service_healthy
       phoenix:
         condition: service_healthy
+
     volumes:
+      # Mount source for live reloading during development
       - ./src:/app/src
       - ./config:/app/config
-      - chainlit_data:/app/.chainlit
+      - ./.chainlit:/app/.chainlit
+      - ./public:/app/public
+      - chainlit_data:/app/.chainlit/data
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
+
     networks:
       - law-agent-network
-    command: python -m chainlit run src/law_agent/ui/app.py --host 0.0.0.0 --port 8000
+
+    stdin_open: true
+    tty: true
 
 volumes:
   postgres_data:
