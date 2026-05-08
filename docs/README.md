@@ -1,262 +1,101 @@
-# Law Agent Documentation
+# Law Agent — Documentation
 
-Welcome to the Law Agent documentation! This directory contains all the documentation you need to understand, build, and maintain the Law Agent system.
+**An AI-powered legal assistant for Iranian law built with PydanticAI, Claude Sonnet, and PostgreSQL.**
 
-## Documentation Structure
+---
+
+## Start Here
+
+New to the project? Read in this order:
+
+1. **[`architecture/design.md`](architecture/design.md)** — Product requirements, document types, agent behavior
+2. **[`architecture/search.md`](architecture/search.md)** — How the agent searches (this file IS the system prompt)
+3. **[`development/workflow.md`](development/workflow.md)** — How to build features: setup → code → test → commit
+4. **[`development/tasks.md`](development/tasks.md)** — What's built, what's pending, key implementation facts
+
+---
+
+## Architecture
+
+| Document | Contents |
+|---|---|
+| [`architecture/design.md`](architecture/design.md) | Functional requirements, document hierarchy, conversation behavior, citation format |
+| [`architecture/search.md`](architecture/search.md) | Agentic search philosophy, 3 core tools, multi-hop patterns, system prompt |
+| [`architecture/database.md`](architecture/database.md) | PostgreSQL schema, `documents` and `relations` tables, FTS configuration |
+| [`architecture/migration/`](architecture/migration/) | Database migration scripts (HTML → clean text), schema SQL |
+
+---
+
+## Development
+
+| Document | Contents |
+|---|---|
+| [`development/workflow.md`](development/workflow.md) | **Full developer guide**: setup, feature process, testing, committing, docs, available skills, critical architecture facts |
+| [`development/tasks.md`](development/tasks.md) | What's built (Phases 0–9, UI v0.0.2), what's pending, key implementation details per feature |
+
+---
+
+## Features
+
+One folder per feature with `plan.md` (design decisions) and `progress.md` (development journal with blockers and solutions).
 
 ```
-docs/
-├── README.md (you are here)
-├── architecture/            # System design and architecture
-│   └── migration/          # Database migration scripts
-├── development/             # Developer guides and workflows
-├── best-practices/          # Engineering best practices
-└── features/                # Feature-specific documentation
+docs/features/
+├── login/                  # @cl.password_auth_callback, JWT sessions
+├── configuration/          # Pydantic Settings, config.yaml, .env secrets
+├── search-tools/           # search_documents, get_document, get_related_documents
+├── agent-core/             # PydanticAI agent, conversation management, citations
+├── ui/                     # Chainlit setup, RTL, citation rendering
+├── observability/          # Arize Phoenix, OpenTelemetry, token tracking
+├── testing-cicd/           # pytest, CI pipeline, pre-commit hooks
+├── deployment/             # Docker Compose, Dockerfile, health checks → DEPLOYMENT.md
+├── performance/            # Indexes, LRU cache, connection pooling → PERFORMANCE.md
+├── conversation-sidebar/   # LawAgentDataLayer, camelCase schema, auth requirement
+├── thinking-steps/         # async cl.Step(), dynamic names, step ordering
+├── feedback/               # @cl.on_feedback, Phoenix span annotations, two-click UI
+└── retry-messages/         # cl.Action retry, session-scoped cleanup, action callback
 ```
 
----
+### Key learnings by feature
 
-## Quick Start
+**`conversation-sidebar/progress.md`** — Chainlit DB schema is camelCase, `createdAt` is TEXT not TIMESTAMP, never override `execute_sql()`
 
-**New to the project?** Start here:
+**`thinking-steps/progress.md`** — `@cl.step` on sync functions doesn't render, `cl.Message().send()` must come after `agent.run()`, `steps` table needs `"defaultOpen"` BOOLEAN column
 
-1. **Read**: [`architecture/design.md`](architecture/design.md) - Complete system design
-2. **Read**: [`architecture/search.md`](architecture/search.md) - Agent search strategy
-3. **Read**: [`../CLAUDE.md`](../CLAUDE.md) - Project overview and guidelines for Claude Code
-4. **Follow**: [`development/workflow.md`](development/workflow.md) - Developer workflow
-5. **Start**: [`development/tasks.md`](development/tasks.md) - Task breakdown
+**`feedback/progress.md`** — Phoenix feedback: `POST /v1/span_annotations` with `span_id`, module-level dict for cross-coroutine session state, start Phoenix before Chainlit
+
+**`retry-messages/progress.md`** — `cl.user_session` for per-session action list, `action.forId` to remove error message, `@cl.action_callback` re-calls `main()`
 
 ---
 
-## Documentation Index
+## Best Practices
 
-### 📚 Architecture
-
-Core system design and technical decisions.
-
-- **[`architecture/design.md`](architecture/design.md)** - Complete functional requirements and technical design
-  - Product requirements
-  - Agentic search philosophy
-  - Document hierarchy and schema
-  - Agent behavior and conversation flow
-  - UI requirements
-
-- **[`architecture/search.md`](architecture/search.md)** - Agent search strategy and system prompt
-  - Agentic vs algorithmic search
-  - Three core tools
-  - Multi-hop search patterns
-  - **Important**: This becomes the agent's system prompt
-
-- **[`architecture/database.md`](architecture/database.md)** - Database schema and structure
-  - PostgreSQL schema documentation
-  - Documents and relations tables
-  - Full-text search configuration
-  - DAG structure and relationships
-
-- **[`architecture/migration/`](architecture/migration/)** - Database migration
-  - Migration scripts (HTML → clean text)
-  - README with migration instructions
-  - Database schema SQL
+| Document | Contents |
+|---|---|
+| [`best-practices/agent-engineering.md`](best-practices/agent-engineering.md) | Multi-context window workflows, progressive disclosure, state management |
+| [`best-practices/evaluation.md`](best-practices/evaluation.md) | Eval-driven development, golden sets, LLM-as-judge |
 
 ---
 
-### 💻 Development
+## Deployment & Performance
 
-Guides for building and contributing to the project.
-
-- **[`development/workflow.md`](development/workflow.md)** - Developer workflow guide
-  - **Plan, Build, Document, Learn** philosophy
-  - How to start a task (plan.md and progress.md)
-  - Testing, committing, and code review
-  - Logging and debugging
-  - Engineering principles from Accelerate
-
-- **[`development/tasks.md`](development/tasks.md)** - Hierarchical task breakdown
-  - 9 phases from onboarding to deployment
-  - ~70 tasks with Definition of Done
-  - Dependencies and success criteria
-  - Designed for junior developers
-
-- **[`development/v0.0.2-tasks.md`](development/v0.0.2-tasks.md)** - Phase 11 (Enhanced UI/UX) detailed guide
-  - ✅ Task 11.1: Centered welcome screen
-  - ✅ Task 11.2: Conversation history sidebar (auth + Persian UI)
-  - 📋 Task 11.3: Thinking steps visualization ← **current**
-  - Exact code examples and file references for each task
-  - Key learnings from completed tasks
-
-**Also see**: [`../CLAUDE.md`](../CLAUDE.md) in the project root - Instructions for Claude Code with project overview, tech stack, and development patterns.
+- **[`features/deployment/DEPLOYMENT.md`](features/deployment/DEPLOYMENT.md)** — Full production deployment guide: Docker Compose, environment setup, health checks, monitoring
+- **[`features/performance/PERFORMANCE.md`](features/performance/PERFORMANCE.md)** — Performance benchmarks, database indexes, caching strategy, load test results
 
 ---
 
-### ✨ Best Practices
+## Technology Stack
 
-Proven patterns and practices for building AI agents and robust systems.
-
-- **[`best-practices/agent-engineering.md`](best-practices/agent-engineering.md)** - Agent engineering patterns
-  - Multi-context window workflows
-  - Progressive disclosure
-  - Trust and transparency
-  - Verification strategies
-  - State management
-
-- **[`best-practices/evaluation.md`](best-practices/evaluation.md)** - Evaluation methodology
-  - Eval-driven development
-  - Building golden sets
-  - LLM-as-judge patterns
-  - Metrics and grading
-  - Error analysis
-
----
-
-### 🎯 Features
-
-Feature-specific documentation created during development.
-
-**Location**: `features/`
-
-Each feature has its own directory with:
-- `plan.md` - Design decisions, alternatives, success criteria
-- `progress.md` - Development journal with learnings and blockers
-
-**Phase 11 features (current work)**:
-```
-features/phase-11-enhanced-ui/
-├── task-11.2-conversation-sidebar/
-│   ├── plan.md
-│   ├── progress.md          ← key learnings on Chainlit DB schema
-│   └── screenshots/         ← proof screenshots (8 + 9 show Persian UI)
-└── (task-11.3 coming next)
-```
-
-**Key learnings in `task-11.2-conversation-sidebar/progress.md`**:
-- Chainlit requires camelCase columns + TEXT timestamps (not TIMESTAMP)
-- Auth callback + JWT secret needed for per-user history
-- Never override `execute_sql()` — parent handles it
-
-See [`development/workflow.md`](development/workflow.md) for how to create feature documentation.
-
----
-
-## How to Use This Documentation
-
-### As a New Developer
-
-1. **Onboarding** (Day 1-2):
-   - Read `architecture/design.md` to understand the system
-   - Read `architecture/search.md` to understand the core innovation
-   - Read `../CLAUDE.md` for project context and guidelines
-   - Follow onboarding tasks in `development/tasks.md` (Phase 0)
-
-2. **Before Building** (Every Feature):
-   - Read `development/workflow.md` for the development process
-   - Check `development/tasks.md` for task details and Definition of Done
-   - Review `architecture/` docs for relevant design decisions
-   - Create `features/{feature-name}/plan.md` before coding
-
-3. **While Building** (Continuously):
-   - Follow workflow in `development/workflow.md`
-   - Update `features/{feature-name}/progress.md` as you work
-   - Reference `best-practices/` for patterns and approaches
-   - Check `architecture/database.md` for schema details
-
-4. **When Stuck**:
-   - Check `features/` for similar features (read other progress.md files)
-   - Review relevant sections in `architecture/design.md`
-   - Consult `best-practices/` for guidance
-   - Ask questions and document answers in your progress.md
-
-### As a Team Lead
-
-- **Onboarding**: Direct new developers to this README → `development/workflow.md` → `development/tasks.md`
-- **Code Review**: Check that `features/{feature-name}/plan.md` and `progress.md` are committed with code
-- **Knowledge Sharing**: Encourage team to read `features/` documentation from other developers
-- **Process Improvement**: Update `development/workflow.md` based on team feedback
-
-### As a Maintainer
-
-- **Understanding Decisions**: Read feature's `plan.md` to understand why it was built that way
-- **Debugging Issues**: Check feature's `progress.md` for known issues and solutions
-- **Refactoring**: Review original design decisions before making changes
-- **Onboarding New Team Members**: Point them to this documentation structure
-
----
-
-## Documentation Principles
-
-**1. Documentation IS Development**
-- Write plan.md before coding (design decisions)
-- Write progress.md while coding (living journal)
-- Commit documentation with code (they are one)
-
-**2. Capture WHY, Not Just WHAT**
-- Design decisions include alternatives and trade-offs
-- Progress logs explain reasoning in the moment
-- Blockers include attempted solutions and lessons learned
-
-**3. Write for Future Developers**
-- Assume they don't know the context
-- Explain terminology and concepts
-- Include examples and references
-- Make it easy to find related information
-
-**4. Keep It Living**
-- Update docs as system evolves
-- Mark outdated information
-- Add new patterns as discovered
-- Refine based on feedback
-
----
-
-## Contributing to Documentation
-
-### Adding New Documentation
-
-1. **Architecture docs**: For system-wide design changes, update `architecture/`
-2. **Workflow changes**: Update `development/workflow.md`
-3. **Task breakdown**: Update `development/tasks.md`
-4. **New patterns**: Add to `best-practices/`
-5. **Feature docs**: Create in `features/{feature-name}/`
-
-### Documentation Style Guide
-
-- **Use Markdown** for all documentation
-- **Use descriptive headers** (H2 `##` for main sections, H3 `###` for subsections)
-- **Use code blocks** with language tags for code examples
-- **Use checklists** for success criteria and verification steps
-- **Use bold** for important concepts
-- **Use links** to reference other docs (relative paths)
-- **Use examples** to illustrate concepts
-- **Keep it concise** but comprehensive
-
-### When to Update Documentation
-
-- **Before starting**: Create plan.md
-- **While coding**: Update progress.md continuously
-- **After completion**: Write final summary in progress.md
-- **When refactoring**: Update architecture docs if design changes
-- **When discovering patterns**: Add to best-practices/
-- **When process improves**: Update workflow.md
-
----
-
-## Questions?
-
-- **Architecture questions**: Check `architecture/design.md` and `architecture/search.md`
-- **Workflow questions**: Check `development/workflow.md`
-- **Task questions**: Check `development/tasks.md`
-- **Pattern questions**: Check `best-practices/`
-- **Feature questions**: Check `features/{feature-name}/plan.md` and `progress.md`
-
-**Still stuck?** Ask your team lead or document your question in your progress.md as you find the answer - future developers will thank you!
-
----
-
-## Documentation Maintenance
-
-This documentation structure is maintained by the development team. If you find:
-- **Outdated information**: Update it and commit
-- **Missing information**: Add it and commit
-- **Unclear explanations**: Improve them and commit
-- **Broken links**: Fix them and commit
-
-Documentation is code. Treat it with the same care.
+| Layer | Technology |
+|---|---|
+| Agent | PydanticAI |
+| LLM | Claude Sonnet via LiteLLM proxy |
+| Database | PostgreSQL 14+ with `persian_custom` FTS |
+| ORM | SQLAlchemy 2.0 async |
+| UI | Chainlit 2.11 |
+| Observability | Arize Phoenix (self-hosted) |
+| Config | Pydantic Settings + YAML |
+| Logging | structlog |
+| Testing | pytest + pytest-asyncio |
+| Quality | Black, Ruff, mypy |
+| Deployment | Docker Compose |
