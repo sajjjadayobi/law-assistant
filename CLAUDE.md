@@ -17,6 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Progress**:
 - ✅ Task 11.1 (Centered welcome screen) - Complete
 - ✅ Task 11.2 (Conversation history sidebar) - Complete
+- ✅ Tests (session): 306 passing (was 236) — +70 new tests covering 11.2/11.3/11.5/citations
 - ✅ Task 11.5 (Feedback 👍/👎) - **Complete**:
   - DB: `upsert_feedback` override in data layer → `feedbacks` table
   - Phoenix: `POST /v1/span_annotations` with span_id from `_session_span_ids` dict

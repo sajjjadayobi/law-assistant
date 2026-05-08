@@ -156,3 +156,14 @@ class CitationFormatter:
         if not nums:
             return True
         return nums == list(range(1, len(nums) + 1))
+
+    def extract_citation_references(self, text: str) -> dict[int, dict[str, str]]:
+        """Return reference details keyed by citation number (legacy API).
+
+        Returns: {1: {"number": "1", "text": "title"}, ...}
+        """
+        citations = self._parse_references(text)
+        return {
+            num: {"number": str(num), "text": c.title or ""}
+            for num, c in citations.items()
+        }
