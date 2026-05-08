@@ -34,9 +34,9 @@ logger = structlog.get_logger(__name__)
 # Initialize observability at startup
 try:
     initialize_tracing()
-    initialize_feedback_client(
-        phoenix_endpoint=os.getenv("PHOENIX_ENDPOINT", "http://localhost:6006")
-    )
+    # Load Phoenix endpoint from config (or PHOENIX_ENDPOINT env var if set)
+    phoenix_endpoint = os.getenv("PHOENIX_ENDPOINT") or None
+    initialize_feedback_client(phoenix_endpoint=phoenix_endpoint)
     logger.info("Observability initialized")
     # Register shutdown hook
     atexit.register(shutdown_tracing)

@@ -70,7 +70,7 @@ def configure_logging(config: LoggingConfig) -> None:
         processors=processors,
         wrapper_class=structlog.make_filtering_bound_logger(log_level),
         context_class=dict,
-        logger_factory=structlog.PrintLoggerFactory(file=_get_output_file(config.file_path)),
+        logger_factory=structlog.PrintLoggerFactory(file=_get_output_file(config)),
         cache_logger_on_first_use=True,
     )
 
@@ -98,26 +98,26 @@ def _add_context_processor(logger: object, name: str, event_dict: dict[str, Any]
     return event_dict
 
 
-def _get_output_file(file_path: str | None) -> Union[TextIO, Any]:
+def _get_output_file(config: LoggingConfig) -> Union[TextIO, Any]:
     """Get file handle for log output with rotation support.
 
     Args:
-        file_path: Path to log file, or None for stderr
+        config: LoggingConfig instance with file_path, max_file_bytes, backup_count
 
     Returns:
         File handle (stderr or rotating file handler)
     """
-    if file_path:
+    if config.file_path:
         # Create directory if it doesn't exist
-        log_dir = Path(file_path).parent
+        log_dir = Path(config.file_path).parent
         log_dir.mkdir(parents=True, exist_ok=True)
 
         # Create rotating file handler for log rotation
-        # Max 10MB per file, keep 5 backup files
+        # Use configured max_bytes and backup_count from LoggingConfig
         handler = RotatingFileHandler(
-            filename=file_path,
-            maxBytes=10 * 1024 * 1024,  # 10MB
-            backupCount=5,  # Keep 5 backup files
+            filename=config.file_path,
+            maxBytes=config.max_file_bytes,
+            backupCount=config.backup_count,
             encoding="utf-8",
         )
         return handler.stream  # Return the stream for structlog

@@ -347,6 +347,39 @@ All checks must pass before committing. The CI pipeline (`.github/workflows/ci.y
 
 ---
 
+## 6b. Configuration Rule: No Hardcoding
+
+**Everything that varies by deployment lives in `config.yaml`.**
+
+This includes:
+- All limits, thresholds, timeouts, and window sizes
+- All URLs (API endpoints, citation bases, observability backends)
+- All feature toggles and debug flags
+- Any value that differs between dev/test/prod
+
+**How to add a new config value:**
+
+1. Add field to `config.yaml` with comments explaining its purpose and range
+2. Add corresponding Pydantic field to the matching `*Config` class in `settings.py`
+3. Import `get_settings()` in your module and load at module level: `_settings = get_settings()`
+4. Reference the value as `_settings.section.field` instead of hardcoding
+
+**Example:**
+```python
+# ❌ WRONG
+max_retries = 3
+timeout_seconds = 30
+
+# ✅ RIGHT
+_settings = get_settings()
+max_retries = _settings.model.retries
+timeout_seconds = _settings.observability.http_timeout
+```
+
+**Why:** Configuration is single-source-of-truth, deployment-agnostic, and auditable in git. Changes don't require code changes or rebuilds.
+
+---
+
 ## 7. Documentation Rules
 
 ### When to write what

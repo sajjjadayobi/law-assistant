@@ -170,7 +170,7 @@ class LawAgent:
                 self._get_document_tool,
                 self._get_related_documents_tool,
             ],
-            retries=1,  # Single retry for transient errors
+            retries=self.settings.model.retries,
         )
 
     @staticmethod
@@ -182,7 +182,9 @@ class LawAgent:
         limit: int = 20,
     ) -> str:
         """Tool: Search documents using full-text search."""
-        limit = min(max(1, limit), 20)
+        # Clamp limit to configured max_results
+        settings = get_settings()
+        limit = min(max(1, limit), settings.search.max_results)
         logger.info("search_documents_tool_called", query=query, tags=tags, doc_types=doc_types, limit=limit)
 
         async with cl.Step(name="در حال جستجو ...", type="retrieval", show_input=False) as step:
@@ -272,7 +274,9 @@ class LawAgent:
         limit: int = 10,
     ) -> str:
         """Tool: Get related documents via citation graph."""
-        limit = min(max(1, limit), 10)
+        # Clamp limit to configured default
+        settings = get_settings()
+        limit = min(max(1, limit), settings.search.related_docs_default_limit)
         logger.info("get_related_documents_tool_called", doc_id=doc_id, relation_types=relation_types, limit=limit)
 
         async with cl.Step(name="در حال جستجوی اسناد مرتبط ...", type="retrieval", show_input=False) as step:

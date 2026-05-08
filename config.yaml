@@ -31,6 +31,10 @@ model:
   # Max: 16000 for safety (model supports more)
   max_tokens: 4000
 
+  # Number of retries for transient errors
+  # Higher = more resilience, but slower failure detection
+  retries: 1
+
 # ============================================================================
 # DATABASE CONFIGURATION
 # ============================================================================
@@ -98,6 +102,34 @@ search:
   # Typical range: 0.2-0.5
   min_relevance_score: 0.3
 
+  # Hard limit on search results (maximum caller can request)
+  # Prevents excessive DB load from misbehaving callers
+  hard_limit: 100
+
+  # Default limit for related documents search
+  # Caller can request different, but clamped to hard_limit
+  related_docs_default_limit: 10
+
+  # Relevance score decrement per result position
+  # Used to rank results by relevance: first = 1.0, then 0.95, 0.90, etc.
+  # Higher = more distinction between results, lower = flatter ranking
+  relevance_score_step: 0.05
+
+  # Maximum tags to include per search result
+  # Reduces token usage by limiting metadata returned to LLM
+  # Typical range: 2-5
+  max_tags_per_result: 3
+
+  # Maximum relations to prefetch when getting document details
+  # Used to determine if a document has related documents worth showing
+  # Higher = better coverage, but slower for docs with many relations
+  relations_prefetch_limit: 1000
+
+  # Relevance score assigned to related documents
+  # Related documents get a fixed high score (assumed relevant via citation)
+  # Typical range: 0.8-0.95
+  related_docs_relevance_score: 0.9
+
 # ============================================================================
 # CONVERSATION CONFIGURATION
 # ============================================================================
@@ -144,6 +176,11 @@ ui:
   # Starter questions are now loaded from: prompts/starters.yaml
   # See that file to customize the starter questions
 
+  # Base URL for citation links in agent responses
+  # Citations appear as [N](base_url/doc_id) markdown links
+  # Change to point to your law portal or documentation service
+  citation_base_url: "https://iran.ir/en/law"
+
 # ============================================================================
 # LOGGING CONFIGURATION
 # ============================================================================
@@ -167,9 +204,36 @@ logging:
   # null/empty = logs to console/stderr only (recommended for Docker)
   # "/var/log/law-agent.log" = write to file with automatic rotation
   #
-  # Log rotation: Automatically rotates at 10MB per file, keeps 5 backups
+  # Log rotation: Automatically rotates when file size exceeds max_file_bytes
+  # keeps backup_count previous files
   # This prevents disk space issues in long-running production deployments
   #
   # Leave null for console-only in development
   # Production: Set via LOGGING_FILE_PATH environment variable if file logging needed
   file_path: null
+
+  # Maximum file size in bytes before rotation
+  # 10485760 = 10 MB (default)
+  # Set lower for frequent rotation, higher for fewer rotations
+  max_file_bytes: 10485760
+
+  # Number of backup log files to keep
+  # When max_file_bytes is exceeded, rename current to .1, .2, etc.
+  # Files beyond this count are deleted
+  backup_count: 5
+
+# ============================================================================
+# OBSERVABILITY CONFIGURATION
+# ============================================================================
+# Tracing and feedback integration with Arize Phoenix
+observability:
+  # Phoenix endpoint for sending feedback and spans
+  # Development: http://localhost:6006 (self-hosted)
+  # Production: Update to your Phoenix deployment URL
+  # Can be overridden via PHOENIX_ENDPOINT environment variable
+  phoenix_endpoint: "http://localhost:6006"
+
+  # HTTP timeout for feedback requests to Phoenix
+  # Higher = more tolerant of slow networks, longer waits on timeouts
+  # Typical range: 3-10 seconds
+  http_timeout: 5.0

@@ -15,6 +15,8 @@ from typing import Any
 
 import httpx
 
+from law_agent.config.settings import get_settings
+
 logger = logging.getLogger(__name__)
 
 _ANNOTATION_NAME = "user_feedback"
@@ -23,9 +25,18 @@ _ANNOTATION_NAME = "user_feedback"
 class PhoenixFeedbackClient:
     """Sends user feedback to Arize Phoenix as span annotations."""
 
-    def __init__(self, phoenix_endpoint: str = "http://localhost:6006"):
+    def __init__(self, phoenix_endpoint: str | None = None):
+        # Use provided endpoint or load from settings
+        if phoenix_endpoint is None:
+            settings = get_settings()
+            phoenix_endpoint = settings.observability.phoenix_endpoint
+            timeout = settings.observability.http_timeout
+        else:
+            settings = get_settings()
+            timeout = settings.observability.http_timeout
+
         self.endpoint = phoenix_endpoint.rstrip("/")
-        self._http = httpx.AsyncClient(timeout=5.0)
+        self._http = httpx.AsyncClient(timeout=timeout)
 
     async def send_feedback(
         self,
@@ -89,8 +100,12 @@ class PhoenixFeedbackClient:
 _feedback_client: PhoenixFeedbackClient | None = None
 
 
-def initialize_feedback_client(phoenix_endpoint: str = "http://localhost:6006") -> None:
+def initialize_feedback_client(phoenix_endpoint: str | None = None) -> None:
     global _feedback_client
+    if phoenix_endpoint is None:
+        settings = get_settings()
+        phoenix_endpoint = settings.observability.phoenix_endpoint
+
     _feedback_client = PhoenixFeedbackClient(phoenix_endpoint)
     logger.info("Phoenix feedback client initialized at %s", phoenix_endpoint)
 

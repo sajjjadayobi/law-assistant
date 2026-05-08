@@ -23,6 +23,7 @@ results in Pydantic models for type safety and JSON serialization.
 import structlog
 from hazm import Normalizer
 
+from law_agent.config.settings import get_settings
 from law_agent.database import queries
 from law_agent.models.document import DocSummary, FullDocument
 
@@ -30,6 +31,9 @@ logger = structlog.get_logger(__name__)
 
 # Persian text normalizer (normalize ك→ک, ي→ی, etc.)
 _normalizer = Normalizer()
+
+# Load settings at module level (cached singleton)
+_settings = get_settings()
 
 
 def search_documents(
@@ -90,8 +94,8 @@ def search_documents(
             limit=limit,
         )
 
-        # Ensure limit is reasonable
-        limit = min(limit, 100)
+        # Ensure limit is reasonable (respect hard limit from config)
+        limit = min(limit, _settings.search.hard_limit)
 
         # Get raw documents from FTS search
         documents = queries.search_documents_fts(normalized_query, limit=limit)
@@ -109,7 +113,8 @@ def search_documents(
 
             # Create DocSummary (calculate relevance score from result position)
             # PostgreSQL FTS returns results already ranked, so we use position as score
-            relevance_score = 1.0 - (len(summaries) * 0.05)  # Decrease by 0.05 per result
+            # Decrement by configured step value per result position
+            relevance_score = 1.0 - (len(summaries) * _settings.search.relevance_score_step)
             relevance_score = max(0.0, min(1.0, relevance_score))  # Clamp to 0-1
 
             date_str = doc.date.isoformat() if doc.date else None
@@ -119,7 +124,7 @@ def search_documents(
                 doc_type=str(doc.doc_type),
                 date=date_str,
                 summary=str(doc.summary or ""),
-                tags=list(doc.tags[:3]) if doc.tags else [],  # First 3 tags only
+                tags=list(doc.tags[:_settings.search.max_tags_per_result]) if doc.tags else [],
                 relevance_score=relevance_score,
             )
             summaries.append(summary)
@@ -184,8 +189,8 @@ def get_document(doc_id: int) -> FullDocument:
             logger.warning("get_document_not_found", doc_id=doc_id)
             raise DocumentNotFoundError(f"Document with ID {doc_id} not found")
 
-        # Count related documents
-        relations = queries.get_relations(doc_id, limit=1000)
+        # Count related documents (prefetch using configured limit)
+        relations = queries.get_relations(doc_id, limit=_settings.search.relations_prefetch_limit)
         relations_count = len(relations)
 
         # Create FullDocument
@@ -267,7 +272,7 @@ def get_related_documents(
                 pass
     """
     try:
-        limit = min(limit, 100)  # Ensure limit is reasonable
+        limit = min(limit, _settings.search.hard_limit)  # Ensure limit is reasonable
 
         logger.info(
             "get_related_documents_called",
@@ -315,8 +320,8 @@ def get_related_documents(
                 doc_type=str(doc.doc_type),
                 date=doc.date.isoformat() if doc.date else None,
                 summary=str(doc.summary or ""),
-                tags=list(doc.tags[:3]) if doc.tags else [],  # First 3 tags
-                relevance_score=0.9,  # Related documents have high relevance
+                tags=list(doc.tags[:_settings.search.max_tags_per_result]) if doc.tags else [],
+                relevance_score=_settings.search.related_docs_relevance_score,
             )
             for doc in related_docs
         ]

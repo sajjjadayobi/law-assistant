@@ -31,6 +31,9 @@ class ModelConfig(BaseModel):
     max_tokens: int = Field(
         default=4000, gt=0, le=16000, description="Maximum tokens for model response"
     )
+    retries: int = Field(
+        default=1, gt=0, le=10, description="Number of retries for transient LLM errors"
+    )
     base_url: str | None = Field(
         default=None, description="Custom LLM API endpoint URL (reads from LLM_BASE_URL env var)"
     )
@@ -85,6 +88,42 @@ class SearchConfig(BaseModel):
         le=1.0,
         description="Minimum relevance score threshold for search results",
     )
+    hard_limit: int = Field(
+        default=100,
+        gt=0,
+        le=1000,
+        description="Hard maximum limit for search results (prevents excessive DB load)",
+    )
+    related_docs_default_limit: int = Field(
+        default=10,
+        gt=0,
+        le=100,
+        description="Default limit for related documents search",
+    )
+    relevance_score_step: float = Field(
+        default=0.05,
+        ge=0.01,
+        le=0.1,
+        description="Score decrement per result position for ranking",
+    )
+    max_tags_per_result: int = Field(
+        default=3,
+        gt=0,
+        le=10,
+        description="Maximum tags to include per search result (reduces token usage)",
+    )
+    relations_prefetch_limit: int = Field(
+        default=1000,
+        gt=0,
+        le=10000,
+        description="Maximum relations to prefetch when getting document details",
+    )
+    related_docs_relevance_score: float = Field(
+        default=0.9,
+        ge=0.0,
+        le=1.0,
+        description="Fixed relevance score for documents related via citations",
+    )
 
 
 class ConversationConfig(BaseModel):
@@ -116,6 +155,10 @@ class UIConfig(BaseModel):
     show_thinking: bool = Field(default=True, description="Show model thinking/reasoning to user")
     show_tool_calls: bool = Field(default=True, description="Show tool calls and their parameters")
     enable_feedback: bool = Field(default=True, description="Enable thumbs up/down feedback")
+    citation_base_url: str = Field(
+        default="https://iran.ir/en/law",
+        description="Base URL for citation links in agent responses",
+    )
     example_questions: list[str] = Field(
         default=[
             "قوانین مرتبط با بیمه را بیان کنید",
@@ -123,6 +166,21 @@ class UIConfig(BaseModel):
             "حقوق و تکالیف کارفرما چیست؟",
         ],
         description="Example questions to show users at startup (legacy)",
+    )
+
+
+class ObservabilityConfig(BaseModel):
+    """Configuration for observability integration (Phoenix tracing/feedback)."""
+
+    phoenix_endpoint: str = Field(
+        default="http://localhost:6006",
+        description="Arize Phoenix endpoint for sending feedback and spans",
+    )
+    http_timeout: float = Field(
+        default=5.0,
+        gt=0,
+        le=60,
+        description="HTTP timeout for requests to observability backend",
     )
 
 
@@ -137,6 +195,17 @@ class LoggingConfig(BaseModel):
     )
     file_path: str | None = Field(
         default=None, description="Path to log file (if None, logs to console only)"
+    )
+    max_file_bytes: int = Field(
+        default=10485760,
+        gt=0,
+        description="Maximum file size in bytes before rotation",
+    )
+    backup_count: int = Field(
+        default=5,
+        gt=0,
+        le=100,
+        description="Number of backup log files to keep",
     )
 
 
@@ -154,6 +223,7 @@ class Settings(BaseSettings):
     search: SearchConfig = Field(default_factory=SearchConfig)
     conversation: ConversationConfig = Field(default_factory=ConversationConfig)
     ui: UIConfig = Field(default_factory=UIConfig)
+    observability: ObservabilityConfig = Field(default_factory=ObservabilityConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
 
     @classmethod

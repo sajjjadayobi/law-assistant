@@ -2,14 +2,21 @@
 Citation parsing and formatting for the UI.
 
 Extracts [1], [2] citation markers from agent responses and converts them
-to markdown links pointing to the real iran.ir document URLs using the
+to markdown links pointing to the real document URLs using the
 doc_id extracted from the reference section.
+
+The citation base URL is configurable in config.yaml (ui.citation_base_url).
 """
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+
+from law_agent.config.settings import get_settings
+
+# Load settings at module level (cached singleton)
+_settings = get_settings()
 
 
 @dataclass
@@ -20,7 +27,7 @@ class Citation:
 
     @property
     def url(self) -> str:
-        base = "https://iran.ir/en/law"
+        base = _settings.ui.citation_base_url
         target = self.doc_id if self.doc_id else str(self.number)
         return f"{base}/{target}"
 
@@ -118,7 +125,8 @@ class CitationFormatter:
         if citation:
             return citation.to_markdown_link()
         # Fallback: link by number even without doc_id
-        return f"[{num}](https://iran.ir/en/law/{num})"
+        base_url = _settings.ui.citation_base_url
+        return f"[{num}]({base_url}/{num})"
 
     def _clean_ref_section(self, section: str) -> str:
         """Render منابع block with markdown links and no raw [doc_id: X] tags."""
