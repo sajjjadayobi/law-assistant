@@ -14,11 +14,11 @@ Project instructions for Claude Code. Read this first, then follow the links.
 - ✅ Full agent stack: search tools, PydanticAI agent, citations, conversation management
 - ✅ PostgreSQL + FTS (47K+ legal documents), Arize Phoenix observability
 - ✅ Chainlit UI: RTL, sidebar, thinking steps, feedback 👍/👎, retry button, copy-to-clipboard
+- ✅ RTL polish (11.11): JS direction detection, blockquote/table logical properties, inline code bidi
 - ✅ Docker Compose deployment, CI pipeline, 288 tests (cleaned up dead code)
 
 ### What's next
 - 📋 Task 11.9: Browser notifications
-- 📋 Task 11.11: RTL polish
 - 📋 Task 11.12: Response streaming
 
 Full task list: `docs/development/tasks.md`

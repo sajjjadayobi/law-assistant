@@ -8,24 +8,18 @@
 }
 
 /* ==================== RTL Support for Persian Text ==================== */
-/* Chainlit 2.11 handles centered welcome and starter buttons natively */
-/* This CSS focuses on Persian text direction and styling enhancements */
 
-/* Auto-detect Persian text and apply RTL direction */
+/* Auto-detect direction for text containers */
 p,
 span,
+li,
 div[class*="message"],
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1, h2, h3, h4, h5, h6 {
     text-align: start;
     direction: auto;
 }
 
-/* Input fields support both RTL and LTR */
+/* Input fields: auto-detect direction */
 input,
 textarea {
     text-align: start;
@@ -38,40 +32,102 @@ code,
 pre,
 .language-sql,
 .language-python,
-.language-json {
+.language-json,
+kbd {
     direction: ltr !important;
     text-align: left !important;
     font-family: 'Courier New', monospace;
+    unicode-bidi: embed;
 }
 
-/* Persian text styling */
-[dir="rtl"] {
+/* Inline code within RTL paragraphs: embed LTR in RTL context */
+p code,
+li code,
+td code,
+span code {
+    unicode-bidi: embed;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Explicit RTL direction (set by JS or [dir] attribute) */
+[dir="rtl"],
+[dir="rtl"] p,
+[dir="rtl"] li {
     direction: rtl;
     text-align: right;
 }
 
-/* Message content right alignment for RTL */
+/* Explicit LTR direction (for English-only content) */
+[dir="ltr"],
+[dir="ltr"] p,
+[dir="ltr"] li {
+    direction: ltr;
+    text-align: left;
+}
+
+/* Code inside explicitly RTL containers stays LTR */
+[dir="rtl"] code,
+[dir="rtl"] pre,
+[dir="ltr"] code,
+[dir="ltr"] pre {
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: embed;
+}
+
+/* ==================== Prose / Markdown RTL ==================== */
+
 .message-content,
 .prose {
     text-align: start;
 }
 
-/* Fix margins for RTL content */
+/* Per-element direction auto-detection */
+.prose p,
+.prose li,
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+    direction: auto;
+    text-align: start;
+}
+
+/* Lists: logical padding adapts to direction */
 .prose ul,
 .prose ol {
     padding-inline-start: 1.5em;
     padding-inline-end: 0;
 }
 
-/* Starter button styling (Chainlit renders them) */
-.cl-starter {
-    min-width: 200px;
-    font-family: 'Vazirmatn', inherit;
+/* Blockquotes: border on inline-start (right for RTL, left for LTR) */
+.prose blockquote {
+    border: none;
+    border-inline-start: 3px solid currentColor;
+    padding-inline-start: 1em;
+    padding-inline-end: 0;
+    margin-inline-start: 0;
+    margin-inline-end: 1em;
+    font-style: normal;
+    opacity: 0.85;
 }
 
-/* Ensure proper spacing in messages */
-.cl-message {
-    margin: 0.5rem 0;
+/* Tables: RTL-aware alignment */
+.prose table {
+    direction: rtl;
+    text-align: start;
+}
+
+.prose th,
+.prose td {
+    text-align: start;
+    direction: auto;
+}
+
+/* ==================== Step / Tool Content Direction ==================== */
+[class*="step"] p,
+[class*="step"] span,
+[class*="step"] li {
+    direction: auto;
+    text-align: start;
 }
 
 /* ==================== Copy Button for Code Blocks ==================== */

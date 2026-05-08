@@ -235,6 +235,14 @@ See `docs/features/retry-messages/`
 - On click: `navigator.clipboard.writeText()` → button shows "✓ کپی شد" for 2s → reverts
 - Button positioned `bottom: 8px; left: 8px` in `public/patch.css` (RTL-friendly, overlays code block corner)
 
+### 11.11 — RTL polish
+- `applyAutoDirection()` in `public/patch.js`: counts Persian `[؀-ۿ]` vs Latin `[a-zA-Z]` chars in `.prose` elements; sets `dir="rtl"` if ratio > 30%, `dir="ltr"` if < 10%, otherwise falls back to CSS `direction: auto`
+- Single consolidated `domObserver` (replaces two separate observers) calls placeholder + copy button + direction functions on every DOM change
+- `public/patch.css`: blockquotes use `border-inline-start` (logical property → right border in RTL, left in LTR); tables get `direction: rtl; text-align: start`; inline code within prose gets `unicode-bidi: embed; display: inline-block` so it stays LTR in RTL paragraphs
+- `[dir="rtl"] code` and `[dir="ltr"] code` rules ensure code blocks are never flipped by direction inheritance
+
+See `docs/features/rtl-polish/`
+
 ---
 
 ## 📋 Pending
@@ -244,7 +252,6 @@ See `docs/features/retry-messages/`
 | Task | Description | Effort |
 |---|---|---|
 | **11.9** | Browser notifications via JS `Notification API` when tab is hidden | ~2h |
-| **11.11** | RTL polish: auto-direction detection, mixed text improvements | ~2h |
 | **11.12** | Response streaming via `agent.iter()` token-by-token | ~3h |
 
 ### Deferred
