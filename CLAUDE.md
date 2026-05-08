@@ -8,13 +8,13 @@ Project instructions for Claude Code. Read this first, then follow the links.
 
 **Version**: v0.0.2 (Enhanced UI — in progress)
 **Branch**: `feature/phase-11-thinking-steps`
-**Tests**: 314 passing — `.venv/bin/python -m pytest tests/ --ignore=tests/integration -q`
+**Tests**: 288 passing (after cleanup) — `.venv/bin/python -m pytest tests/ --ignore=tests/integration -q`
 
 ### What's done
 - ✅ Full agent stack: search tools, PydanticAI agent, citations, conversation management
 - ✅ PostgreSQL + FTS (47K+ legal documents), Arize Phoenix observability
 - ✅ Chainlit UI: RTL, sidebar, thinking steps, feedback 👍/👎, retry button, copy-to-clipboard
-- ✅ Docker Compose deployment, CI pipeline, 314 tests
+- ✅ Docker Compose deployment, CI pipeline, 288 tests (cleaned up dead code)
 
 ### What's next
 - 📋 Task 11.9: Browser notifications

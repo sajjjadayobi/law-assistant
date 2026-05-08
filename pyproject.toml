@@ -23,9 +23,6 @@ dependencies = [
     # LLM integration
     "anthropic>=0.40.0",
 
-    # Retry & resilience
-    "tenacity>=8.2.3",
-
     # Logging
     "structlog>=24.1.0",
 
