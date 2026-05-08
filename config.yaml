@@ -35,6 +35,7 @@ model:
   # Higher = more resilience, but slower failure detection
   retries: 1
 
+
 # ============================================================================
 # DATABASE CONFIGURATION
 # ============================================================================

@@ -1,4 +1,10 @@
-# Phase 6: Observability & Eval-Driven Development - Plan
+# Phase 6 + 11: Observability — Plan (retrospectively updated 2026-05-09)
+
+> **Retrospective note**: This document merges the original Phase 6 plan (written before implementation) with decisions made during Sessions 2–3 (2026-05-08/09). Sections marked `[REVISED]` or `[ADDED]` reflect what was actually built vs. the original design. Sections marked `[DEFERRED]` were planned but not implemented.
+
+---
+
+# Phase 6: Observability & Eval-Driven Development - Original Plan
 
 ## What I'm Building
 
@@ -176,23 +182,107 @@ This transforms the application from a working prototype into a **production-gra
 
 ## Success Criteria
 
-- [ ] Phoenix running in Docker at localhost:6006
-- [ ] Agent instrumented with OpenTelemetry (spans visible in Phoenix UI)
-- [ ] All agent activities traced: search_documents, get_document, get_related_documents, LLM calls
-- [ ] Token usage tracked per tool call
-- [ ] Conversation traces include: user query, tool calls, final response, execution time
-- [ ] Chainlit feedback (👍/👎) sent to Phoenix
-- [ ] Phoenix dashboard created with key metrics (conversations, tokens, cost, feedback)
-- [ ] Error tracking and alerts configured
-- [ ] Golden eval set created (50 QA pairs)
-- [ ] LLM-as-judge evaluator implemented
-- [ ] Eval harness runs 50 test cases in < 2 minutes (cached)
-- [ ] Pass/fail grading implemented (with reasoning)
-- [ ] Error analysis framework documented
-- [ ] All 8 subtasks (6.1-6.8) have implementation + tests
-- [ ] Tests pass: eval grading, trace visibility, feedback integration
-- [ ] Documentation complete: plan.md and progress.md updated
-- [ ] CLAUDE.md updated with Phase 6 completion status
+- [x] Phoenix running locally at localhost:6006 (Docker or native)
+- [x] Agent instrumented with OpenTelemetry (spans visible in Phoenix UI)
+- [x] All agent activities traced: search_documents, get_document, get_related_documents, LLM calls
+- [x] Token usage tracked on CHAIN span (from PydanticAI usage object)
+- [x] Conversation traces include: user query, tool calls, full response, execution time, session ID
+- [x] Chainlit feedback (👍/👎) sent to Phoenix as span annotation + span note
+- [x] Feedback comment stored in Phoenix Notes panel (visible as chat bubble)
+- [x] Tool output shows actual document titles/IDs (not generic counts)
+- [x] get_document output includes full document content for eval review
+- [x] No DB connection spans polluting traces (SQLAlchemy uninstrumented)
+- [x] "law-agent" project used consistently (no "default" project pollution)
+- [x] 10 new unit tests for observability (304 total)
+- [ ] [DEFERRED] Phoenix dashboard with aggregated metrics
+- [ ] [DEFERRED] Error tracking and alerts configured
+- [ ] [DEFERRED] Golden eval set created (50 QA pairs)
+- [ ] [DEFERRED] LLM-as-judge evaluator implemented
+- [ ] [DEFERRED] LLM span cost display (requires knowing LiteLLM proxy pricing)
+
+---
+
+## What Was Actually Built vs. Original Plan `[REVISED]`
+
+### What changed from the plan
+
+**Original plan assumed**:
+- PydanticAI had built-in Phoenix instrumentation (`Agent(instrument=True)`)
+- `openinference-instrumentation-openai` would be used for LLM tracing
+- SQLAlchemy instrumentation would provide useful DB performance data
+- Eval framework (golden set + LLM-as-judge) would be built in same phase
+
+**What actually happened**:
+- `Agent(instrument=True)` does not exist in PydanticAI — instrumentation is manual
+- `openinference-instrumentation-openai 0.1.44` incompatible with `opentelemetry 0.62b1` — switched to `opentelemetry-instrumentation-openai 0.60.0` (Traceloop)
+- SQLAlchemy instrumentation created 800+ useless "connect" spans — explicitly removed AND uninstrumented (Traceloop re-enables it)
+- Eval framework deferred — observability itself took 2 full sessions to get right
+
+### New decisions made in implementation
+
+| Decision | Chosen | Why |
+|---|---|---|
+| Project name | `PHOENIX_PROJECT_NAME=law-agent` env var | Prevents "default" project pollution from Traceloop auto-init |
+| DB instrumentation | Explicitly uninstrument SQLAlchemy after OpenAIInstrumentor | Traceloop re-enables it despite removal from our code |
+| CHAIN span token counts | From PydanticAI `result.usage()` after iter completes | Only way to get total across all LLM calls |
+| Feedback storage | annotation (label+score+explanation+metadata) + note (comment text) | Notes panel is more visible than annotation explanation |
+| Note content | Comment text only, no username/emoji | Keep Notes clean for evaluators |
+| LLM span cost | Not implemented — $0 | Model name (grok-4-1-fast-reasoning) not in Phoenix pricing; LiteLLM proxy pricing unknown |
+| Tool output | Titles/IDs list for search, full content for get_document | Evaluators need to see exactly what the agent retrieved |
+
+### Key technical gotchas discovered `[ADDED]`
+
+1. **`openinference-instrumentation-openai` API break**: `wrap_function_wrapper()` signature changed in `opentelemetry-instrumentation 0.62b1` — the `module` keyword arg no longer accepted. Switch to `opentelemetry-instrumentation-openai 0.60.0` from Traceloop.
+
+2. **Traceloop auto-init**: `OpenAIInstrumentor().instrument()` triggers broader auto-instrumentation including SQLAlchemy. Must set `OTEL_PYTHON_DISABLED_INSTRUMENTATIONS=sqlalchemy,psycopg2` AND call `SQLAlchemyInstrumentor().uninstrument()` after.
+
+3. **Phoenix project routing**: All libraries using `phoenix.otel` default to "default" project unless `PHOENIX_PROJECT_NAME` env var is set before any instrumentation.
+
+4. **`batch=False` for dev**: `SimpleSpanProcessor` (not `BatchSpanProcessor`) needed for immediate span delivery during development. With batch, spans may not appear for 5+ seconds.
+
+5. **OTel span context in asyncio**: `trace.get_current_span()` inside `core.py`'s `run()` correctly returns the `user_turn` span created in `app.py` — asyncio propagates OTel context via `contextvars` automatically.
+
+6. **Phoenix Notes API**: `POST /v1/span_notes` is separate from annotations. Allows multiple notes per span, shown as chat bubbles. Annotation explanation is stored but hidden in table view — Notes are more user-friendly for human evaluators.
+
+7. **`BoundedAttributes` mutation**: After span ends, `span.set_attribute()` is blocked (`is_recording()` returns False) but `span._attributes["key"] = value` works — `BoundedAttributes` allows direct item assignment. This is how the LLM bridge exporter was prototyped (not shipped).
+
+8. **Phoenix "default" project cannot be deleted**: The API returns 403 or error. Delete its contents via SQLite instead: `DELETE FROM spans WHERE trace_rowid IN (SELECT id FROM traces JOIN projects...)`.
+
+### Span hierarchy reference
+
+```
+user_turn (CHAIN)
+  openinference.span.kind = "CHAIN"
+  input.value              = user question (Persian)
+  output.value             = agent response (Markdown)
+  session.id               = Chainlit session UUID
+  llm.token_count.prompt   = total request tokens across all LLM calls
+  llm.token_count.completion = total response tokens
+  llm.model_name           = model name from config
+  ├── openai.chat (unknown) — LLM planning call
+  │     gen_ai.input.messages  = system prompt + history
+  │     gen_ai.output.messages = tool call requests
+  │     gen_ai.usage.*         = per-call token counts
+  ├── search_documents (TOOL)
+  │     input.value  = {"query": "...", "tags": [], "doc_types": [...], "limit": N}
+  │     output.value = "[101] قانون کار (law)\n[202] آیین‌نامه... (regulation)"
+  ├── openai.chat (unknown) — LLM reasoning over results
+  ├── get_document (TOOL)
+  │     input.value  = {"doc_id": 12345}
+  │     output.value = "[12345] Title\ntype | date\n\nsummary...\n\n---\nfull content..."
+  ├── get_related_documents (TOOL)
+  │     input.value  = {"doc_id": ..., "relation_types": [], "limit": N}
+  │     output.value = "[301] Related Title (regulation)"
+  └── openai.chat (unknown) — final answer generation
+
+Phoenix annotations on user_turn span:
+  user_feedback | HUMAN | thumbs_up/thumbs_down | score 1.0/0.0
+  explanation = user_comment + "[سوال] question + "[پاسخ] response_preview"
+  metadata = {session_id, user, user_comment, question, response_preview}
+
+Phoenix notes on user_turn span:
+  note = user_comment (only the comment text, nothing else)
+```
 
 ## Dependencies
 

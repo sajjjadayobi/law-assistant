@@ -248,6 +248,12 @@ async def main(message: cl.Message) -> None:
                 _session_span_ids[session_id] = _span_hex
                 logger.info("span_id_stored", session_id=session_id, span_id=_span_hex)
 
+            # OpenInference CHAIN span — Phoenix renders this as the top-level
+            # agent turn with input/output/session visible in the trace viewer.
+            _span.set_attribute("openinference.span.kind", "CHAIN")
+            _span.set_attribute("input.value", user_query)
+            _span.set_attribute("session.id", session_id or "unknown")
+
             if settings.ui.enable_streaming:
                 streaming_msg = cl.Message(content="")
                 await streaming_msg.send()  # type: ignore
@@ -267,6 +273,13 @@ async def main(message: cl.Message) -> None:
                     conversation_history=history,
                     conversation_id=session_id,
                 )
+
+            _span.set_attribute("output.value", response_text)
+
+        # Store the last question + response in session so feedback annotations
+        # include the actual message content (reviewers see what was rated).
+        cl.user_session.set("last_user_query", user_query)  # type: ignore
+        cl.user_session.set("last_response_text", response_text)  # type: ignore
 
         # Update conversation state
         conv_state.message_history = updated_history
@@ -354,6 +367,8 @@ async def handle_feedback(feedback: cl.Feedback) -> None:
     This handler adds logging and optional Phoenix integration.
     """
     session_id = cl.user_session.get("id") or "unknown"  # type: ignore
+    user = cl.user_session.get("user")  # type: ignore
+    username: str = getattr(user, "identifier", None) or session_id[:8]
     is_positive = feedback.value == 1
     label = "مفید بود 👍" if is_positive else "مفید نبود 👎"
 
@@ -367,9 +382,25 @@ async def handle_feedback(feedback: cl.Feedback) -> None:
         comment=feedback.comment,
     )
 
+    # Retrieve the last question + response so annotation is self-contained
+    # (reviewer can read what was rated without opening the full trace).
+    last_query: str = cl.user_session.get("last_user_query") or ""  # type: ignore
+    last_response: str = cl.user_session.get("last_response_text") or ""  # type: ignore
+
+    # Build the explanation: user comment first, then message preview for context.
+    explanation_parts: list[str] = []
+    if feedback.comment:
+        explanation_parts.append(feedback.comment)
+    if last_query:
+        explanation_parts.append(f"[سوال] {last_query[:300]}")
+    if last_response:
+        explanation_parts.append(f"[پاسخ] {last_response[:500]}")
+    explanation = "\n\n".join(explanation_parts)
+
     # Send to Phoenix as a span annotation (best-effort — Phoenix may be offline)
     span_id: str | None = _session_span_ids.get(session_id)
-    logger.info("feedback_phoenix_attempt", session_id=session_id, span_id=span_id)
+    logger.info("feedback_phoenix_attempt", session_id=session_id, span_id=span_id,
+                has_comment=bool(feedback.comment), has_query=bool(last_query))
     if span_id:
         try:
             from law_agent.observability.feedback import get_feedback_client
@@ -379,10 +410,26 @@ async def handle_feedback(feedback: cl.Feedback) -> None:
                 sent = await client.send_feedback(
                     span_id=span_id,
                     feedback_type="positive" if is_positive else "negative",
-                    comment=feedback.comment,
+                    comment=explanation,
+                    identifier=username,
+                    metadata={
+                        "session_id": session_id,
+                        "user": username,
+                        "user_comment": feedback.comment or "",
+                        "question": last_query[:500],
+                        "response_preview": last_response[:1000],
+                    },
                 )
                 if sent:
-                    logger.info("feedback_sent_to_phoenix", span_id=span_id)
+                    logger.info("feedback_sent_to_phoenix", span_id=span_id,
+                                explanation_length=len(explanation))
+
+                # Also add a Note so the user's comment appears in the Notes
+                # panel (the prominent "N" panel in Phoenix trace detail view).
+                # Notes support multiple entries and are easier to spot than
+                # the explanation field buried in the annotation table.
+                if feedback.comment:
+                    await client.send_note(span_id=span_id, note=feedback.comment)
         except Exception as e:
             logger.debug("feedback_phoenix_unavailable", error=str(e))
     else:

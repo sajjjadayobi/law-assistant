@@ -1,26 +1,18 @@
 """
-OpenTelemetry tracing setup and utilities for Law Agent.
+OpenTelemetry tracing setup for Law Agent via Arize Phoenix.
 
-Initializes OpenTelemetry SDK with OTLP exporter (Phoenix),
-provides tracer for capturing agent execution traces.
+Uses arize-phoenix-otel for proper Phoenix integration and
+openinference-instrumentation-openai for LLM call tracing with
+full input/output/token-count visibility.
 """
 
 import os
 from contextlib import contextmanager
-from typing import Any, Dict
+from typing import Any
 
 import structlog
-from opentelemetry import trace, metrics
+from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 
 logger = structlog.get_logger(__name__)
 
@@ -28,7 +20,7 @@ logger = structlog.get_logger(__name__)
 class OTelConfig:
     """OpenTelemetry configuration from environment."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.enabled = os.getenv("OTEL_ENABLED", "true").lower() == "true"
         self.endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
         self.service_name = os.getenv("OTEL_SERVICE_NAME", "law-agent")
@@ -37,99 +29,106 @@ class OTelConfig:
 
 
 _tracer_provider: TracerProvider | None = None
-_meter_provider: MeterProvider | None = None
 _config: OTelConfig | None = None
+_initialized: bool = False
 
 
 def initialize_tracing(config: OTelConfig | None = None) -> None:
+    """Initialize Phoenix tracing with OpenInference instrumentation.
+
+    Sets up:
+    - arize-phoenix-otel TracerProvider (exports spans to Phoenix)
+    - OpenAIInstrumentor (captures LLM calls with prompts/responses/token counts)
+    - RequestsInstrumentor (captures outbound HTTP calls)
+
+    SQLAlchemy is intentionally NOT instrumented — DB connection noise
+    pollutes Phoenix and obscures the LLM traces.
     """
-    Initialize OpenTelemetry tracing with OTLP exporter.
+    global _tracer_provider, _config, _initialized
 
-    Args:
-        config: OTelConfig instance. If None, will create from environment.
-
-    Returns:
-        None
-
-    Raises:
-        Exception: If initialization fails
-    """
-    global _tracer_provider, _meter_provider, _config
+    if _initialized:
+        return
 
     _config = config or OTelConfig()
 
     if not _config.enabled:
-        logger.info("OpenTelemetry tracing disabled (OTEL_ENABLED=false)")
+        logger.info("tracing_disabled")
         return
 
     try:
-        # Create resource (describes the service)
-        resource = Resource.create({
-            "service.name": _config.service_name,
-            "service.version": _config.service_version,
-            "deployment.environment": _config.environment,
-        })
+        from opentelemetry.instrumentation.requests import RequestsInstrumentor
+        from phoenix.otel import register
 
-        # Create OTLP span exporter (sends to Phoenix)
-        otlp_exporter = OTLPSpanExporter(
-            endpoint=_config.endpoint,
-            insecure=True,  # Use insecure connection for localhost
+        # Determine the Phoenix collector endpoint.
+        # phoenix.otel.register() infers HTTP vs gRPC from the URL.
+        # Default: HTTP endpoint at 6006 (what Phoenix exposes locally).
+        # If OTEL_EXPORTER_OTLP_ENDPOINT points to 4317 (gRPC), that also works.
+        endpoint = _config.endpoint
+        if endpoint == "http://localhost:4317":
+            # Default gRPC endpoint — prefer Phoenix HTTP endpoint for reliability
+            phoenix_http = os.getenv("PHOENIX_COLLECTOR_ENDPOINT", "http://localhost:6006/v1/traces")
+            endpoint = phoenix_http
+
+        # Force all Phoenix-aware libraries (including Traceloop's auto-init
+        # inside opentelemetry-instrumentation-openai) to use our project name,
+        # not the "default" project. Without this the "default" project keeps
+        # reappearing with unrelated connection spans.
+        os.environ.setdefault("PHOENIX_PROJECT_NAME", _config.service_name)
+
+        _tracer_provider = register(
+            endpoint=endpoint,
+            project_name=_config.service_name,
+            batch=False,  # SimpleSpanProcessor — sends spans immediately (best for dev)
+            verbose=True,
         )
 
-        # Create and set tracer provider
-        _tracer_provider = TracerProvider(resource=resource)
-        _tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
-        trace.set_tracer_provider(_tracer_provider)
-
-        # Create metric exporter and meter provider
-        metric_exporter = OTLPMetricExporter(
-            endpoint=_config.endpoint,
-            insecure=True,
+        # Disable DB instrumentation via env var before any auto-instrumentation
+        # runs. Traceloop's OpenAIInstrumentor triggers OTel auto-instrumentation
+        # that includes SQLAlchemy and psycopg2, creating "connect" spans that
+        # pollute Phoenix with hundreds of useless DB traces.
+        os.environ.setdefault(
+            "OTEL_PYTHON_DISABLED_INSTRUMENTATIONS",
+            "sqlalchemy,psycopg2,psycopg2_binary",
         )
-        metric_reader = PeriodicExportingMetricReader(metric_exporter)
-        _meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
-        metrics.set_meter_provider(_meter_provider)
 
-        # Auto-instrument popular libraries
-        _instrument_libraries()
+        # Instrument the openai library — PydanticAI's OpenAIModel uses it
+        # internally, so this captures every LLM call with full attributes:
+        # model name, input messages, output, token counts, latency.
+        # opentelemetry-instrumentation-openai is compatible with OTel 0.62b1;
+        # the openinference variant has a version mismatch with wrap_function_wrapper.
+        try:
+            from opentelemetry.instrumentation.openai import OpenAIInstrumentor  # type: ignore[import]
 
+            OpenAIInstrumentor().instrument(tracer_provider=_tracer_provider)
+            logger.info("llm_instrumentation_active", instrumentor="opentelemetry-openai")
+        except Exception as llm_err:
+            logger.warning("llm_instrumentation_failed", error=str(llm_err))
+
+        # Explicitly uninstrument SQLAlchemy in case Traceloop auto-instrumented it
+        # despite the env var (some versions ignore it).
+        for _uninstrument_cls in ("SQLAlchemyInstrumentor", "Psycopg2Instrumentor"):
+            try:
+                if _uninstrument_cls == "SQLAlchemyInstrumentor":
+                    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+                    SQLAlchemyInstrumentor().uninstrument()
+            except Exception:
+                pass
+
+        _initialized = True
         logger.info(
-            "OpenTelemetry tracing initialized",
-            endpoint=_config.endpoint,
+            "tracing_initialized",
+            endpoint=endpoint,
             service=_config.service_name,
         )
 
-    except Exception as e:
-        logger.exception("Failed to initialize OpenTelemetry tracing")
+    except Exception:
+        logger.exception("tracing_init_failed")
         raise
 
 
-def _instrument_libraries() -> None:
-    """Auto-instrument popular libraries for automatic tracing."""
-    try:
-        RequestsInstrumentor().instrument()
-        HTTPXClientInstrumentor().instrument()
-        SQLAlchemyInstrumentor().instrument()
-        logger.debug("Auto-instrumented libraries")
-    except Exception as e:
-        logger.warning(f"Failed to auto-instrument libraries: {e}")
-
-    # Psycopg2 instrumentation is handled by SQLAlchemy instrumentation
-    # and is not available as a standalone package in recent versions
-
-
-def get_tracer(name: str) -> trace.Tracer:
-    """
-    Get a tracer instance for the given name.
-
-    Args:
-        name: Module or component name for tracer identification
-
-    Returns:
-        Tracer instance
-    """
+def get_tracer(name: str = "law-agent") -> trace.Tracer:
+    """Get a tracer instance for the given name."""
     if _tracer_provider is None:
-        # Return a no-op tracer if tracing not initialized
         return trace.get_tracer(name)
     return _tracer_provider.get_tracer(name)
 
@@ -137,36 +136,18 @@ def get_tracer(name: str) -> trace.Tracer:
 @contextmanager
 def create_span(
     name: str,
-    attributes: Dict[str, Any] | None = None,
+    attributes: dict[str, Any] | None = None,
     tracer_name: str = "law-agent",
 ):
-    """
-    Context manager for creating and managing a span.
-
-    Usage:
-        with create_span("search_documents", attributes={"query": "بیمه"}) as span:
-            # Do work
-            span.set_attribute("results_count", 5)
-
-    Args:
-        name: Span name (e.g., "search_documents", "get_document")
-        attributes: Optional dictionary of span attributes
-        tracer_name: Name of the tracer to use
-
-    Yields:
-        The span object for adding custom attributes
-    """
+    """Context manager for creating a span with optional attributes."""
     tracer = get_tracer(tracer_name)
-
     with tracer.start_as_current_span(name) as span:
-        # Set initial attributes
         if attributes:
             for key, value in attributes.items():
                 try:
                     span.set_attribute(key, value)
-                except Exception as e:
-                    logger.debug(f"Could not set attribute {key}: {e}")
-
+                except Exception:
+                    pass
         yield span
 
 
@@ -175,29 +156,13 @@ def record_token_usage(
     output_tokens: int,
     model: str = "claude-sonnet-4.5",
     tool_name: str | None = None,
-) -> Dict[str, Any]:
-    """
-    Record token usage and estimate costs.
-
-    Uses Anthropic pricing as of 2024:
-    - Claude Sonnet 4.5: $3/$1M input, $15/$1M output
-
-    Args:
-        input_tokens: Number of input tokens used
-        output_tokens: Number of output tokens used
-        model: Model name (for pricing lookup)
-        tool_name: Optional tool name for attribution
-
-    Returns:
-        Dictionary with token counts and cost estimate
-    """
-    # Pricing per million tokens (as of 2024)
+) -> dict[str, Any]:
+    """Record token usage and estimate costs on the current span."""
     pricing = {
         "claude-sonnet-4.5": {"input": 3.0, "output": 15.0},
         "claude-opus": {"input": 15.0, "output": 75.0},
         "claude-haiku": {"input": 0.80, "output": 4.0},
     }
-
     rates = pricing.get(model, pricing["claude-sonnet-4.5"])
     input_cost = (input_tokens / 1_000_000) * rates["input"]
     output_cost = (output_tokens / 1_000_000) * rates["output"]
@@ -213,58 +178,38 @@ def record_token_usage(
         "model": model,
     }
 
-    # Add to current span if available
     span = trace.get_current_span()
     if span.is_recording():
         for key, value in usage_data.items():
             try:
                 span.set_attribute(f"token_usage.{key}", value)
-            except Exception as e:
-                logger.debug(f"Could not set token attribute {key}: {e}")
+            except Exception:
+                pass
 
-    # Log for observability
-    logger.info(
-        "Token usage recorded",
-        tool=tool_name,
-        **usage_data
-    )
-
+    logger.info("token_usage_recorded", tool=tool_name, **usage_data)
     return usage_data
 
 
 def record_error(
     error: Exception,
     span_name: str | None = None,
-    attributes: Dict[str, Any] | None = None,
+    attributes: dict[str, Any] | None = None,
 ) -> None:
-    """
-    Record an error in the current span.
-
-    Args:
-        error: Exception that occurred
-        span_name: Optional name of the span (for logging context)
-        attributes: Optional additional attributes to record
-    """
+    """Record an error in the current span."""
     span = trace.get_current_span()
-
     if span.is_recording():
-        # Set error attributes on span
         span.set_attribute("error.type", type(error).__name__)
         span.set_attribute("error.message", str(error))
-
+        span.set_attribute("error", True)
         if attributes:
             for key, value in attributes.items():
                 try:
                     span.set_attribute(f"error.{key}", value)
-                except Exception as e:
-                    logger.debug(f"Could not set error attribute {key}: {e}")
+                except Exception:
+                    pass
 
-        # Mark span as failed
-        span.set_attribute("error", True)
-
-    # Log error
     logger.error(
-        f"Error in {span_name or 'span'}",
+        f"error_in_{span_name or 'span'}",
         error=type(error).__name__,
         message=str(error),
         **(attributes or {}),
@@ -273,32 +218,22 @@ def record_error(
 
 def record_event(
     event_name: str,
-    attributes: Dict[str, Any] | None = None,
+    attributes: dict[str, Any] | None = None,
 ) -> None:
-    """
-    Record a named event in the current span.
-
-    Args:
-        event_name: Name of the event (e.g., "search_started", "tool_called")
-        attributes: Optional event attributes
-    """
+    """Record a named event in the current span."""
     span = trace.get_current_span()
-
     if span.is_recording():
         span.add_event(event_name, attributes=attributes or {})
-
-    logger.debug(f"Event recorded: {event_name}", **(attributes or {}))
+    logger.debug(f"event_recorded_{event_name}", **(attributes or {}))
 
 
 def shutdown_tracing() -> None:
     """Gracefully shutdown OpenTelemetry providers."""
-    global _tracer_provider, _meter_provider
-
+    global _tracer_provider, _initialized
     try:
         if _tracer_provider:
             _tracer_provider.force_flush()
-        if _meter_provider:
-            _meter_provider.force_flush()
-        logger.info("OpenTelemetry tracing shutdown complete")
+        _initialized = False
+        logger.info("tracing_shutdown")
     except Exception as e:
-        logger.warning(f"Error during OpenTelemetry shutdown: {e}")
+        logger.warning("tracing_shutdown_error", error=str(e))

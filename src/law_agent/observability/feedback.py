@@ -43,15 +43,18 @@ class PhoenixFeedbackClient:
         span_id: str,
         feedback_type: str,       # "positive" | "negative"
         comment: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        identifier: str | None = None,  # user identifier shown in Phoenix "user" column
         **kwargs: Any,
     ) -> bool:
-        """
-        POST /v1/span_annotations with a HUMAN annotation.
+        """POST /v1/span_annotations with a HUMAN annotation.
 
         Args:
             span_id:       16-char hex span_id from OpenTelemetry context.
             feedback_type: "positive" or "negative".
-            comment:       Optional user comment.
+            comment:       Explanation text — includes user comment + message preview.
+            metadata:      Extra key-value pairs stored with the annotation
+                           (question, response_preview, session_id, user_comment).
 
         Returns:
             True if Phoenix accepted the annotation.
@@ -59,21 +62,21 @@ class PhoenixFeedbackClient:
         label = "thumbs_up" if feedback_type == "positive" else "thumbs_down"
         score = 1.0 if feedback_type == "positive" else 0.0
 
-        payload = {
-            "data": [
-                {
-                    "span_id": span_id,
-                    "name": _ANNOTATION_NAME,
-                    "annotator_kind": "HUMAN",
-                    "result": {
-                        "label": label,
-                        "score": score,
-                        "explanation": comment or "",
-                    },
-                    "metadata": {},
-                }
-            ]
+        annotation: dict[str, Any] = {
+            "span_id": span_id,
+            "name": _ANNOTATION_NAME,
+            "annotator_kind": "HUMAN",
+            "result": {
+                "label": label,
+                "score": score,
+                "explanation": comment or "",
+            },
+            "metadata": metadata or {},
         }
+        if identifier:
+            annotation["identifier"] = identifier
+
+        payload = {"data": [annotation]}
 
         try:
             resp = await self._http.post(
@@ -87,6 +90,39 @@ class PhoenixFeedbackClient:
             return False
         except Exception as e:
             logger.debug("Phoenix feedback error: %s", e)
+            return False
+
+    async def send_note(
+        self,
+        span_id: str,
+        note: str,
+    ) -> bool:
+        """POST /v1/span_notes — adds free-text note visible in Phoenix Notes panel.
+
+        Notes are separate from annotations and support multiple entries per span.
+        The user's comment appears directly in the Notes panel (N key shortcut) in
+        the trace detail view, which is more prominent than the annotation explanation.
+
+        Args:
+            span_id: 16-char hex OTel span_id.
+            note:    Text to appear in the Notes panel.
+
+        Returns:
+            True if Phoenix accepted the note.
+        """
+        payload = {"data": {"span_id": span_id, "note": note}}
+        try:
+            resp = await self._http.post(
+                f"{self.endpoint}/v1/span_notes",
+                json=payload,
+            )
+            if resp.status_code in (200, 201):
+                logger.info("Phoenix note sent span_id=%s chars=%d", span_id, len(note))
+                return True
+            logger.warning("Phoenix note rejected status=%s body=%s", resp.status_code, resp.text[:200])
+            return False
+        except Exception as e:
+            logger.debug("Phoenix note error: %s", e)
             return False
 
     async def close(self) -> None:

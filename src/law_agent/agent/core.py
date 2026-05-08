@@ -22,12 +22,14 @@ from pathlib import Path
 import chainlit as cl
 import structlog
 import yaml
+from opentelemetry import trace as otel_trace
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.agent import CallToolsNode
 from pydantic_ai.messages import ModelMessage, TextPart, ThinkingPart, ToolCallPart
 from pydantic_ai.models.openai import OpenAIModel
 
 from law_agent.config.settings import get_settings
+from law_agent.observability.tracer import get_tracer
 from law_agent.tools.search import (
     DocumentNotFoundError,
     get_document,
@@ -183,93 +185,121 @@ class LawAgent:
         limit: int = 20,
     ) -> str:
         """Tool: Search documents using full-text search."""
-        # Clamp limit to configured max_results
         settings = get_settings()
         limit = min(max(1, limit), settings.search.max_results)
         logger.info(
             "search_documents_tool_called", query=query, tags=tags, doc_types=doc_types, limit=limit
         )
 
-        async with cl.Step(name="در حال جستجو ...", type="retrieval", show_input=False) as step:
-            try:
-                results = search_documents(query=query, tags=tags, doc_types=doc_types, limit=limit)
+        tracer = get_tracer("law-agent-tools")
+        tool_input = json.dumps(
+            {"query": query, "tags": tags or [], "doc_types": doc_types or [], "limit": limit},
+            ensure_ascii=False,
+        )
 
-                if results:
-                    step.name = f"جستجو — {len(results)} سند پیدا شد"
-                    step.output = "\n".join(
-                        f"- **{r.title}** ({r.doc_type}) — امتیاز: {r.relevance_score:.2f}"
-                        for r in results
+        with tracer.start_as_current_span("search_documents") as span:
+            span.set_attribute("openinference.span.kind", "TOOL")
+            span.set_attribute("tool.name", "search_documents")
+            span.set_attribute("input.value", tool_input)
+
+            async with cl.Step(name="در حال جستجو ...", type="retrieval", show_input=False) as step:
+                try:
+                    results = search_documents(query=query, tags=tags, doc_types=doc_types, limit=limit)
+
+                    if results:
+                        step.name = f"جستجو — {len(results)} سند پیدا شد"
+                        step.output = "\n".join(
+                            f"- **{r.title}** ({r.doc_type}) — امتیاز: {r.relevance_score:.2f}"
+                            for r in results
+                        )
+                    else:
+                        step.name = "جستجو — نتیجه‌ای پیدا نشد"
+                        step.output = "هیچ سندی با این معیار یافت نشد."
+
+                    results_json = json.dumps(
+                        [
+                            {
+                                "doc_id": r.doc_id,
+                                "title": r.title,
+                                "doc_type": r.doc_type,
+                                "date": r.date,
+                                "summary": r.summary[:200] + ("..." if len(r.summary) > 200 else ""),
+                                "tags": r.tags,
+                                "relevance_score": round(r.relevance_score, 3),
+                            }
+                            for r in results
+                        ],
+                        ensure_ascii=False,
+                        indent=2,
                     )
-                else:
-                    step.name = "جستجو — نتیجه‌ای پیدا نشد"
-                    step.output = "هیچ سندی با این معیار یافت نشد."
+                    titles = "\n".join(
+                        f"[{r.doc_id}] {r.title} ({r.doc_type})" for r in results
+                    )
+                    span.set_attribute("output.value", titles if results else "no results")
+                    logger.info("search_documents_tool_success", query=query, result_count=len(results))
+                    return results_json
 
-                results_json = json.dumps(
-                    [
-                        {
-                            "doc_id": r.doc_id,
-                            "title": r.title,
-                            "doc_type": r.doc_type,
-                            "date": r.date,
-                            "summary": r.summary[:200] + ("..." if len(r.summary) > 200 else ""),
-                            "tags": r.tags,
-                            "relevance_score": round(r.relevance_score, 3),
-                        }
-                        for r in results
-                    ],
-                    ensure_ascii=False,
-                    indent=2,
-                )
-                logger.info("search_documents_tool_success", query=query, result_count=len(results))
-                return results_json
-
-            except Exception as e:
-                logger.exception("search_documents_tool_error", query=query, error=str(e))
-                step.name = "جستجو — خطا"
-                step.output = f"خطا در جستجو: {e}"
-                return json.dumps({"error": f"خطا در جستجو: {e}"}, ensure_ascii=False)
+                except Exception as e:
+                    logger.exception("search_documents_tool_error", query=query, error=str(e))
+                    step.name = "جستجو — خطا"
+                    step.output = f"خطا در جستجو: {e}"
+                    span.set_attribute("output.value", f"error: {e}")
+                    return json.dumps({"error": f"خطا در جستجو: {e}"}, ensure_ascii=False)
 
     @staticmethod
     async def _get_document_tool(ctx: RunContext, doc_id: int) -> str:
         """Tool: Fetch complete document content."""
         logger.info("get_document_tool_called", doc_id=doc_id)
 
-        async with cl.Step(
-            name="در حال خواندن سند ...", type="retrieval", show_input=False
-        ) as step:
-            try:
-                doc = get_document(doc_id)
-                step.name = f"خواندن سند — {doc.title}"
-                meta = " — ".join(filter(None, [doc.doc_type, doc.date]))
-                step.output = f"**{doc.title}**\n_{meta}_\n\n{doc.summary[:300]}{'...' if len(doc.summary) > 300 else ''}"
+        tracer = get_tracer("law-agent-tools")
+        with tracer.start_as_current_span("get_document") as span:
+            span.set_attribute("openinference.span.kind", "TOOL")
+            span.set_attribute("tool.name", "get_document")
+            span.set_attribute("input.value", json.dumps({"doc_id": doc_id}))
 
-                doc_json = json.dumps(
-                    {
-                        "doc_id": doc.doc_id,
-                        "title": doc.title,
-                        "doc_type": doc.doc_type,
-                        "date": doc.date,
-                        "summary": doc.summary,
-                        "tags": doc.tags,
-                        "full_content": doc.full_content,
-                        "relations_count": doc.relations_count,
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                )
-                logger.info("get_document_tool_success", doc_id=doc_id)
-                return doc_json
+            async with cl.Step(
+                name="در حال خواندن سند ...", type="retrieval", show_input=False
+            ) as step:
+                try:
+                    doc = get_document(doc_id)
+                    step.name = f"خواندن سند — {doc.title}"
+                    meta = " — ".join(filter(None, [doc.doc_type, doc.date]))
+                    step.output = f"**{doc.title}**\n_{meta}_\n\n{doc.summary[:300]}{'...' if len(doc.summary) > 300 else ''}"
 
-            except DocumentNotFoundError:
-                logger.warning("get_document_tool_not_found", doc_id=doc_id)
-                step.name = f"سند {doc_id} پیدا نشد"
-                step.output = f"سند شماره {doc_id} در پایگاه داده موجود نیست."
-                return json.dumps({"error": f"سند شماره {doc_id} پیدا نشد"}, ensure_ascii=False)
-            except Exception as e:
-                logger.exception("get_document_tool_error", doc_id=doc_id, error=str(e))
-                step.name = "خواندن سند — خطا"
-                step.output = f"خطا: {e}"
-                return json.dumps({"error": f"خطا در دریافت سند: {e}"}, ensure_ascii=False)
+                    doc_json = json.dumps(
+                        {
+                            "doc_id": doc.doc_id,
+                            "title": doc.title,
+                            "doc_type": doc.doc_type,
+                            "date": doc.date,
+                            "summary": doc.summary,
+                            "tags": doc.tags,
+                            "full_content": doc.full_content,
+                            "relations_count": doc.relations_count,
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    )
+                    meta_line = " | ".join(filter(None, [doc.doc_type, doc.date]))
+                    doc_output = f"[{doc.doc_id}] {doc.title}\n{meta_line}\n\n{doc.summary}"
+                    if doc.full_content and doc.full_content != doc.summary:
+                        doc_output += f"\n\n---\n{doc.full_content[:3000]}"
+                    span.set_attribute("output.value", doc_output)
+                    logger.info("get_document_tool_success", doc_id=doc_id)
+                    return doc_json
+
+                except DocumentNotFoundError:
+                    logger.warning("get_document_tool_not_found", doc_id=doc_id)
+                    step.name = f"سند {doc_id} پیدا نشد"
+                    step.output = f"سند شماره {doc_id} در پایگاه داده موجود نیست."
+                    span.set_attribute("output.value", f"not found: {doc_id}")
+                    return json.dumps({"error": f"سند شماره {doc_id} پیدا نشد"}, ensure_ascii=False)
+                except Exception as e:
+                    logger.exception("get_document_tool_error", doc_id=doc_id, error=str(e))
+                    step.name = "خواندن سند — خطا"
+                    step.output = f"خطا: {e}"
+                    span.set_attribute("output.value", f"error: {e}")
+                    return json.dumps({"error": f"خطا در دریافت سند: {e}"}, ensure_ascii=False)
 
     @staticmethod
     async def _get_related_documents_tool(
@@ -279,7 +309,6 @@ class LawAgent:
         limit: int = 10,
     ) -> str:
         """Tool: Get related documents via citation graph."""
-        # Clamp limit to configured default
         settings = get_settings()
         limit = min(max(1, limit), settings.search.related_docs_default_limit)
         logger.info(
@@ -289,47 +318,62 @@ class LawAgent:
             limit=limit,
         )
 
-        async with cl.Step(
-            name="در حال جستجوی اسناد مرتبط ...", type="retrieval", show_input=False
-        ) as step:
-            try:
-                results = get_related_documents(
-                    doc_id=doc_id, relation_types=relation_types, limit=limit
-                )
+        tracer = get_tracer("law-agent-tools")
+        tool_input = json.dumps(
+            {"doc_id": doc_id, "relation_types": relation_types or [], "limit": limit}
+        )
 
-                if results:
-                    step.name = f"اسناد مرتبط — {len(results)} سند"
-                    step.output = "\n".join(f"- **{r.title}** ({r.doc_type})" for r in results)
-                else:
-                    step.name = "اسناد مرتبط — موردی یافت نشد"
-                    step.output = "هیچ سند مرتبطی یافت نشد."
+        with tracer.start_as_current_span("get_related_documents") as span:
+            span.set_attribute("openinference.span.kind", "TOOL")
+            span.set_attribute("tool.name", "get_related_documents")
+            span.set_attribute("input.value", tool_input)
 
-                results_json = json.dumps(
-                    [
-                        {
-                            "doc_id": r.doc_id,
-                            "title": r.title,
-                            "doc_type": r.doc_type,
-                            "date": r.date,
-                            "summary": r.summary[:200] + ("..." if len(r.summary) > 200 else ""),
-                            "tags": r.tags,
-                            "relevance_score": round(r.relevance_score, 3),
-                        }
-                        for r in results
-                    ],
-                    ensure_ascii=False,
-                    indent=2,
-                )
-                logger.info(
-                    "get_related_documents_tool_success", doc_id=doc_id, result_count=len(results)
-                )
-                return results_json
+            async with cl.Step(
+                name="در حال جستجوی اسناد مرتبط ...", type="retrieval", show_input=False
+            ) as step:
+                try:
+                    results = get_related_documents(
+                        doc_id=doc_id, relation_types=relation_types, limit=limit
+                    )
 
-            except Exception as e:
-                logger.exception("get_related_documents_tool_error", doc_id=doc_id, error=str(e))
-                step.name = "اسناد مرتبط — خطا"
-                step.output = f"خطا: {e}"
-                return json.dumps({"error": f"خطا در دریافت اسناد مرتبط: {e}"}, ensure_ascii=False)
+                    if results:
+                        step.name = f"اسناد مرتبط — {len(results)} سند"
+                        step.output = "\n".join(f"- **{r.title}** ({r.doc_type})" for r in results)
+                    else:
+                        step.name = "اسناد مرتبط — موردی یافت نشد"
+                        step.output = "هیچ سند مرتبطی یافت نشد."
+
+                    results_json = json.dumps(
+                        [
+                            {
+                                "doc_id": r.doc_id,
+                                "title": r.title,
+                                "doc_type": r.doc_type,
+                                "date": r.date,
+                                "summary": r.summary[:200] + ("..." if len(r.summary) > 200 else ""),
+                                "tags": r.tags,
+                                "relevance_score": round(r.relevance_score, 3),
+                            }
+                            for r in results
+                        ],
+                        ensure_ascii=False,
+                        indent=2,
+                    )
+                    related_titles = "\n".join(
+                        f"[{r.doc_id}] {r.title} ({r.doc_type})" for r in results
+                    )
+                    span.set_attribute("output.value", related_titles if results else "no results")
+                    logger.info(
+                        "get_related_documents_tool_success", doc_id=doc_id, result_count=len(results)
+                    )
+                    return results_json
+
+                except Exception as e:
+                    logger.exception("get_related_documents_tool_error", doc_id=doc_id, error=str(e))
+                    step.name = "اسناد مرتبط — خطا"
+                    step.output = f"خطا: {e}"
+                    span.set_attribute("output.value", f"error: {e}")
+                    return json.dumps({"error": f"خطا در دریافت اسناد مرتبط: {e}"}, ensure_ascii=False)
 
     async def run(
         self,
@@ -404,11 +448,24 @@ class LawAgent:
             response_text = agent_run.result.output
             updated_history = agent_run.result.all_messages()
 
+            # Attach token counts to the parent CHAIN span (user_turn in app.py).
+            # All tool sub-spans are closed at this point so get_current_span()
+            # returns user_turn. Phoenix uses these to compute cost.
+            usage = agent_run.result.usage()
+            parent_span = otel_trace.get_current_span()
+            if parent_span.is_recording() and usage:
+                parent_span.set_attribute("llm.token_count.prompt", usage.request_tokens or 0)
+                parent_span.set_attribute("llm.token_count.completion", usage.response_tokens or 0)
+                parent_span.set_attribute("llm.token_count.total", usage.total_tokens or 0)
+                parent_span.set_attribute("llm.model_name", self.model)
+
             logger.info(
                 "law_agent_run_success",
                 conversation_id=conversation_id,
                 response_length=len(response_text),
                 message_history_length=len(updated_history),
+                request_tokens=getattr(usage, "request_tokens", 0),
+                response_tokens=getattr(usage, "response_tokens", 0),
             )
 
             return response_text, updated_history
@@ -461,10 +518,21 @@ class LawAgent:
 
             updated_history = result.all_messages()
 
+            # Attach token counts to the parent CHAIN span (same as non-streaming run).
+            usage = result.usage()
+            parent_span = otel_trace.get_current_span()
+            if parent_span.is_recording() and usage:
+                parent_span.set_attribute("llm.token_count.prompt", usage.request_tokens or 0)
+                parent_span.set_attribute("llm.token_count.completion", usage.response_tokens or 0)
+                parent_span.set_attribute("llm.token_count.total", usage.total_tokens or 0)
+                parent_span.set_attribute("llm.model_name", self.model)
+
             logger.info(
                 "law_agent_run_streaming_success",
                 conversation_id=conversation_id,
                 response_length=len(full_text),
+                request_tokens=getattr(usage, "request_tokens", 0),
+                response_tokens=getattr(usage, "response_tokens", 0),
             )
 
             return full_text, updated_history

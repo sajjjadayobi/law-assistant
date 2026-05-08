@@ -8,15 +8,25 @@ Project instructions for Claude Code. Read this first, then follow the links.
 
 **Version**: v0.0.2 (Enhanced UI — in progress)
 **Branch**: `feature/phase-11-thinking-steps`
-**Tests**: 288 passing (after cleanup) — `.venv/bin/python -m pytest tests/ --ignore=tests/integration -q`
+**Tests**: 304 passing — `.venv/bin/python -m pytest tests/ --ignore=tests/integration -q`
 
 ### What's done
 - ✅ Full agent stack: search tools, PydanticAI agent, citations, conversation management
 - ✅ PostgreSQL + FTS (47K+ legal documents), Arize Phoenix observability
 - ✅ Chainlit UI: RTL, sidebar, thinking steps, feedback 👍/👎, retry button, copy-to-clipboard
 - ✅ RTL polish (11.11): JS direction detection, blockquote/table logical properties, inline code bidi
-- ✅ Response streaming (11.12): `enable_streaming` config flag, `run_streaming(on_delta)` in agent, 294 tests
-- ✅ Docker Compose deployment, CI pipeline, 294 tests
+- ✅ Response streaming (11.12): `enable_streaming` config flag, `run_streaming(on_delta)` in agent, 304 tests
+- ✅ Phoenix observability fixed: real CHAIN/TOOL/LLM traces, token counts, feedback with message context
+- ✅ Docker Compose deployment, CI pipeline
+
+### Phoenix Observability (fixed 2026-05-08/09)
+- Project "law-agent" in Phoenix at `http://localhost:6006` (no "default" pollution)
+- Each chat = `user_turn` CHAIN span: input=question, output=answer, token counts, session.id
+- Tool calls = TOOL spans: search → `[id] title` list; get_document → full content; related → title list
+- LLM calls = `openai.chat` spans (auto-traced via `opentelemetry-instrumentation-openai`)
+- Feedback (👍/👎) → Phoenix annotation (label+score+explanation+metadata) + Notes panel (comment text)
+- DB connections NOT traced (SQLAlchemy explicitly uninstrumented)
+- See `docs/features/observability/` for full architecture and gotchas
 
 ### What's next
 - 📋 Task 11.9: Browser notifications
