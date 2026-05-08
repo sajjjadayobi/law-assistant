@@ -47,13 +47,19 @@ function addCopyButtons() {
         btn.addEventListener('click', () => {
             const code = pre.querySelector('code');
             const text = code ? code.innerText : pre.innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                btn.textContent = '✓ کپی شد';
-                setTimeout(() => { btn.textContent = 'کپی'; }, 2000);
-            }).catch(() => {
-                btn.textContent = 'خطا';
-                setTimeout(() => { btn.textContent = 'کپی'; }, 2000);
-            });
+
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                navigator.clipboard.writeText(text).then(() => {
+                    btn.textContent = '✓ کپی شد';
+                    setTimeout(() => { btn.textContent = 'کپی'; }, 2000);
+                }).catch(() => {
+                    btn.textContent = 'خطا';
+                    setTimeout(() => { btn.textContent = 'کپی'; }, 2000);
+                });
+            } else {
+                btn.textContent = '⚠️ غیر‌دستیاب';
+                setTimeout(() => { btn.textContent = 'کپی'; }, 3000);
+            }
         });
 
         pre.appendChild(btn);
