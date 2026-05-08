@@ -155,6 +155,15 @@ class UIConfig(BaseModel):
     show_thinking: bool = Field(default=True, description="Show model thinking/reasoning to user")
     show_tool_calls: bool = Field(default=True, description="Show tool calls and their parameters")
     enable_feedback: bool = Field(default=True, description="Enable thumbs up/down feedback")
+    enable_streaming: bool = Field(
+        default=False,
+        description=(
+            "Stream response tokens as they arrive instead of waiting for the full response. "
+            "Only visible with progressive-generation models (e.g. claude-sonnet, gpt-4o). "
+            "Reasoning models (grok-4-1-fast-reasoning) dump all tokens at once after thinking, "
+            "so streaming produces no visible effect despite the proxy supporting SSE."
+        ),
+    )
     citation_base_url: str = Field(
         default="https://iran.ir/en/law",
         description="Base URL for citation links in agent responses",

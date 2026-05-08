@@ -11,7 +11,6 @@ import atexit
 import json
 import os
 from pathlib import Path
-from typing import Optional
 
 import chainlit as cl
 import structlog
@@ -132,7 +131,7 @@ def load_starters() -> list[StarterQuestion]:
 
 
 @cl.password_auth_callback
-async def auth_callback(username: str, password: str) -> Optional[cl.User]:
+async def auth_callback(username: str, password: str) -> cl.User | None:
     """Accept any username/password to enable per-user conversation history."""
     return cl.User(identifier=username, metadata={"role": "user"})
 
@@ -188,7 +187,6 @@ async def start() -> None:
     Note: Do NOT send messages here - they break the centered layout.
     Chainlit handles everything natively.
     """
-    settings = get_settings()
     session_id = cl.user_session.get("id")  # type: ignore
 
     logger.info("chat_started", session_id=session_id)
@@ -241,6 +239,8 @@ async def main(message: cl.Message) -> None:
         # for Phoenix feedback annotations later.
         logger.info("calling_agent", session_id=session_id)
         _tracer = otel_trace.get_tracer("law-agent-ui")
+        streaming_msg: cl.Message | None = None
+
         with _tracer.start_as_current_span("user_turn") as _span:
             _ctx = _span.get_span_context()
             if _ctx.is_valid:
@@ -248,11 +248,25 @@ async def main(message: cl.Message) -> None:
                 _session_span_ids[session_id] = _span_hex
                 logger.info("span_id_stored", session_id=session_id, span_id=_span_hex)
 
-            response_text, updated_history = await agent.run(
-                user_query=user_query,
-                conversation_history=history,
-                conversation_id=session_id,
-            )
+            if settings.ui.enable_streaming:
+                streaming_msg = cl.Message(content="")
+                await streaming_msg.send()  # type: ignore
+
+                async def _on_delta(delta: str) -> None:
+                    await streaming_msg.stream_token(delta)  # type: ignore
+
+                response_text, updated_history = await agent.run_streaming(
+                    user_query=user_query,
+                    conversation_history=history,
+                    conversation_id=session_id,
+                    on_delta=_on_delta,
+                )
+            else:
+                response_text, updated_history = await agent.run(
+                    user_query=user_query,
+                    conversation_history=history,
+                    conversation_id=session_id,
+                )
 
         # Update conversation state
         conv_state.message_history = updated_history
@@ -262,9 +276,13 @@ async def main(message: cl.Message) -> None:
             message_count=len(updated_history),
         )
 
-        # Format and send the final response AFTER all tool steps are complete
+        # Format citations on the full response text, then send or update
         formatted_response = citation_formatter.format_response(response_text)
-        await cl.Message(content=formatted_response).send()  # type: ignore
+        if streaming_msg is not None:
+            streaming_msg.content = formatted_response
+            await streaming_msg.update()  # type: ignore
+        else:
+            await cl.Message(content=formatted_response).send()  # type: ignore
 
         # Legacy tool step extraction (kept for compatibility, now superseded by cl.step in tools)
         if False and settings.ui.show_tool_calls:
@@ -355,6 +373,7 @@ async def handle_feedback(feedback: cl.Feedback) -> None:
     if span_id:
         try:
             from law_agent.observability.feedback import get_feedback_client
+
             client = get_feedback_client()
             if client:
                 sent = await client.send_feedback(

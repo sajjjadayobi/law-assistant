@@ -166,6 +166,16 @@ ui:
   # false = no feedback (for privacy or testing)
   enable_feedback: true
 
+  # Stream response tokens as they arrive (live typing effect)
+  # true  = tokens appear one by one (requires a model that generates progressively)
+  # false = full response sent at once after model completes
+  #
+  # NOTE: grok-4-1-fast-reasoning is a reasoning model — it thinks first (3–5s),
+  # then dumps the full response in a rapid burst. All chunks arrive within milliseconds
+  # of each other, so streaming is not visually observable with this model.
+  # Enable when switching to a progressive-generation model (e.g. claude-sonnet, gpt-4o).
+  enable_streaming: false
+
   # Example questions shown to user at conversation start (legacy, for reference)
   # List of 3-5 questions in Persian to guide users
   example_questions:

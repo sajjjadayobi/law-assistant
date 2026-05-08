@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import uuid
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 import chainlit as cl
@@ -185,7 +186,9 @@ class LawAgent:
         # Clamp limit to configured max_results
         settings = get_settings()
         limit = min(max(1, limit), settings.search.max_results)
-        logger.info("search_documents_tool_called", query=query, tags=tags, doc_types=doc_types, limit=limit)
+        logger.info(
+            "search_documents_tool_called", query=query, tags=tags, doc_types=doc_types, limit=limit
+        )
 
         async with cl.Step(name="در حال جستجو ...", type="retrieval", show_input=False) as step:
             try:
@@ -231,7 +234,9 @@ class LawAgent:
         """Tool: Fetch complete document content."""
         logger.info("get_document_tool_called", doc_id=doc_id)
 
-        async with cl.Step(name="در حال خواندن سند ...", type="retrieval", show_input=False) as step:
+        async with cl.Step(
+            name="در حال خواندن سند ...", type="retrieval", show_input=False
+        ) as step:
             try:
                 doc = get_document(doc_id)
                 step.name = f"خواندن سند — {doc.title}"
@@ -277,18 +282,24 @@ class LawAgent:
         # Clamp limit to configured default
         settings = get_settings()
         limit = min(max(1, limit), settings.search.related_docs_default_limit)
-        logger.info("get_related_documents_tool_called", doc_id=doc_id, relation_types=relation_types, limit=limit)
+        logger.info(
+            "get_related_documents_tool_called",
+            doc_id=doc_id,
+            relation_types=relation_types,
+            limit=limit,
+        )
 
-        async with cl.Step(name="در حال جستجوی اسناد مرتبط ...", type="retrieval", show_input=False) as step:
+        async with cl.Step(
+            name="در حال جستجوی اسناد مرتبط ...", type="retrieval", show_input=False
+        ) as step:
             try:
-                results = get_related_documents(doc_id=doc_id, relation_types=relation_types, limit=limit)
+                results = get_related_documents(
+                    doc_id=doc_id, relation_types=relation_types, limit=limit
+                )
 
                 if results:
                     step.name = f"اسناد مرتبط — {len(results)} سند"
-                    step.output = "\n".join(
-                        f"- **{r.title}** ({r.doc_type})"
-                        for r in results
-                    )
+                    step.output = "\n".join(f"- **{r.title}** ({r.doc_type})" for r in results)
                 else:
                     step.name = "اسناد مرتبط — موردی یافت نشد"
                     step.output = "هیچ سند مرتبطی یافت نشد."
@@ -309,7 +320,9 @@ class LawAgent:
                     ensure_ascii=False,
                     indent=2,
                 )
-                logger.info("get_related_documents_tool_success", doc_id=doc_id, result_count=len(results))
+                logger.info(
+                    "get_related_documents_tool_success", doc_id=doc_id, result_count=len(results)
+                )
                 return results_json
 
             except Exception as e:
@@ -403,6 +416,62 @@ class LawAgent:
         except Exception as e:
             logger.exception(
                 "law_agent_run_error",
+                conversation_id=conversation_id,
+                error=str(e),
+            )
+            raise
+
+    async def run_streaming(
+        self,
+        user_query: str,
+        conversation_history: list[ModelMessage] | None = None,
+        conversation_id: str | None = None,
+        on_delta: Callable[[str], Awaitable[None]] | None = None,
+    ) -> tuple[str, list[ModelMessage]]:
+        """Run agent with token-by-token streaming via callback.
+
+        Tool call steps (جستجو، خواندن سند) still render via cl.Step inside each tool.
+        The synthetic planning step (تحلیل سوال) is not shown in streaming mode.
+
+        Args:
+            on_delta: Async callback invoked with each text token as it arrives.
+
+        Returns:
+            Tuple of (full_response_text, updated_message_history)
+        """
+        if conversation_id is None:
+            conversation_id = str(uuid.uuid4())
+
+        try:
+            logger.info(
+                "law_agent_run_streaming_called",
+                conversation_id=conversation_id,
+                user_query_length=len(user_query),
+            )
+
+            full_text = ""
+            async with self.agent.run_stream(
+                user_query,
+                message_history=conversation_history or [],
+            ) as result:
+                async for delta in result.stream_text(delta=True):
+                    full_text += delta
+                    if on_delta:
+                        await on_delta(delta)
+
+            updated_history = result.all_messages()
+
+            logger.info(
+                "law_agent_run_streaming_success",
+                conversation_id=conversation_id,
+                response_length=len(full_text),
+            )
+
+            return full_text, updated_history
+
+        except Exception as e:
+            logger.exception(
+                "law_agent_run_streaming_error",
                 conversation_id=conversation_id,
                 error=str(e),
             )

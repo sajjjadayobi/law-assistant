@@ -245,6 +245,25 @@ See `docs/features/rtl-polish/`
 
 ---
 
+### 11.12 — Response streaming
+
+- `ui.enable_streaming: true/false` in `config.yaml` + `UIConfig.enable_streaming` in `settings.py` (default `true`)
+- `LawAgent.run_streaming(user_query, conversation_history, conversation_id, on_delta)` in `core.py`:
+  - Uses `agent.run_stream()` + `result.stream_text(delta=True)` to yield tokens
+  - Calls async `on_delta(token)` callback for each delta
+  - Returns `(full_text, updated_history)` — same signature as `run()`
+  - Tool functions still execute normally; their `cl.Step()` blocks still render
+  - The synthetic "تحلیل سوال" planning step (from `CallToolsNode`) is not shown in streaming mode
+- `app.py` streaming path: send empty `cl.Message` → stream tokens → format citations → `msg.update()`
+- `app.py` non-streaming path: unchanged `agent.run()` → `cl.Message(formatted).send()`
+- **Citation formatting**: applied on complete streamed text after stream ends, then `msg.update()` (two-phase approach to avoid split-token issues with `[1]`, `[2]` markers)
+- **Reasoning model caveat**: `grok-4-1-fast-reasoning` generates its full response during the thinking phase, then sends all tokens in a rapid burst (verified: 6 SSE chunks all arriving at t=3.29s). No visible streaming effect regardless of `enable_streaming`. Default is `false`. Enable only when using progressive-generation models (claude-sonnet, gpt-4o).
+- 6 tests in `tests/ui/test_streaming.py`
+
+See `docs/features/streaming/`
+
+---
+
 ## 📋 Pending
 
 ### Phase 11 — Remaining UI tasks
@@ -252,7 +271,6 @@ See `docs/features/rtl-polish/`
 | Task | Description | Effort |
 |---|---|---|
 | **11.9** | Browser notifications via JS `Notification API` when tab is hidden | ~2h |
-| **11.12** | Response streaming via `agent.iter()` token-by-token | ~3h |
 
 ### Deferred
 
