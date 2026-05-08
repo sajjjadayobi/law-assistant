@@ -6,55 +6,63 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Current Focus: v0.0.2 - Enhanced UI/UX
 
-**Status**: Task 11.4 — Tool Calls Visualization
+**Status**: Task 11.8 — Retry Failed Messages
 
-**Next Task**: Task 11.4 - Show search tool call inputs/outputs in a dedicated panel
+**Next Task**: Task 11.8 — Add a "retry" action button when a message fails
 
-**Implementation Guide**: `docs/development/v0.0.2-tasks.md` (Task 11.4 section)
+**Implementation Guide**: `docs/development/v0.0.2-tasks.md` (Task 11.8 section has exact code)
 
-**Reference Project**: `/Users/divar/Documents/codes/data-assistant` (SQL Assistant)
+**Reference Project**: `/Users/divar/Documents/codes/data-assistant` (`src/profiles/base.py` lines 136-150)
 
-**Progress**:
-- ✅ Task 11.1 (Centered welcome screen) - Complete
-- ✅ Task 11.2 (Conversation history sidebar) - Complete
-- ✅ Tests (session): 306 passing (was 236) — +70 new tests covering 11.2/11.3/11.5/citations
-- ✅ Task 11.5 (Feedback 👍/👎) - **Complete**:
-  - DB: `upsert_feedback` override in data layer → `feedbacks` table
-  - Phoenix: `POST /v1/span_annotations` with span_id from `_session_span_ids` dict
-  - `user_feedback μ 1.00` appears in Phoenix dashboard header
-  - Dialog flow: click button → "ثبت نظر" dialog → submits feedback
-  - Fix: `logging.info("%s", val)` not `logging.info("msg", key=val)` (Python compat)
-  - See `docs/features/phase-11-enhanced-ui/task-11.5-feedback/`
-- ✅ Task 11.3 (Thinking steps + UI polish) - **Complete**:
-  - Steps appear BEFORE the final answer (`cl.Message().send()` moved after `agent.run()`)
-  - `agent.run()` → `agent.iter()` to access `CallToolsNode`
-  - `async with cl.Step()` in each tool — never `@cl.step` on sync functions (unreliable)
-  - Dynamic step names: "جستجو — N سند پیدا شد", "خواندن سند — {title}", "اسناد مرتبط — N سند"
-  - "تحلیل سوال" planning step before each tool call group
-  - No "استفاده شد" suffix — `fa-IR.json` `messages.status.used = ""`
-  - `"defaultOpen"` column added to steps table
-  - Citations fixed: HTML → markdown `[1](iran.ir/law/{doc_id})`, strips `[doc_id: X]` from display
-  - "سوالات بیشتر:" header in system prompt for follow-up questions
-  - `chainlit.md` (راهنما): full Persian help page
-  - Sidebar closed by default (`default_sidebar_state = "closed"`)
-  - Translations: only `en-US.json` + `fa-IR.json` kept
-  - Logo redesigned: bolder scales, cleaner proportions
-  - See `docs/features/phase-11-enhanced-ui/task-11.3-thinking-steps/`
-- 📋 Task 11.4–11.12 - Pending
+**Phase 11 Progress**:
+- ✅ Task 11.1: Centered welcome screen + starter questions
+- ✅ Task 11.2: Conversation history sidebar (PostgreSQL, per-user, Persian time groups)
+- ✅ Task 11.3: Thinking steps + full UI polish (steps before answer, dynamic labels, citations)
+- ⏭️ Task 11.4: Tool calls visualization — skipped (11.3 already shows retrieval steps)
+- ✅ Task 11.5: Feedback 👍/👎 (PostgreSQL + Phoenix span annotations)
+- ⏭️ Task 11.6: Share conversations — deferred
+- ⏭️ Task 11.7: Export to Markdown — deferred
+- 📋 **Task 11.8: Retry failed messages ← START HERE**
+- 📋 Task 11.9–11.12: Pending
 
-**Key Setup Facts** (for next developer):
-- Server: `python3 /tmp/start_server.py` (loads .env via Python — bash breaks `$` in JWT secret)
-- Auth: `CHAINLIT_AUTH_SECRET` in `.env`, `@cl.password_auth_callback` in `app.py`
-- DB schema: camelCase + TEXT timestamps + `"defaultOpen"` BOOLEAN in steps table
-- Translation: `.chainlit/translations/fa-IR.json`, language `= "fa-IR"` in `.chainlit/config.toml`
-- Steps: always `async with cl.Step(name="...", type="retrieval") as step:` then update `step.name`
-- Citations: `citations.py` parses `[doc_id: X]` from منابع section → builds markdown links
+**Tests**: 306 passing, 0 failing (run: `.venv/bin/python -m pytest tests/ --ignore=tests/integration -q`)
 
-**Critical learnings from 11.3**:
-- `@cl.step` on sync → NOT reliable; always `async with cl.Step()`
-- `cl.Message().send()` AFTER `agent.run()` → steps precede the answer
-- `step.name` updatable inside context manager → show result count in label
-- `unsafe_allow_html = false` in Chainlit → use markdown links, not `<a>` tags
+---
+
+## Key Setup for Next Developer
+
+**Server start** (loads .env without bash variable expansion breaking JWT secret):
+```python
+# python3 /path/to/start_server.py
+import os, subprocess
+with open('.env') as f:
+    for line in f:
+        if '=' in line and not line.startswith('#'):
+            k, _, v = line.strip().partition('=')
+            os.environ[k] = v.strip('"')
+subprocess.Popen(['.venv/bin/chainlit', 'run', 'src/law_agent/ui/app.py', '--port', '7860', '--headless'])
+```
+
+**Key environment variables** (in `.env`):
+- `CHAINLIT_AUTH_SECRET` — JWT secret for authentication
+- `LLM_BASE_URL` / `LLM_AUTH_TOKEN` — LiteLLM proxy endpoint
+- `DB_PASSWORD` — PostgreSQL password
+
+**Architecture facts** (hard-won from this session):
+- Chainlit tables: **camelCase** columns (`createdAt` TEXT, `userId`, `threadId`)
+- `steps` table needs `"defaultOpen"` BOOLEAN column
+- `@cl.step` on sync functions doesn't render in UI — use `async with cl.Step()`
+- `cl.Message().send()` must come **AFTER** `agent.run()` so steps precede the answer
+- `step.name` is updatable inside the context manager (show result count dynamically)
+- Chainlit `unsafe_allow_html = false` — use markdown links `[1](url)` not HTML
+- Phoenix feedback: `POST /v1/span_annotations` with `span_id` (not trace_id)
+- Feedback dialog requires TWO clicks: button + "ثبت نظر" submit
+- Translation: `.chainlit/translations/fa-IR.json`, `messages.status.used = ""`
+
+**Feature docs** for completed tasks:
+- `docs/features/phase-11-enhanced-ui/task-11.2-conversation-sidebar/` — camelCase DB lessons
+- `docs/features/phase-11-enhanced-ui/task-11.3-thinking-steps/` — 6 root causes documented
+- `docs/features/phase-11-enhanced-ui/task-11.5-feedback/` — Phoenix API + dialog flow
 
 ---
 
@@ -131,15 +139,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **In Progress**:
 - 🚀 Phase 11: Enhanced UI/UX (v0.0.2) - **In Implementation**
-  - ✅ Task 11.1: Centered welcome screen with starter questions (COMPLETE)
-  - ✅ Task 11.2: Conversation history sidebar — COMPLETE (auth + Persian UI + camelCase DB)
-  - ✅ Task 11.3: Thinking steps — COMPLETE (steps before answer, dynamic labels, cl.Step async)
-  - 📋 Task 11.4: Tool calls visualization ← **NEXT**
-  - 📋 Task 11.4: Tool calls visualization
-  - 📋 Task 11.5: Feedback collection (thumbs up/down)
-  - 📋 Task 11.6: Share conversations
-  - 📋 Task 11.7: Export to Markdown
-  - 📋 Task 11.8: Retry failed messages
+  - ✅ Task 11.1: Centered welcome screen with starter questions
+  - ✅ Task 11.2: Conversation history sidebar (auth + Persian UI + camelCase DB)
+  - ✅ Task 11.3: Thinking steps + UI polish (steps before answer, dynamic labels)
+  - ⏭️ Task 11.4: Tool calls visualization — skipped (covered by 11.3)
+  - ✅ Task 11.5: Feedback 👍/👎 (PostgreSQL + Phoenix span annotations)
+  - ⏭️ Task 11.6: Share conversations — deferred
+  - ⏭️ Task 11.7: Export to Markdown — deferred
+  - 📋 Task 11.8: Retry failed messages ← **NEXT**
   - 📋 Task 11.9: Browser notifications
   - 📋 Task 11.10: Copy to clipboard
   - 📋 Task 11.11: RTL and Persian UI polish
