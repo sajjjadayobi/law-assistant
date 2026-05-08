@@ -88,7 +88,6 @@ scratchpad*.md
 .chainlit/*.db
 .chainlit-debug/
 .files/
-chainlit.md.example
 
 # Test artifacts
 .pytest_cache/
