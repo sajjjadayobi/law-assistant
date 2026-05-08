@@ -86,6 +86,7 @@ scratchpad*.md
 
 # Chainlit & UI artifacts
 .chainlit/*.db
+.chainlit-debug/
 .files/
 chainlit.md.example
 
