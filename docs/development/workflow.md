@@ -341,7 +341,8 @@ All checks must pass before committing. The CI pipeline (`.github/workflows/ci.y
 
 **Style rules**:
 - Type hints on all function signatures
-- No comments explaining what code does — only explain non-obvious WHY
+- **No docstrings** — function/class names are self-documenting
+- **Comments only if WHY is non-obvious** — not what the code does
 - No dead code, no commented-out code
 - structlog with structured data: `logger.info("search_executed", query=q, result_count=n)`
 
