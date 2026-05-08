@@ -203,6 +203,15 @@ async def main(message: cl.Message) -> None:
     session_id = cl.user_session.get("id")  # type: ignore
     settings = get_settings()
 
+    # Remove any retry buttons from the previous failed message
+    prev_retry_actions: list[cl.Action] = cl.user_session.get("retry_actions") or []  # type: ignore
+    for action in prev_retry_actions:
+        try:
+            await action.remove()
+        except Exception:
+            pass
+    cl.user_session.set("retry_actions", [])  # type: ignore
+
     try:
         user_query = message.content.strip()
 
@@ -282,12 +291,32 @@ async def main(message: cl.Message) -> None:
             session_id=session_id,
             error=str(e),
         )
-        error_msg = """
-متاسفانه خطایی رخ داده است. 😔
 
-لطفاً دوباره تلاش کنید یا سوال خود را به شکل دیگری بیان کنید.
-"""
-        await cl.Message(content=error_msg).send()  # type: ignore
+        retry_action = cl.Action(
+            name="retry",
+            label="تلاش مجدد",
+            icon="refresh-cw",
+            payload={"message_content": message.content},
+            tooltip="تلاش مجدد برای این پیام",
+        )
+        cl.user_session.set("retry_actions", [retry_action])  # type: ignore
+
+        error_msg = "متاسفانه خطایی رخ داده است. 😔\n\nبا زدن دکمه «تلاش مجدد» دوباره امتحان کنید."
+        await cl.Message(content=error_msg, actions=[retry_action]).send()  # type: ignore
+
+
+@cl.action_callback(name="retry")
+async def handle_retry(action: cl.Action) -> None:
+    """Remove the error message and re-process the original user query."""
+    try:
+        await cl.Message(content="", id=action.forId).remove()  # type: ignore
+    except Exception:
+        pass
+
+    original_content = action.payload.get("message_content", "")
+    if original_content:
+        retry_message = cl.Message(content=original_content, type="user_message")
+        await main(retry_message)
 
 
 @cl.on_chat_end

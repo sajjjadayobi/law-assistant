@@ -6,13 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Current Focus: v0.0.2 - Enhanced UI/UX
 
-**Status**: Task 11.8 — Retry Failed Messages
+**Status**: Task 11.9 — Browser Notifications
 
-**Next Task**: Task 11.8 — Add a "retry" action button when a message fails
+**Next Task**: Task 11.9 — Browser notifications when tab is hidden
 
-**Implementation Guide**: `docs/development/v0.0.2-tasks.md` (Task 11.8 section has exact code)
-
-**Reference Project**: `/Users/divar/Documents/codes/data-assistant` (`src/profiles/base.py` lines 136-150)
+**Implementation Guide**: `docs/development/v0.0.2-tasks.md`
 
 **Phase 11 Progress**:
 - ✅ Task 11.1: Centered welcome screen + starter questions
@@ -22,10 +20,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ Task 11.5: Feedback 👍/👎 (PostgreSQL + Phoenix span annotations)
 - ⏭️ Task 11.6: Share conversations — deferred
 - ⏭️ Task 11.7: Export to Markdown — deferred
-- 📋 **Task 11.8: Retry failed messages ← START HERE**
-- 📋 Task 11.9–11.12: Pending
+- ✅ **Task 11.8: Retry failed messages — COMPLETE**
+- 📋 Task 11.9: Browser notifications ← START HERE
+- 📋 Task 11.10–11.12: Pending
 
-**Tests**: 306 passing, 0 failing (run: `.venv/bin/python -m pytest tests/ --ignore=tests/integration -q`)
+**Tests**: 314 passing, 0 failing (run: `.venv/bin/python -m pytest tests/ --ignore=tests/integration -q`)
 
 ---
 
@@ -146,8 +145,8 @@ subprocess.Popen(['.venv/bin/chainlit', 'run', 'src/law_agent/ui/app.py', '--por
   - ✅ Task 11.5: Feedback 👍/👎 (PostgreSQL + Phoenix span annotations)
   - ⏭️ Task 11.6: Share conversations — deferred
   - ⏭️ Task 11.7: Export to Markdown — deferred
-  - 📋 Task 11.8: Retry failed messages ← **NEXT**
-  - 📋 Task 11.9: Browser notifications
+  - ✅ Task 11.8: Retry failed messages (cl.Action + session-scoped retry_actions)
+  - 📋 Task 11.9: Browser notifications ← **NEXT**
   - 📋 Task 11.10: Copy to clipboard
   - 📋 Task 11.11: RTL and Persian UI polish
   - 📋 Task 11.12: Response streaming
