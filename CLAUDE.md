@@ -22,7 +22,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ⏭️ Task 11.7: Export to Markdown — deferred
 - ✅ **Task 11.8: Retry failed messages — COMPLETE**
 - 📋 Task 11.9: Browser notifications ← START HERE
-- 📋 Task 11.10–11.12: Pending
+- ✅ Task 11.10: Copy to clipboard (patch.js + patch.css)
+- 📋 Task 11.11–11.12: Pending
 
 **Tests**: 314 passing, 0 failing (run: `.venv/bin/python -m pytest tests/ --ignore=tests/integration -q`)
 

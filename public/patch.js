@@ -32,3 +32,34 @@ observer.observe(document.body, {
 // Also try immediately and after a delay
 setTimeout(changeInputPlaceholder, 500);
 setTimeout(changeInputPlaceholder, 1000);
+
+// ==================== Copy to Clipboard for Code Blocks ====================
+
+function addCopyButtons() {
+    document.querySelectorAll('pre').forEach(pre => {
+        if (pre.querySelector('.copy-btn')) return;
+
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.textContent = 'کپی';
+        btn.title = 'کپی کد';
+
+        btn.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.innerText : pre.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                btn.textContent = '✓ کپی شد';
+                setTimeout(() => { btn.textContent = 'کپی'; }, 2000);
+            }).catch(() => {
+                btn.textContent = 'خطا';
+                setTimeout(() => { btn.textContent = 'کپی'; }, 2000);
+            });
+        });
+
+        pre.appendChild(btn);
+    });
+}
+
+const copyObserver = new MutationObserver(addCopyButtons);
+copyObserver.observe(document.body, { childList: true, subtree: true });
+addCopyButtons();

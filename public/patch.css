@@ -73,3 +73,33 @@ pre,
 .cl-message {
     margin: 0.5rem 0;
 }
+
+/* ==================== Copy Button for Code Blocks ==================== */
+pre {
+    position: relative;
+}
+
+.copy-btn {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    padding: 3px 10px;
+    background: rgba(74, 85, 104, 0.85);
+    color: #e2e8f0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'Vazirmatn', sans-serif;
+    z-index: 10;
+    transition: background 0.15s;
+    line-height: 1.5;
+}
+
+.copy-btn:hover {
+    background: rgba(45, 55, 72, 0.95);
+}
+
+.copy-btn:active {
+    transform: scale(0.96);
+}
