@@ -105,7 +105,7 @@ language = "fa-IR"
 
 # layout = "wide"
 
-default_sidebar_state = "open"  # Options: "open", "closed", "hidden"
+default_sidebar_state = "closed"  # Options: "open", "closed", "hidden"
 
 # Chat settings display location: "message_composer" (default) or "sidebar" (header)
 # chat_settings_location = "message_composer"

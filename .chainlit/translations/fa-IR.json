@@ -58,8 +58,8 @@
     },
     "messages": {
       "status": {
-        "using": "در حال استفاده از",
-        "used": "استفاده شد"
+        "using": "",
+        "used": ""
       },
       "actions": {
         "copy": {

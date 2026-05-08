@@ -225,11 +225,8 @@ async def main(message: cl.Message) -> None:
         # Get conversation history from state
         history = conv_state.message_history
 
-        # Create a message for streaming response
-        msg = cl.Message(content="")
-        await msg.send()  # type: ignore
-
-        # Call agent
+        # Run agent — thinking and tool steps appear during execution
+        # The final cl.Message is sent AFTER, so steps appear before the answer
         logger.info("calling_agent", session_id=session_id)
 
         response_text, updated_history = await agent.run(
@@ -238,8 +235,7 @@ async def main(message: cl.Message) -> None:
             conversation_id=session_id,
         )
 
-        # Update conversation state with the complete message history
-        # This ensures follow-up questions have full context
+        # Update conversation state
         conv_state.message_history = updated_history
         logger.info(
             "conversation_state_updated",
@@ -247,15 +243,12 @@ async def main(message: cl.Message) -> None:
             message_count=len(updated_history),
         )
 
-        # Format response with clickable citations
+        # Format and send the final response AFTER all tool steps are complete
         formatted_response = citation_formatter.format_response(response_text)
+        await cl.Message(content=formatted_response).send()  # type: ignore
 
-        # Update message with formatted response
-        msg.content = formatted_response
-        await msg.update()  # type: ignore
-
-        # Show tool steps if enabled
-        if settings.ui.show_tool_calls:
+        # Legacy tool step extraction (kept for compatibility, now superseded by cl.step in tools)
+        if False and settings.ui.show_tool_calls:
             steps = step_manager.extract_steps(response_text)
             for step_data in steps:
                 step = cl.Step(

@@ -88,8 +88,7 @@ scratchpad*.md
 # Chainlit & UI artifacts
 .chainlit/*.db
 .files/
-public/
-chainlit.md
+chainlit.md.example
 
 # Test artifacts
 .pytest_cache/

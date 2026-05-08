@@ -18,10 +18,12 @@ import os
 import uuid
 from pathlib import Path
 
+import chainlit as cl
 import structlog
 import yaml
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.messages import ModelMessage
+from pydantic_ai.agent import CallToolsNode
+from pydantic_ai.messages import ModelMessage, TextPart, ThinkingPart, ToolCallPart
 from pydantic_ai.models.openai import OpenAIModel
 
 from law_agent.config.settings import get_settings
@@ -33,6 +35,15 @@ from law_agent.tools.search import (
 )
 
 logger = structlog.get_logger(__name__)
+
+
+async def show_thinking(text_parts: list[str]) -> None:
+    async with cl.Step(
+        name="تحلیل سوال",
+        type="tool",
+        show_input=False,
+    ) as step:
+        step.output = "\n".join(text_parts)
 
 
 class LawAgent:
@@ -170,123 +181,88 @@ class LawAgent:
         doc_types: list[str] | None = None,
         limit: int = 20,
     ) -> str:
-        """Tool: Search documents using full-text search.
+        """Tool: Search documents using full-text search."""
+        limit = min(max(1, limit), 20)
+        logger.info("search_documents_tool_called", query=query, tags=tags, doc_types=doc_types, limit=limit)
 
-        This tool is called by the agent to search for legal documents.
-        Results are returned as JSON for the agent to parse.
+        async with cl.Step(name="در حال جستجو ...", type="retrieval", show_input=False) as step:
+            try:
+                results = search_documents(query=query, tags=tags, doc_types=doc_types, limit=limit)
 
-        Args:
-            ctx: PydanticAI RunContext
-            query: Search query (Persian or English)
-            tags: Optional subject tags to filter by
-            doc_types: Optional document types to filter by
-            limit: Maximum results (1-20, default 20)
+                if results:
+                    step.name = f"جستجو — {len(results)} سند پیدا شد"
+                    step.output = "\n".join(
+                        f"- **{r.title}** ({r.doc_type}) — امتیاز: {r.relevance_score:.2f}"
+                        for r in results
+                    )
+                else:
+                    step.name = "جستجو — نتیجه‌ای پیدا نشد"
+                    step.output = "هیچ سندی با این معیار یافت نشد."
 
-        Returns:
-            JSON string with search results for agent to parse
-        """
-        try:
-            logger.info(
-                "search_documents_tool_called",
-                query=query,
-                tags=tags,
-                doc_types=doc_types,
-                limit=limit,
-            )
+                results_json = json.dumps(
+                    [
+                        {
+                            "doc_id": r.doc_id,
+                            "title": r.title,
+                            "doc_type": r.doc_type,
+                            "date": r.date,
+                            "summary": r.summary[:200] + ("..." if len(r.summary) > 200 else ""),
+                            "tags": r.tags,
+                            "relevance_score": round(r.relevance_score, 3),
+                        }
+                        for r in results
+                    ],
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                logger.info("search_documents_tool_success", query=query, result_count=len(results))
+                return results_json
 
-            # Clamp limit
-            limit = min(max(1, limit), 20)
-
-            # Call search function
-            results = search_documents(
-                query=query,
-                tags=tags,
-                doc_types=doc_types,
-                limit=limit,
-            )
-
-            # Convert to JSON for agent
-            results_json = json.dumps(
-                [
-                    {
-                        "doc_id": r.doc_id,
-                        "title": r.title,
-                        "doc_type": r.doc_type,
-                        "date": r.date,
-                        "summary": r.summary[:200] + ("..." if len(r.summary) > 200 else ""),
-                        "tags": r.tags,
-                        "relevance_score": round(r.relevance_score, 3),
-                    }
-                    for r in results
-                ],
-                ensure_ascii=False,
-                indent=2,
-            )
-
-            logger.info(
-                "search_documents_tool_success",
-                query=query,
-                result_count=len(results),
-            )
-
-            return results_json
-
-        except Exception as e:
-            logger.exception(
-                "search_documents_tool_error",
-                query=query,
-                error=str(e),
-            )
-            error_msg = f"خطا در جستجو: {str(e)}"
-            return json.dumps({"error": error_msg}, ensure_ascii=False)
+            except Exception as e:
+                logger.exception("search_documents_tool_error", query=query, error=str(e))
+                step.name = "جستجو — خطا"
+                step.output = f"خطا در جستجو: {e}"
+                return json.dumps({"error": f"خطا در جستجو: {e}"}, ensure_ascii=False)
 
     @staticmethod
     async def _get_document_tool(ctx: RunContext, doc_id: int) -> str:
-        """Tool: Fetch complete document content.
+        """Tool: Fetch complete document content."""
+        logger.info("get_document_tool_called", doc_id=doc_id)
 
-        This tool is called by the agent to load the full content of a document.
-        The document is returned as JSON including full_content field.
+        async with cl.Step(name="در حال خواندن سند ...", type="retrieval", show_input=False) as step:
+            try:
+                doc = get_document(doc_id)
+                step.name = f"خواندن سند — {doc.title}"
+                meta = " — ".join(filter(None, [doc.doc_type, doc.date]))
+                step.output = f"**{doc.title}**\n_{meta}_\n\n{doc.summary[:300]}{'...' if len(doc.summary) > 300 else ''}"
 
-        Args:
-            ctx: PydanticAI RunContext
-            doc_id: Document ID to fetch
+                doc_json = json.dumps(
+                    {
+                        "doc_id": doc.doc_id,
+                        "title": doc.title,
+                        "doc_type": doc.doc_type,
+                        "date": doc.date,
+                        "summary": doc.summary,
+                        "tags": doc.tags,
+                        "full_content": doc.full_content,
+                        "relations_count": doc.relations_count,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                logger.info("get_document_tool_success", doc_id=doc_id)
+                return doc_json
 
-        Returns:
-            JSON string with complete document for agent to parse
-        """
-        try:
-            logger.info("get_document_tool_called", doc_id=doc_id)
-
-            # Call get_document function
-            doc = get_document(doc_id)
-
-            # Convert to JSON for agent
-            doc_json = json.dumps(
-                {
-                    "doc_id": doc.doc_id,
-                    "title": doc.title,
-                    "doc_type": doc.doc_type,
-                    "date": doc.date,
-                    "summary": doc.summary,
-                    "tags": doc.tags,
-                    "full_content": doc.full_content,
-                    "relations_count": doc.relations_count,
-                },
-                ensure_ascii=False,
-                indent=2,
-            )
-
-            logger.info("get_document_tool_success", doc_id=doc_id)
-            return doc_json
-
-        except DocumentNotFoundError:
-            logger.warning("get_document_tool_not_found", doc_id=doc_id)
-            error_msg = f"سند شماره {doc_id} پیدا نشد"
-            return json.dumps({"error": error_msg}, ensure_ascii=False)
-        except Exception as e:
-            logger.exception("get_document_tool_error", doc_id=doc_id, error=str(e))
-            error_msg = f"خطا در دریافت سند: {str(e)}"
-            return json.dumps({"error": error_msg}, ensure_ascii=False)
+            except DocumentNotFoundError:
+                logger.warning("get_document_tool_not_found", doc_id=doc_id)
+                step.name = f"سند {doc_id} پیدا نشد"
+                step.output = f"سند شماره {doc_id} در پایگاه داده موجود نیست."
+                return json.dumps({"error": f"سند شماره {doc_id} پیدا نشد"}, ensure_ascii=False)
+            except Exception as e:
+                logger.exception("get_document_tool_error", doc_id=doc_id, error=str(e))
+                step.name = "خواندن سند — خطا"
+                step.output = f"خطا: {e}"
+                return json.dumps({"error": f"خطا در دریافت سند: {e}"}, ensure_ascii=False)
 
     @staticmethod
     async def _get_related_documents_tool(
@@ -295,72 +271,48 @@ class LawAgent:
         relation_types: list[str] | None = None,
         limit: int = 10,
     ) -> str:
-        """Tool: Get related documents via citation graph.
+        """Tool: Get related documents via citation graph."""
+        limit = min(max(1, limit), 10)
+        logger.info("get_related_documents_tool_called", doc_id=doc_id, relation_types=relation_types, limit=limit)
 
-        This tool is called by the agent to follow document relationships.
-        Useful for finding parent laws, related articles, or precedents.
+        async with cl.Step(name="در حال جستجوی اسناد مرتبط ...", type="retrieval", show_input=False) as step:
+            try:
+                results = get_related_documents(doc_id=doc_id, relation_types=relation_types, limit=limit)
 
-        Args:
-            ctx: PydanticAI RunContext
-            doc_id: Source document ID
-            relation_types: Optional relation types to filter by
-            limit: Maximum related documents (1-10, default 10)
+                if results:
+                    step.name = f"اسناد مرتبط — {len(results)} سند"
+                    step.output = "\n".join(
+                        f"- **{r.title}** ({r.doc_type})"
+                        for r in results
+                    )
+                else:
+                    step.name = "اسناد مرتبط — موردی یافت نشد"
+                    step.output = "هیچ سند مرتبطی یافت نشد."
 
-        Returns:
-            JSON string with related documents for agent to parse
-        """
-        try:
-            logger.info(
-                "get_related_documents_tool_called",
-                doc_id=doc_id,
-                relation_types=relation_types,
-                limit=limit,
-            )
+                results_json = json.dumps(
+                    [
+                        {
+                            "doc_id": r.doc_id,
+                            "title": r.title,
+                            "doc_type": r.doc_type,
+                            "date": r.date,
+                            "summary": r.summary[:200] + ("..." if len(r.summary) > 200 else ""),
+                            "tags": r.tags,
+                            "relevance_score": round(r.relevance_score, 3),
+                        }
+                        for r in results
+                    ],
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                logger.info("get_related_documents_tool_success", doc_id=doc_id, result_count=len(results))
+                return results_json
 
-            # Clamp limit
-            limit = min(max(1, limit), 10)
-
-            # Call get_related_documents function
-            results = get_related_documents(
-                doc_id=doc_id,
-                relation_types=relation_types,
-                limit=limit,
-            )
-
-            # Convert to JSON for agent
-            results_json = json.dumps(
-                [
-                    {
-                        "doc_id": r.doc_id,
-                        "title": r.title,
-                        "doc_type": r.doc_type,
-                        "date": r.date,
-                        "summary": r.summary[:200] + ("..." if len(r.summary) > 200 else ""),
-                        "tags": r.tags,
-                        "relevance_score": round(r.relevance_score, 3),
-                    }
-                    for r in results
-                ],
-                ensure_ascii=False,
-                indent=2,
-            )
-
-            logger.info(
-                "get_related_documents_tool_success",
-                doc_id=doc_id,
-                result_count=len(results),
-            )
-
-            return results_json
-
-        except Exception as e:
-            logger.exception(
-                "get_related_documents_tool_error",
-                doc_id=doc_id,
-                error=str(e),
-            )
-            error_msg = f"خطا در دریافت اسناد مرتبط: {str(e)}"
-            return json.dumps({"error": error_msg}, ensure_ascii=False)
+            except Exception as e:
+                logger.exception("get_related_documents_tool_error", doc_id=doc_id, error=str(e))
+                step.name = "اسناد مرتبط — خطا"
+                step.output = f"خطا: {e}"
+                return json.dumps({"error": f"خطا در دریافت اسناد مرتبط: {e}"}, ensure_ascii=False)
 
     async def run(
         self,
@@ -395,15 +347,45 @@ class LawAgent:
                 user_query_length=len(user_query),
             )
 
-            # Run agent with conversation history
-            result = await self.agent.run(
+            async with self.agent.iter(
                 user_query,
                 message_history=conversation_history or [],
-            )
+            ) as agent_run:
+                async for node in agent_run:
+                    if isinstance(node, CallToolsNode):
+                        thinking_parts: list[str] = []
+                        text_parts: list[str] = []
+                        has_tool_part = False
 
-            response_text = result.output
-            # Get the complete updated message history including this exchange
-            updated_history = result.all_messages()
+                        for part in node.model_response.parts:
+                            if isinstance(part, ToolCallPart):
+                                has_tool_part = True
+                            elif isinstance(part, ThinkingPart):
+                                thinking_parts.append(part.content)
+                            elif isinstance(part, TextPart):
+                                text_parts.append(part.content)
+
+                        if thinking_parts:
+                            await show_thinking(thinking_parts)
+                        elif text_parts and has_tool_part:
+                            await show_thinking(text_parts)
+                        elif has_tool_part:
+                            # Build a planning summary from the tool calls
+                            _tool_label = {
+                                "_search_documents_tool": "جستجو در قوانین",
+                                "_get_document_tool": "مطالعه سند",
+                                "_get_related_documents_tool": "بررسی اسناد مرتبط",
+                            }
+                            lines = []
+                            for p in node.model_response.parts:
+                                if isinstance(p, ToolCallPart):
+                                    label = _tool_label.get(p.tool_name, p.tool_name)
+                                    lines.append(f"- {label}")
+                            if lines:
+                                await show_thinking(["برای پاسخ به سوال شما:"] + lines)
+
+            response_text = agent_run.result.output
+            updated_history = agent_run.result.all_messages()
 
             logger.info(
                 "law_agent_run_success",

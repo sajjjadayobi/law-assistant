@@ -6,35 +6,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Current Focus: v0.0.2 - Enhanced UI/UX
 
-**Status**: Task 11.3 — Thinking Steps Visualization
+**Status**: Task 11.4 — Tool Calls Visualization
 
-**Next Task**: Task 11.3 - Show AI reasoning steps while searching legal documents
+**Next Task**: Task 11.4 - Show search tool call inputs/outputs in a dedicated panel
 
-**Implementation Guide**: `docs/development/v0.0.2-tasks.md` (Task 11.3 section has exact code)
+**Implementation Guide**: `docs/development/v0.0.2-tasks.md` (Task 11.4 section)
 
 **Reference Project**: `/Users/divar/Documents/codes/data-assistant` (SQL Assistant)
 
 **Progress**:
 - ✅ Task 11.1 (Centered welcome screen) - Complete
-- ✅ Task 11.2 (Conversation history sidebar) - Complete:
-  - camelCase schema + TEXT timestamps + `@cl.password_auth_callback` + `fa-IR.json` translations
-  - Persian empty state: "هنوز گفتگویی ندارید / اولین سوال حقوقی خود را بپرسید"
-  - Time groups: امروز / دیروز / ۷ روز گذشته / ۳۰ روز گذشته
-  - See `docs/features/phase-11-enhanced-ui/task-11.2-conversation-sidebar/`
-- 📋 Task 11.3 (Thinking steps) - **START HERE**
+- ✅ Task 11.2 (Conversation history sidebar) - Complete
+- ✅ Task 11.3 (Thinking steps + UI polish) - **Complete**:
+  - Steps appear BEFORE the final answer (`cl.Message().send()` moved after `agent.run()`)
+  - `agent.run()` → `agent.iter()` to access `CallToolsNode`
+  - `async with cl.Step()` in each tool — never `@cl.step` on sync functions (unreliable)
+  - Dynamic step names: "جستجو — N سند پیدا شد", "خواندن سند — {title}", "اسناد مرتبط — N سند"
+  - "تحلیل سوال" planning step before each tool call group
+  - No "استفاده شد" suffix — `fa-IR.json` `messages.status.used = ""`
+  - `"defaultOpen"` column added to steps table
+  - Citations fixed: HTML → markdown `[1](iran.ir/law/{doc_id})`, strips `[doc_id: X]` from display
+  - "سوالات بیشتر:" header in system prompt for follow-up questions
+  - `chainlit.md` (راهنما): full Persian help page
+  - Sidebar closed by default (`default_sidebar_state = "closed"`)
+  - Translations: only `en-US.json` + `fa-IR.json` kept
+  - Logo redesigned: bolder scales, cleaner proportions
+  - See `docs/features/phase-11-enhanced-ui/task-11.3-thinking-steps/`
 - 📋 Task 11.4–11.12 - Pending
 
-**Key Setup Facts** (needed before starting 11.3):
-- Server start: load `.env` via Python (bash expansion breaks `$` in JWT secret)
+**Key Setup Facts** (for next developer):
+- Server: `python3 /tmp/start_server.py` (loads .env via Python — bash breaks `$` in JWT secret)
 - Auth: `CHAINLIT_AUTH_SECRET` in `.env`, `@cl.password_auth_callback` in `app.py`
-- DB schema: camelCase (`"createdAt"` TEXT, `"threadId"` TEXT) in `users/threads/steps/elements/feedbacks`
+- DB schema: camelCase + TEXT timestamps + `"defaultOpen"` BOOLEAN in steps table
 - Translation: `.chainlit/translations/fa-IR.json`, language `= "fa-IR"` in `.chainlit/config.toml`
+- Steps: always `async with cl.Step(name="...", type="retrieval") as step:` then update `step.name`
+- Citations: `citations.py` parses `[doc_id: X]` from منابع section → builds markdown links
 
-**What's Next for Task 11.3**:
-- Show "در حال فکر کردن..." collapsible step while agent reasons
-- Use `@cl.step(name="در حال فکر کردن", type="tool", default_open=True)`
-- Switch `agent.run()` → `agent.iter()` to access `CallToolsNode` and `ThinkingPart`
-- Reference: `data-assistant/src/profiles/sql_assistant_v3/agents/sql_assistant.py` lines 51-147
+**Critical learnings from 11.3**:
+- `@cl.step` on sync → NOT reliable; always `async with cl.Step()`
+- `cl.Message().send()` AFTER `agent.run()` → steps precede the answer
+- `step.name` updatable inside context manager → show result count in label
+- `unsafe_allow_html = false` in Chainlit → use markdown links, not `<a>` tags
 
 ---
 
@@ -113,7 +125,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 🚀 Phase 11: Enhanced UI/UX (v0.0.2) - **In Implementation**
   - ✅ Task 11.1: Centered welcome screen with starter questions (COMPLETE)
   - ✅ Task 11.2: Conversation history sidebar — COMPLETE (auth + Persian UI + camelCase DB)
-  - 📋 Task 11.3: Thinking steps visualization ← **NEXT**
+  - ✅ Task 11.3: Thinking steps — COMPLETE (steps before answer, dynamic labels, cl.Step async)
+  - 📋 Task 11.4: Tool calls visualization ← **NEXT**
   - 📋 Task 11.4: Tool calls visualization
   - 📋 Task 11.5: Feedback collection (thumbs up/down)
   - 📋 Task 11.6: Share conversations

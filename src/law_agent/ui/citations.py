@@ -1,203 +1,158 @@
 """
 Citation parsing and formatting for the UI.
 
-Extracts citation references [1], [2], etc. from agent responses
-and converts them to clickable links to iran.ir documentation.
+Extracts [1], [2] citation markers from agent responses and converts them
+to markdown links pointing to the real iran.ir document URLs using the
+doc_id extracted from the reference section.
 """
 
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
 class Citation:
-    """Represents a single citation reference."""
-
     number: int
     doc_id: str | None = None
-    doc_title: str | None = None
-    url: str | None = None
+    title: str | None = None
+
+    @property
+    def url(self) -> str:
+        base = "https://iran.ir/en/law"
+        target = self.doc_id if self.doc_id else str(self.number)
+        return f"{base}/{target}"
+
+    def to_markdown_link(self) -> str:
+        return f"[{self.number}]({self.url})"
+
+
+# Matches [1], [2], [12] etc. — used inline and in reference lines
+_CITATION_RE = re.compile(r"\[(\d+)\]")
+
+# Matches [doc_id: 12345] as written by the agent
+_DOC_ID_RE = re.compile(r"\[doc_id:\s*(\d+)\]", re.IGNORECASE)
+
+# Matches the reference section header  (منابع:  or  :منابع)
+_REF_SECTION_RE = re.compile(r"(منابع\s*:|:منابع)", re.IGNORECASE)
 
 
 class CitationFormatter:
-    """Formats citations in agent responses as clickable links."""
+    """
+    Converts agent citations to clean markdown links.
 
-    # Base URL for Iranian legal documents
-    IRAN_IR_BASE_URL = "https://iran.ir/en/law"
-
-    # Pattern to match citations like [1], [2], etc.
-    CITATION_PATTERN = re.compile(r"\[(\d+)\]")
+    Flow:
+      1. Scan the reference section (منابع:) to build citation → doc_id map.
+      2. Replace every [N] in the body with a markdown link [N](url).
+      3. Clean the reference section: strip [doc_id: X] tags and render
+         each reference as a proper markdown link.
+    """
 
     def __init__(self) -> None:
-        """Initialize citation formatter."""
-        self.citations: list[Citation] = []
-
-    def extract_citations(self, text: str) -> list[int]:
-        """Extract citation numbers from text.
-
-        Args:
-            text: Text containing citations like [1], [2]
-
-        Returns:
-            List of unique citation numbers found
-        """
-        matches = self.CITATION_PATTERN.findall(text)
-        return sorted({int(m) for m in matches})
+        self._citations: dict[int, Citation] = {}
 
     def format_response(self, response: str) -> str:
-        """Format response text with clickable citation links.
-
-        Args:
-            response: Agent response text with citations
-
-        Returns:
-            HTML-formatted response with clickable links
-        """
         try:
-            # Extract citations
-            citation_numbers = self.extract_citations(response)
-
-            if not citation_numbers:
-                # No citations found, return as-is
+            self._citations = self._parse_references(response)
+            if not self._citations and not _CITATION_RE.search(response):
                 return response
-
-            # Format each citation as a clickable link
-            formatted = response
-            for num in citation_numbers:
-                citation_link = self._create_citation_link(num)
-                # Replace [N] with clickable link
-                formatted = formatted.replace(
-                    f"[{num}]", citation_link, 1  # Replace only first occurrence
-                )
-
-            return formatted
-
-        except Exception as e:
-            # If formatting fails, return original response
-            import structlog
-
-            logger = structlog.get_logger(__name__)
-            logger.warning("citation_formatting_error", error=str(e))
+            return self._render(response)
+        except Exception:
             return response
 
-    def _create_citation_link(self, citation_number: int) -> str:
-        """Create HTML link for a citation.
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
 
-        Args:
-            citation_number: Citation number like 1, 2, 3
+    def _parse_references(self, text: str) -> dict[int, Citation]:
+        """Extract citation numbers and their doc_ids from the منابع section."""
+        citations: dict[int, Citation] = {}
 
-        Returns:
-            HTML link string
-        """
-        # URL with citation number (could be enhanced with doc_id if available)
-        url = f"{self.IRAN_IR_BASE_URL}/{citation_number}"
-
-        # Create clickable link in Persian
-        link_html = (
-            f'<a href="{url}" target="_blank" '
-            f'style="color: #0066cc; text-decoration: underline; '
-            f'direction: rtl; text-align: right;">'
-            f"[{citation_number}]</a>"
-        )
-
-        return link_html
-
-    def extract_citation_references(self, text: str) -> dict[int, dict[str, str]]:
-        """Extract and parse citation reference section from response.
-
-        Looks for "منابع:" (References) section at end of response.
-
-        Args:
-            text: Full response text
-
-        Returns:
-            Dictionary mapping citation number to reference details
-        """
-        references: dict[int, dict[str, str]] = {}
-
-        # Look for references section (Persian header)
-        ref_pattern = re.compile(
-            r"منابع\s*:\s*(.*?)(?:\n\n|$)",
-            re.DOTALL | re.IGNORECASE,
-        )
-        match = ref_pattern.search(text)
-
+        match = _REF_SECTION_RE.search(text)
         if not match:
-            return references
+            return citations
 
-        ref_section = match.group(1)
+        section = text[match.end():]
 
-        # Parse individual references like [1] قانون مجازات اسلامی
-        ref_lines = ref_section.strip().split("\n")
-
-        for line in ref_lines:
-            # Match pattern: [N] Reference text
-            ref_match = re.match(r"\s*\[(\d+)\]\s+(.*)", line)
-            if ref_match:
-                num = int(ref_match.group(1))
-                ref_text = ref_match.group(2).strip()
-                references[num] = {
-                    "number": str(num),
-                    "text": ref_text,
-                }
-
-        return references
-
-    def validate_citations(self, response: str) -> bool:
-        """Validate that citation numbers are consecutive and complete.
-
-        Args:
-            response: Response text with citations
-
-        Returns:
-            True if citations are valid (consecutive [1], [2], [3], etc.)
-            False if there are gaps or duplicates
-        """
-        citation_numbers = self.extract_citations(response)
-
-        if not citation_numbers:
-            return True  # No citations is valid
-
-        # Check if consecutive starting from 1
-        if citation_numbers[0] != 1:
-            return False
-
-        for i, num in enumerate(citation_numbers):
-            if num != i + 1:
-                return False
-
-        return True
-
-
-class CitationHTML:
-    """Helper to generate citation HTML elements."""
-
-    @staticmethod
-    def create_reference_section(references: dict[int, dict[str, str]]) -> str:
-        """Create HTML for references section.
-
-        Args:
-            references: Dictionary of reference data
-
-        Returns:
-            HTML formatted references section
-        """
-        if not references:
-            return ""
-
-        html = '<div style="direction: rtl; text-align: right; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;">'
-        html += "<strong>منابع:</strong><br/>"
-
-        for num in sorted(references.keys()):
-            ref_data = references[num]
-            ref_text = ref_data.get("text", "")
-            html += (
-                f'<div style="margin: 5px 0;">'
-                f'<a href="https://iran.ir/en/law/{num}" target="_blank">'
-                f"[{num}]</a> {ref_text}</div>"
+        for line in section.splitlines():
+            m = _CITATION_RE.match(line.strip())
+            if not m:
+                continue
+            num = int(m.group(1))
+            doc_id_m = _DOC_ID_RE.search(line)
+            # Title: everything between [N] and [doc_id:...] or end of line
+            raw_title = _CITATION_RE.sub("", line, count=1)
+            raw_title = _DOC_ID_RE.sub("", raw_title).strip(" \t–—-")
+            citations[num] = Citation(
+                number=num,
+                doc_id=doc_id_m.group(1) if doc_id_m else None,
+                title=raw_title or None,
             )
 
-        html += "</div>"
-        return html
+        return citations
+
+    def _render(self, text: str) -> str:
+        """Replace [N] with markdown links and clean up the reference section."""
+        ref_match = _REF_SECTION_RE.search(text)
+
+        if ref_match:
+            body = text[: ref_match.start()]
+            ref_block = text[ref_match.start():]
+        else:
+            body = text
+            ref_block = ""
+
+        # Replace [N] in body (but not inside markdown links already)
+        body = _CITATION_RE.sub(self._replace_inline, body)
+
+        # Rebuild the reference section cleanly
+        if ref_block:
+            ref_block = self._clean_ref_section(ref_block)
+
+        return body + ref_block
+
+    def _replace_inline(self, m: re.Match) -> str:
+        num = int(m.group(1))
+        citation = self._citations.get(num)
+        if citation:
+            return citation.to_markdown_link()
+        # Fallback: link by number even without doc_id
+        return f"[{num}](https://iran.ir/en/law/{num})"
+
+    def _clean_ref_section(self, section: str) -> str:
+        """Render منابع block with markdown links and no raw [doc_id: X] tags."""
+        lines = section.splitlines()
+        result = []
+        for line in lines:
+            # Ref line: [N] Title [doc_id: X]
+            m = _CITATION_RE.match(line.strip())
+            if m:
+                num = int(m.group(1))
+                citation = self._citations.get(num)
+                # Strip [doc_id:...] from display title
+                clean_title = _DOC_ID_RE.sub("", line)
+                # Also remove the citation number itself — we'll replace with link
+                clean_title = _CITATION_RE.sub("", clean_title, count=1)
+                # Strip stray dashes/spaces that may surround the removed [doc_id:] tag
+                clean_title = re.sub(r'\s*[-–—]\s*$', '', clean_title).strip()
+                # Build the line: markdown link + clean title
+                link = citation.to_markdown_link() if citation else f"[{num}]"
+                result.append(f"{link} {clean_title}")
+            else:
+                result.append(line)
+        return "\n".join(result)
+
+    # ------------------------------------------------------------------
+    # Legacy helpers kept for backwards compatibility
+    # ------------------------------------------------------------------
+
+    def extract_citations(self, text: str) -> list[int]:
+        matches = _CITATION_RE.findall(text)
+        return sorted({int(m) for m in matches})
+
+    def validate_citations(self, response: str) -> bool:
+        nums = self.extract_citations(response)
+        if not nums:
+            return True
+        return nums == list(range(1, len(nums) + 1))

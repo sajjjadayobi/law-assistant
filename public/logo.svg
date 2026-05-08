@@ -1,19 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="#E84855" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Scale base -->
-  <rect x="45" y="145" width="110" height="12" rx="3" fill="#E84855"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
 
-  <!-- Scale pole -->
-  <line x1="100" y1="50" x2="100" y2="145" stroke="#E84855" stroke-width="5"/>
+  <!-- Base platform — wide, bold -->
+  <rect x="38" y="162" width="124" height="11" rx="5.5" fill="#E84855"/>
 
-  <!-- Left pan -->
-  <rect x="35" y="105" width="40" height="25" rx="3" fill="none" stroke="#E84855" stroke-width="4"/>
-  <line x1="50" y1="105" x2="65" y2="65" stroke="#E84855" stroke-width="4"/>
+  <!-- Pillar — slim, elegant -->
+  <rect x="95" y="52" width="10" height="112" rx="5" fill="#E84855"/>
 
-  <!-- Right pan -->
-  <rect x="125" y="105" width="40" height="25" rx="3" fill="none" stroke="#E84855" stroke-width="4"/>
-  <line x1="150" y1="105" x2="135" y2="65" stroke="#E84855" stroke-width="4"/>
+  <!-- Horizontal beam — tapered ends -->
+  <rect x="36" y="66" width="128" height="9" rx="4.5" fill="#E84855"/>
 
-  <!-- Top balance beam -->
-  <line x1="65" y1="65" x2="135" y2="65" stroke="#E84855" stroke-width="5"/>
-  <circle cx="100" cy="65" r="5" fill="#E84855"/>
+  <!-- Pivot circle at top of pillar -->
+  <circle cx="100" cy="57" r="12" fill="#E84855"/>
+  <circle cx="100" cy="57" r="6" fill="#0F0F1A" opacity="0.4"/>
+
+  <!-- === LEFT PAN === -->
+  <!-- Two thin suspension wires -->
+  <line x1="56"  y1="75" x2="46"  y2="118" stroke="#E84855" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="56"  y1="75" x2="70"  y2="118" stroke="#E84855" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Left pan — smooth arc -->
+  <path d="M40,118 Q58,136 76,118" stroke="#E84855" stroke-width="5.5" stroke-linecap="round"/>
+
+  <!-- Left pan bottom line -->
+  <line x1="42" y1="128" x2="74" y2="128" stroke="#E84855" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- === RIGHT PAN (slightly lower for dynamic feel) === -->
+  <line x1="144" y1="75" x2="130" y2="126" stroke="#E84855" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="144" y1="75" x2="158" y2="126" stroke="#E84855" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Right pan — smooth arc, lower -->
+  <path d="M124,126 Q143,144 162,126" stroke="#E84855" stroke-width="5.5" stroke-linecap="round"/>
+  <line x1="126" y1="136" x2="160" y2="136" stroke="#E84855" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+
 </svg>
