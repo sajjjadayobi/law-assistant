@@ -209,7 +209,7 @@ class LawAgent:
                     if results:
                         step.name = f"جستجو — {len(results)} سند پیدا شد"
                         step.output = "\n".join(
-                            f"- **{r.title}** ({r.doc_type}) — امتیاز: {r.relevance_score:.2f}"
+                            f"- **{r.title}** — امتیاز: {r.relevance_score:.2f}"
                             for r in results
                         )
                     else:
@@ -263,8 +263,7 @@ class LawAgent:
                 try:
                     doc = get_document(doc_id)
                     step.name = f"خواندن سند — {doc.title}"
-                    meta = " — ".join(filter(None, [doc.doc_type, doc.date]))
-                    step.output = f"**{doc.title}**\n_{meta}_\n\n{doc.summary[:300]}{'...' if len(doc.summary) > 300 else ''}"
+                    step.output = f"**{doc.title}**\n_{doc.date}_\n\n{doc.summary[:300]}{'...' if len(doc.summary) > 300 else ''}"
 
                     doc_json = json.dumps(
                         {
@@ -338,7 +337,7 @@ class LawAgent:
 
                     if results:
                         step.name = f"اسناد مرتبط — {len(results)} سند"
-                        step.output = "\n".join(f"- **{r.title}** ({r.doc_type})" for r in results)
+                        step.output = "\n".join(f"- **{r.title}**" for r in results)
                     else:
                         step.name = "اسناد مرتبط — موردی یافت نشد"
                         step.output = "هیچ سند مرتبطی یافت نشد."
