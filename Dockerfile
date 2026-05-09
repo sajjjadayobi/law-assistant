@@ -18,13 +18,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install uv for fast dependency management
 RUN pip install --no-cache-dir uv
 
-# Copy dependency files
-COPY pyproject.toml .
+# Copy dependency files and source for installation
+COPY pyproject.toml README.md ./
+COPY src ./src
 
-# Create virtual environment and install dependencies
+# Create virtual environment and install package with all dependencies
 RUN uv venv /opt/venv && \
     . /opt/venv/bin/activate && \
-    uv pip install --no-cache-dir -e .
+    uv pip install --no-cache-dir .
 
 # ============================================================================
 # Stage 2: Runtime
@@ -47,10 +48,10 @@ COPY --from=builder --chown=appuser:appuser /opt/venv /opt/venv
 
 # Copy application code and configuration
 COPY --chown=appuser:appuser src ./src
-COPY --chown=appuser:appuser config ./config
 COPY --chown=appuser:appuser .chainlit ./.chainlit
 COPY --chown=appuser:appuser public ./public
 COPY --chown=appuser:appuser config.yaml .
+COPY --chown=appuser:appuser chainlit.md .
 
 # Set environment variables
 ENV PATH="/opt/venv/bin:$PATH" \

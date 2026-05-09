@@ -55,6 +55,7 @@ class LawAgentDataLayer(SQLAlchemyDataLayer):
                     user_id = None
                     try:
                         import chainlit as cl
+
                         user = cl.user_session.get("user")
                         if user:
                             user_id = user.id
@@ -90,9 +91,7 @@ class LawAgentDataLayer(SQLAlchemyDataLayer):
         self, user_id: Optional[str] = None, thread_id: Optional[str] = None
     ) -> Optional[List[ThreadDict]]:
         """Override to sort threads newest-first for Persian sidebar display."""
-        threads = await super().get_all_user_threads(
-            user_id=user_id, thread_id=thread_id
-        )
+        threads = await super().get_all_user_threads(user_id=user_id, thread_id=thread_id)
         if not threads:
             return threads
         return sorted(threads, key=_parse_thread_date, reverse=True)
@@ -140,9 +139,7 @@ except Exception as e:
 
 def get_data_layer() -> LawAgentDataLayer:
     if _data_layer is None:
-        raise RuntimeError(
-            "Data layer not initialized. Check logs for initialization errors."
-        )
+        raise RuntimeError("Data layer not initialized. Check logs for initialization errors.")
     return _data_layer
 
 

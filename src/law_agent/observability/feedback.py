@@ -41,7 +41,7 @@ class PhoenixFeedbackClient:
     async def send_feedback(
         self,
         span_id: str,
-        feedback_type: str,       # "positive" | "negative"
+        feedback_type: str,  # "positive" | "negative"
         comment: str | None = None,
         metadata: dict[str, Any] | None = None,
         identifier: str | None = None,  # user identifier shown in Phoenix "user" column
@@ -86,7 +86,9 @@ class PhoenixFeedbackClient:
             if resp.status_code in (200, 201):
                 logger.info("Phoenix feedback sent span_id=%s label=%s", span_id, label)
                 return True
-            logger.warning("Phoenix feedback rejected status=%s body=%s", resp.status_code, resp.text[:200])
+            logger.warning(
+                "Phoenix feedback rejected status=%s body=%s", resp.status_code, resp.text[:200]
+            )
             return False
         except Exception as e:
             logger.debug("Phoenix feedback error: %s", e)
@@ -119,7 +121,9 @@ class PhoenixFeedbackClient:
             if resp.status_code in (200, 201):
                 logger.info("Phoenix note sent span_id=%s chars=%d", span_id, len(note))
                 return True
-            logger.warning("Phoenix note rejected status=%s body=%s", resp.status_code, resp.text[:200])
+            logger.warning(
+                "Phoenix note rejected status=%s body=%s", resp.status_code, resp.text[:200]
+            )
             return False
         except Exception as e:
             logger.debug("Phoenix note error: %s", e)
@@ -154,8 +158,9 @@ def get_feedback_client() -> PhoenixFeedbackClient | None:
 # Convenience wrappers (backwards compat)
 # ---------------------------------------------------------------------------
 
+
 async def send_feedback_to_phoenix(
-    trace_id: str,          # kept for signature compat — value used as span_id
+    trace_id: str,  # kept for signature compat — value used as span_id
     feedback_type: str,
     comment: str | None = None,
     tags: list[str] | None = None,

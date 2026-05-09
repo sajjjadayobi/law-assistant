@@ -124,7 +124,7 @@ def search_documents(
                 doc_type=str(doc.doc_type),
                 date=date_str,
                 summary=str(doc.summary or ""),
-                tags=list(doc.tags[:_settings.search.max_tags_per_result]) if doc.tags else [],
+                tags=list(doc.tags[: _settings.search.max_tags_per_result]) if doc.tags else [],
                 relevance_score=relevance_score,
             )
             summaries.append(summary)
@@ -320,7 +320,7 @@ def get_related_documents(
                 doc_type=str(doc.doc_type),
                 date=doc.date.isoformat() if doc.date else None,
                 summary=str(doc.summary or ""),
-                tags=list(doc.tags[:_settings.search.max_tags_per_result]) if doc.tags else [],
+                tags=list(doc.tags[: _settings.search.max_tags_per_result]) if doc.tags else [],
                 relevance_score=_settings.search.related_docs_relevance_score,
             )
             for doc in related_docs

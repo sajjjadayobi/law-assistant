@@ -15,7 +15,11 @@ from pathlib import Path
 import chainlit as cl
 import structlog
 import yaml
+from chainlit.server import app as _chainlit_app
 from opentelemetry import trace as otel_trace
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from law_agent.agent import ConversationManager, LawAgent
 from law_agent.config.settings import Settings, StarterQuestion
@@ -399,8 +403,13 @@ async def handle_feedback(feedback: cl.Feedback) -> None:
 
     # Send to Phoenix as a span annotation (best-effort — Phoenix may be offline)
     span_id: str | None = _session_span_ids.get(session_id)
-    logger.info("feedback_phoenix_attempt", session_id=session_id, span_id=span_id,
-                has_comment=bool(feedback.comment), has_query=bool(last_query))
+    logger.info(
+        "feedback_phoenix_attempt",
+        session_id=session_id,
+        span_id=span_id,
+        has_comment=bool(feedback.comment),
+        has_query=bool(last_query),
+    )
     if span_id:
         try:
             from law_agent.observability.feedback import get_feedback_client
@@ -421,8 +430,11 @@ async def handle_feedback(feedback: cl.Feedback) -> None:
                     },
                 )
                 if sent:
-                    logger.info("feedback_sent_to_phoenix", span_id=span_id,
-                                explanation_length=len(explanation))
+                    logger.info(
+                        "feedback_sent_to_phoenix",
+                        span_id=span_id,
+                        explanation_length=len(explanation),
+                    )
 
                 # Also add a Note so the user's comment appears in the Notes
                 # panel (the prominent "N" panel in Phoenix trace detail view).
@@ -441,34 +453,25 @@ async def handle_feedback(feedback: cl.Feedback) -> None:
 
 
 # ============================================================================
-# Health Check Routes
+# Health Check Middleware
+# Chainlit has a /{full_path:path} catch-all that intercepts any GET route
+# added after include_router(). Middleware runs before routing and bypasses that.
 # ============================================================================
-# These routes are used by Docker health checks and monitoring systems
-#
-# NOTE: The @cl.get_app() decorator doesn't exist in current Chainlit version.
-# Health checks are accessible via separate health.py module for now.
-# TODO: Implement proper FastAPI app access for health check routes
 
-# @cl.get_app()  # type: ignore
-# def setup_health_routes(app: FastAPI) -> None:
-#     """Set up health check routes for the FastAPI app."""
+from law_agent.health import get_health_status, get_readiness  # noqa: E402
 
-#     @app.get("/health", tags=["health"])
-#     async def health() -> dict[str, any]:  # type: ignore
-#         """
-#         Health check endpoint for Docker and monitoring systems.
 
-#         Returns:
-#             JSON with health status of all components
-#         """
-#         return await get_health_status()
+class _HealthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+        if request.url.path == "/health":
+            status = await get_health_status()
+            http_code = 200 if status["status"] != "unhealthy" else 503
+            return JSONResponse(content=status, status_code=http_code)
+        if request.url.path == "/ready":
+            result = await get_readiness()
+            http_code = 200 if result["ready"] else 503
+            return JSONResponse(content=result, status_code=http_code)
+        return await call_next(request)
 
-#     @app.get("/ready", tags=["health"])
-#     async def readiness() -> dict[str, any]:  # type: ignore
-#         """
-#         Readiness check endpoint for Kubernetes and orchestration systems.
 
-#         Returns:
-#             JSON with readiness status (ready: true/false)
-#         """
-#         return await get_readiness()
+_chainlit_app.add_middleware(_HealthMiddleware)

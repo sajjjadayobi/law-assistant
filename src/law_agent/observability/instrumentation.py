@@ -34,6 +34,7 @@ def instrument_agent_run(original_method: Callable) -> Callable:
         async def run(self, user_query: str, ...):
             ...
     """
+
     @wraps(original_method)
     async def wrapper(
         self,
@@ -90,6 +91,7 @@ def instrument_search_tool(original_method: Callable) -> Callable:
     - Execution time
     - Relevance scores
     """
+
     @wraps(original_method)
     async def wrapper(
         ctx: Any,
@@ -110,12 +112,11 @@ def instrument_search_tool(original_method: Callable) -> Callable:
         ) as span:
             start_time = time.time()
             try:
-                result = await original_method(
-                    ctx, query, tags, doc_types, limit, **kwargs
-                )
+                result = await original_method(ctx, query, tags, doc_types, limit, **kwargs)
 
                 # Parse result to count documents
                 import json
+
                 try:
                     result_data = json.loads(result)
                     if isinstance(result_data, list):
@@ -151,6 +152,7 @@ def instrument_get_document_tool(original_method: Callable) -> Callable:
     - Execution time
     - Document metadata (size, type)
     """
+
     @wraps(original_method)
     async def wrapper(ctx: Any, doc_id: int, **kwargs: Any) -> str:
         with create_span(
@@ -163,6 +165,7 @@ def instrument_get_document_tool(original_method: Callable) -> Callable:
 
                 # Parse result to get metadata
                 import json
+
                 try:
                     result_data = json.loads(result)
                     if not isinstance(result_data, dict) or "error" not in result_data:
@@ -203,6 +206,7 @@ def instrument_get_related_documents_tool(original_method: Callable) -> Callable
     - Result count
     - Graph traversal depth
     """
+
     @wraps(original_method)
     async def wrapper(
         ctx: Any,
@@ -221,12 +225,11 @@ def instrument_get_related_documents_tool(original_method: Callable) -> Callable
         ) as span:
             start_time = time.time()
             try:
-                result = await original_method(
-                    ctx, doc_id, relation_types, limit, **kwargs
-                )
+                result = await original_method(ctx, doc_id, relation_types, limit, **kwargs)
 
                 # Parse result to count documents
                 import json
+
                 try:
                     result_data = json.loads(result)
                     if isinstance(result_data, list):
@@ -261,6 +264,7 @@ def instrument_llm_call(original_method: Callable) -> Callable:
     - Execution time
     - Cost estimation
     """
+
     @wraps(original_method)
     async def wrapper(
         self,

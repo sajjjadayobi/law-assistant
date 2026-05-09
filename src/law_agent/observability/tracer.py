@@ -90,7 +90,9 @@ def initialize_tracing(config: OTelConfig | None = None) -> None:
 
         endpoint = _config.endpoint
         if endpoint == "http://localhost:4317":
-            phoenix_http = os.getenv("PHOENIX_COLLECTOR_ENDPOINT", "http://localhost:6006/v1/traces")
+            phoenix_http = os.getenv(
+                "PHOENIX_COLLECTOR_ENDPOINT", "http://localhost:6006/v1/traces"
+            )
             endpoint = phoenix_http
 
         # Must be set before register() so all Phoenix-aware libraries use "law-agent".

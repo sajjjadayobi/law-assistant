@@ -9,13 +9,14 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres_password
       POSTGRES_DB: law_agent
-      POSTGRES_INITDB_ARGS: "-c shared_preload_libraries=pg_stat_statements"
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
-      - ./docs/architecture/migration/schema.sql:/docker-entrypoint-initdb.d/02-schema.sql
+      - ./init-db.sh:/docker-entrypoint-initdb.d/02-init.sh
+      - ./docs/architecture/migration/schema.sql:/docker-entrypoint-initdb.d/03-schema.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -28,7 +29,7 @@ services:
 
   # Phoenix Observability Platform
   phoenix:
-    image: arizehq/phoenix:latest
+    image: arizephoenix/phoenix:latest
     container_name: law-agent-phoenix
     ports:
       - "6006:6006"  # UI
@@ -45,7 +46,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6006/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:6006/healthz')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -79,6 +80,9 @@ services:
       LLM_BASE_URL: ${LLM_BASE_URL}
       LLM_AUTH_TOKEN: ${LLM_AUTH_TOKEN}
 
+      # Phoenix observability endpoint (used by health check + feedback client)
+      PHOENIX_ENDPOINT: http://phoenix:6006
+
       # OpenTelemetry & Phoenix Integration
       OTEL_EXPORTER_OTLP_ENDPOINT: http://phoenix:4317
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
@@ -97,15 +101,15 @@ services:
       postgres:
         condition: service_healthy
       phoenix:
-        condition: service_healthy
+        condition: service_started
 
     volumes:
       # Mount source for live reloading during development
       - ./src:/app/src
-      - ./config:/app/config
+      - ./config.yaml:/app/config.yaml
       - ./.chainlit:/app/.chainlit
       - ./public:/app/public
-      - chainlit_data:/app/.chainlit/data
+      - chainlit_data:/app/.files
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

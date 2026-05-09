@@ -80,7 +80,7 @@ class CitationFormatter:
         if not match:
             return citations
 
-        section = text[match.end():]
+        section = text[match.end() :]
 
         for line in section.splitlines():
             m = _CITATION_RE.match(line.strip())
@@ -105,7 +105,7 @@ class CitationFormatter:
 
         if ref_match:
             body = text[: ref_match.start()]
-            ref_block = text[ref_match.start():]
+            ref_block = text[ref_match.start() :]
         else:
             body = text
             ref_block = ""
@@ -143,7 +143,7 @@ class CitationFormatter:
                 # Also remove the citation number itself — we'll replace with link
                 clean_title = _CITATION_RE.sub("", clean_title, count=1)
                 # Strip stray dashes/spaces that may surround the removed [doc_id:] tag
-                clean_title = re.sub(r'\s*[-–—]\s*$', '', clean_title).strip()
+                clean_title = re.sub(r"\s*[-–—]\s*$", "", clean_title).strip()
                 # Build the line: markdown link + clean title
                 link = citation.to_markdown_link() if citation else f"[{num}]"
                 result.append(f"{link} {clean_title}")
@@ -171,7 +171,4 @@ class CitationFormatter:
         Returns: {1: {"number": "1", "text": "title"}, ...}
         """
         citations = self._parse_references(text)
-        return {
-            num: {"number": str(num), "text": c.title or ""}
-            for num, c in citations.items()
-        }
+        return {num: {"number": str(num), "text": c.title or ""} for num, c in citations.items()}

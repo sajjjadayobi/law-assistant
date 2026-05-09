@@ -204,13 +204,14 @@ class LawAgent:
 
             async with cl.Step(name="در حال جستجو ...", type="retrieval", show_input=False) as step:
                 try:
-                    results = search_documents(query=query, tags=tags, doc_types=doc_types, limit=limit)
+                    results = search_documents(
+                        query=query, tags=tags, doc_types=doc_types, limit=limit
+                    )
 
                     if results:
                         step.name = f"جستجو — {len(results)} سند پیدا شد"
                         step.output = "\n".join(
-                            f"- **{r.title}** — امتیاز: {r.relevance_score:.2f}"
-                            for r in results
+                            f"- **{r.title}** — امتیاز: {r.relevance_score:.2f}" for r in results
                         )
                     else:
                         step.name = "جستجو — نتیجه‌ای پیدا نشد"
@@ -223,7 +224,8 @@ class LawAgent:
                                 "title": r.title,
                                 "doc_type": r.doc_type,
                                 "date": r.date,
-                                "summary": r.summary[:200] + ("..." if len(r.summary) > 200 else ""),
+                                "summary": r.summary[:200]
+                                + ("..." if len(r.summary) > 200 else ""),
                                 "tags": r.tags,
                                 "relevance_score": round(r.relevance_score, 3),
                             }
@@ -232,11 +234,11 @@ class LawAgent:
                         ensure_ascii=False,
                         indent=2,
                     )
-                    titles = "\n".join(
-                        f"[{r.doc_id}] {r.title}" for r in results
-                    )
+                    titles = "\n".join(f"[{r.doc_id}] {r.title}" for r in results)
                     span.set_attribute("output.value", titles if results else "no results")
-                    logger.info("search_documents_tool_success", query=query, result_count=len(results))
+                    logger.info(
+                        "search_documents_tool_success", query=query, result_count=len(results)
+                    )
                     return results_json
 
                 except Exception as e:
@@ -350,7 +352,8 @@ class LawAgent:
                                 "title": r.title,
                                 "doc_type": r.doc_type,
                                 "date": r.date,
-                                "summary": r.summary[:200] + ("..." if len(r.summary) > 200 else ""),
+                                "summary": r.summary[:200]
+                                + ("..." if len(r.summary) > 200 else ""),
                                 "tags": r.tags,
                                 "relevance_score": round(r.relevance_score, 3),
                             }
@@ -359,21 +362,25 @@ class LawAgent:
                         ensure_ascii=False,
                         indent=2,
                     )
-                    related_titles = "\n".join(
-                        f"[{r.doc_id}] {r.title}" for r in results
-                    )
+                    related_titles = "\n".join(f"[{r.doc_id}] {r.title}" for r in results)
                     span.set_attribute("output.value", related_titles if results else "no results")
                     logger.info(
-                        "get_related_documents_tool_success", doc_id=doc_id, result_count=len(results)
+                        "get_related_documents_tool_success",
+                        doc_id=doc_id,
+                        result_count=len(results),
                     )
                     return results_json
 
                 except Exception as e:
-                    logger.exception("get_related_documents_tool_error", doc_id=doc_id, error=str(e))
+                    logger.exception(
+                        "get_related_documents_tool_error", doc_id=doc_id, error=str(e)
+                    )
                     step.name = "اسناد مرتبط — خطا"
                     step.output = f"خطا: {e}"
                     span.set_attribute("output.value", f"error: {e}")
-                    return json.dumps({"error": f"خطا در دریافت اسناد مرتبط: {e}"}, ensure_ascii=False)
+                    return json.dumps(
+                        {"error": f"خطا در دریافت اسناد مرتبط: {e}"}, ensure_ascii=False
+                    )
 
     async def run(
         self,

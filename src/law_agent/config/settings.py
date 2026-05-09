@@ -281,16 +281,29 @@ class Settings(BaseSettings):
                 if content:
                     yaml_data = content
 
-        # Apply environment variable overrides for nested fields
-        # This handles settings like DATABASE__PASSWORD=value
-        if yaml_data.get("database") is None:
+        # Apply environment variable overrides for nested DB fields
+        if not isinstance(yaml_data.get("database"), dict):
             yaml_data["database"] = {}
+        db = yaml_data["database"]
+        _db_env = {
+            "DB_HOST": "host",
+            "DB_USER": "user",
+            "DB_PORT": "port",
+            "DB_NAME": "database",
+            "DB_PASSWORD": "password",
+        }
+        for env_key, field in _db_env.items():
+            if env_key in os.environ:
+                val: str | int = os.environ[env_key]
+                if field == "port":
+                    val = int(val)
+                db[field] = val
 
-        # Override database password from environment if set
-        if "DB_PASSWORD" in os.environ:
-            if not isinstance(yaml_data.get("database"), dict):
-                yaml_data["database"] = {}
-            yaml_data["database"]["password"] = os.environ["DB_PASSWORD"]
+        # Override observability endpoint from environment
+        if "PHOENIX_ENDPOINT" in os.environ:
+            if not isinstance(yaml_data.get("observability"), dict):
+                yaml_data["observability"] = {}
+            yaml_data["observability"]["phoenix_endpoint"] = os.environ["PHOENIX_ENDPOINT"]
 
         # Create settings instance
         return cls(**yaml_data)
