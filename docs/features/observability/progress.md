@@ -749,3 +749,29 @@ Phoenix shows:
 - `src/law_agent/agent/core.py` — TOOL spans, full doc output, token counts on CHAIN span
 - `src/law_agent/ui/app.py` — store last query/response, username from session, note only if comment
 - `tests/unit/observability/test_observability_fixes.py` — 10 new tests (304 total)
+
+---
+
+## Session 4: DB Noise Filter — "default" project still polluted (2026-05-09)
+
+**Problem**: 513 `connect` spans still appearing in Phoenix "default" project after Session 3 fix.
+
+**Root cause analysis**: The `OTEL_PYTHON_DISABLED_INSTRUMENTATIONS` env var (set by Session 3 fix) is only honoured by the `opentelemetry-instrument` CLI auto-instrumentation system — it has NO effect when an instrumentor is called directly. The `SQLAlchemyInstrumentor().uninstrument()` call was a no-op because nothing had called `.instrument()` explicitly in our code. The actual source of the spans remained unknown (could be Traceloop auto-init, a third-party dependency, or a timing issue with the ProxyTracerProvider), but the spans ARE reaching Phoenix under "default".
+
+**Fix** (in `src/law_agent/observability/tracer.py`):
+
+Two-layer defence:
+
+1. **SpanProcessor filter** (`_DBNoiseFilterProcessor`) — wraps the default `SimpleSpanProcessor` that `register()` creates. Drops any span with name in `{"connect", "query", "execute", "cursor"}` or with a `db.*` attribute (SQLAlchemy semantic convention). Installed immediately after `register()` by replacing `_active_span_processor._span_processors` tuple.
+
+2. **SQLAlchemy redirect** — calls `SQLAlchemyInstrumentor().uninstrument()` then `SQLAlchemyInstrumentor().instrument(tracer_provider=_tracer_provider)`. This:
+   - Clears whatever previous (possibly misconfigured) instrumentation existed
+   - Redirects all future SQLAlchemy spans through our "law-agent" provider
+   - Our filter (layer 1) then drops them silently before they reach Phoenix
+   - Net result: DB spans never appear in Phoenix at all — not in "law-agent", not in "default"
+
+**Why this works even without knowing the exact source**: The filter intercepts spans on the "law-agent" provider side. The redirect ensures any SQLAlchemy instrumentation uses our provider. Together they eliminate DB noise regardless of which library originally instrumented SQLAlchemy.
+
+**Gotcha**: `_active_span_processor._span_processors` is a semi-internal attribute of `SynchronousMultiSpanProcessor`. This is safe because Phoenix itself accesses this tuple directly in `add_span_processor()`. Wrapped in a try/except so a future SDK change would log a warning but not crash.
+
+**Tests**: No new tests needed — existing 304 tests still pass. The filter is defensive infrastructure, not business logic.

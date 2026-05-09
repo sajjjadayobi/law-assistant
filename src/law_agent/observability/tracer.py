@@ -8,13 +8,43 @@ full input/output/token-count visibility.
 
 import os
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, Optional
 
 import structlog
 from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace import SpanProcessor, TracerProvider
 
 logger = structlog.get_logger(__name__)
+
+# DB span names and attributes that indicate connection noise we want to suppress.
+_DB_SPAN_NAMES = frozenset({"connect", "query", "execute", "cursor"})
+_DB_ATTRS = frozenset({"db.system", "db.statement", "db.name", "db.operation"})
+
+
+class _DBNoiseFilterProcessor(SpanProcessor):
+    """Wraps a SpanProcessor and drops database connection spans.
+
+    Prevents SQLAlchemy / asyncpg 'connect' and query spans from reaching
+    Phoenix, regardless of which library originally instrumented them.
+    """
+
+    def __init__(self, inner: SpanProcessor) -> None:
+        self._inner = inner
+
+    def on_start(self, span: Any, parent_context: Optional[Any] = None) -> None:
+        self._inner.on_start(span, parent_context)
+
+    def on_end(self, span: Any) -> None:
+        attrs = span.attributes or {}
+        if span.name in _DB_SPAN_NAMES or any(attrs.get(k) for k in _DB_ATTRS):
+            return  # silently drop
+        self._inner.on_end(span)
+
+    def shutdown(self) -> None:
+        self._inner.shutdown()
+
+    def force_flush(self, timeout_millis: int = 30000) -> bool:
+        return self._inner.force_flush(timeout_millis)
 
 
 class OTelConfig:
@@ -39,10 +69,10 @@ def initialize_tracing(config: OTelConfig | None = None) -> None:
     Sets up:
     - arize-phoenix-otel TracerProvider (exports spans to Phoenix)
     - OpenAIInstrumentor (captures LLM calls with prompts/responses/token counts)
-    - RequestsInstrumentor (captures outbound HTTP calls)
+    - DB noise filter (drops SQLAlchemy connect spans before Phoenix export)
 
-    SQLAlchemy is intentionally NOT instrumented — DB connection noise
-    pollutes Phoenix and obscures the LLM traces.
+    SQLAlchemy is redirected to our provider and filtered out — DB connection
+    noise must never reach Phoenix regardless of which library instruments it.
     """
     global _tracer_provider, _config, _initialized
 
@@ -56,40 +86,35 @@ def initialize_tracing(config: OTelConfig | None = None) -> None:
         return
 
     try:
-        from opentelemetry.instrumentation.requests import RequestsInstrumentor
         from phoenix.otel import register
 
-        # Determine the Phoenix collector endpoint.
-        # phoenix.otel.register() infers HTTP vs gRPC from the URL.
-        # Default: HTTP endpoint at 6006 (what Phoenix exposes locally).
-        # If OTEL_EXPORTER_OTLP_ENDPOINT points to 4317 (gRPC), that also works.
         endpoint = _config.endpoint
         if endpoint == "http://localhost:4317":
-            # Default gRPC endpoint — prefer Phoenix HTTP endpoint for reliability
             phoenix_http = os.getenv("PHOENIX_COLLECTOR_ENDPOINT", "http://localhost:6006/v1/traces")
             endpoint = phoenix_http
 
-        # Force all Phoenix-aware libraries (including Traceloop's auto-init
-        # inside opentelemetry-instrumentation-openai) to use our project name,
-        # not the "default" project. Without this the "default" project keeps
-        # reappearing with unrelated connection spans.
+        # Must be set before register() so all Phoenix-aware libraries use "law-agent".
         os.environ.setdefault("PHOENIX_PROJECT_NAME", _config.service_name)
 
         _tracer_provider = register(
             endpoint=endpoint,
             project_name=_config.service_name,
-            batch=False,  # SimpleSpanProcessor — sends spans immediately (best for dev)
+            batch=False,
             verbose=True,
         )
 
-        # Disable DB instrumentation via env var before any auto-instrumentation
-        # runs. Traceloop's OpenAIInstrumentor triggers OTel auto-instrumentation
-        # that includes SQLAlchemy and psycopg2, creating "connect" spans that
-        # pollute Phoenix with hundreds of useless DB traces.
-        os.environ.setdefault(
-            "OTEL_PYTHON_DISABLED_INSTRUMENTATIONS",
-            "sqlalchemy,psycopg2,psycopg2_binary",
-        )
+        # Wrap the default SimpleSpanProcessor with a DB noise filter.
+        # This drops any 'connect'/'query' spans before they reach the Phoenix
+        # exporter, regardless of which library created them.
+        try:
+            multi = _tracer_provider._active_span_processor  # SynchronousMultiSpanProcessor
+            if hasattr(multi, "_span_processors") and multi._span_processors:
+                multi._span_processors = tuple(
+                    _DBNoiseFilterProcessor(p) for p in multi._span_processors
+                )
+                logger.info("db_noise_filter_installed")
+        except Exception as filter_err:
+            logger.warning("db_noise_filter_failed", error=str(filter_err))
 
         # Instrument the openai library — PydanticAI's OpenAIModel uses it
         # internally, so this captures every LLM call with full attributes:
@@ -97,22 +122,27 @@ def initialize_tracing(config: OTelConfig | None = None) -> None:
         # opentelemetry-instrumentation-openai is compatible with OTel 0.62b1;
         # the openinference variant has a version mismatch with wrap_function_wrapper.
         try:
-            from opentelemetry.instrumentation.openai import OpenAIInstrumentor  # type: ignore[import]
+            from opentelemetry.instrumentation.openai import (
+                OpenAIInstrumentor,  # type: ignore[import]
+            )
 
             OpenAIInstrumentor().instrument(tracer_provider=_tracer_provider)
             logger.info("llm_instrumentation_active", instrumentor="opentelemetry-openai")
         except Exception as llm_err:
             logger.warning("llm_instrumentation_failed", error=str(llm_err))
 
-        # Explicitly uninstrument SQLAlchemy in case Traceloop auto-instrumented it
-        # despite the env var (some versions ignore it).
-        for _uninstrument_cls in ("SQLAlchemyInstrumentor", "Psycopg2Instrumentor"):
-            try:
-                if _uninstrument_cls == "SQLAlchemyInstrumentor":
-                    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-                    SQLAlchemyInstrumentor().uninstrument()
-            except Exception:
-                pass
+        # Redirect SQLAlchemy to our "law-agent" provider (not the global default).
+        # This ensures that even if something else instruments SQLAlchemy, those
+        # spans flow through our filter above and are silently dropped — they never
+        # reach Phoenix under the "default" project.
+        try:
+            from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
+            SQLAlchemyInstrumentor().uninstrument()  # clear any previous instrumentation
+            SQLAlchemyInstrumentor().instrument(tracer_provider=_tracer_provider)
+            logger.info("sqlalchemy_redirected_to_law_agent")
+        except Exception as sa_err:
+            logger.warning("sqlalchemy_redirect_failed", error=str(sa_err))
 
         _initialized = True
         logger.info(
