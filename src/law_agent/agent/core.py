@@ -233,7 +233,7 @@ class LawAgent:
                         indent=2,
                     )
                     titles = "\n".join(
-                        f"[{r.doc_id}] {r.title} ({r.doc_type})" for r in results
+                        f"[{r.doc_id}] {r.title}" for r in results
                     )
                     span.set_attribute("output.value", titles if results else "no results")
                     logger.info("search_documents_tool_success", query=query, result_count=len(results))
@@ -263,7 +263,8 @@ class LawAgent:
                 try:
                     doc = get_document(doc_id)
                     step.name = f"خواندن سند — {doc.title}"
-                    step.output = f"**{doc.title}**\n_{doc.date}_\n\n{doc.summary[:300]}{'...' if len(doc.summary) > 300 else ''}"
+                    date_part = f"\n_{doc.date}_" if doc.date else ""
+                    step.output = f"**{doc.title}**{date_part}\n\n{doc.summary[:300]}{'...' if len(doc.summary) > 300 else ''}"
 
                     doc_json = json.dumps(
                         {
@@ -279,7 +280,7 @@ class LawAgent:
                         ensure_ascii=False,
                         indent=2,
                     )
-                    meta_line = " | ".join(filter(None, [doc.doc_type, doc.date]))
+                    meta_line = doc.date or ""
                     doc_output = f"[{doc.doc_id}] {doc.title}\n{meta_line}\n\n{doc.summary}"
                     if doc.full_content and doc.full_content != doc.summary:
                         doc_output += f"\n\n---\n{doc.full_content[:3000]}"
@@ -359,7 +360,7 @@ class LawAgent:
                         indent=2,
                     )
                     related_titles = "\n".join(
-                        f"[{r.doc_id}] {r.title} ({r.doc_type})" for r in results
+                        f"[{r.doc_id}] {r.title}" for r in results
                     )
                     span.set_attribute("output.value", related_titles if results else "no results")
                     logger.info(

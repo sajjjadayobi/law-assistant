@@ -182,8 +182,8 @@ class TestSearchDocumentsOutputFormat:
         assert "قانون کار جمهوری اسلامی ایران" in output_val
         assert "[202]" in output_val
         assert "آیین‌نامه حق مسکن" in output_val
-        assert "(law)" in output_val
-        assert "(regulation)" in output_val
+        assert "(law)" not in output_val
+        assert "(regulation)" not in output_val
 
     @pytest.mark.asyncio
     async def test_empty_results_output(self) -> None:
@@ -269,7 +269,7 @@ class TestGetDocumentOutputFormat:
 
         assert "[555]" in output_val
         assert "قانون بیمه بیکاری" in output_val
-        assert "law" in output_val
+        assert "law" not in output_val
         assert "1369/06/26" in output_val
         assert "قانون بیمه بیکاری مصوب مجلس" in output_val
         assert "ماده ۱" in output_val  # full_content included
@@ -337,4 +337,4 @@ class TestGetRelatedDocumentsOutputFormat:
         output_val = span.attributes.get("output.value", "")
         assert "[301]" in output_val
         assert "آیین‌نامه اجرایی ماده ۱۴۱" in output_val
-        assert "(regulation)" in output_val
+        assert "(regulation)" not in output_val
