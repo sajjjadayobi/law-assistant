@@ -2,7 +2,7 @@
 
 An intelligent conversational agent for Iranian legal documents, built with PydanticAI, Claude Sonnet, and PostgreSQL full-text search.
 
-[![Tests](https://img.shields.io/badge/tests-314%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-304%20passing-brightgreen)](tests/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 
 ---
@@ -30,7 +30,7 @@ Law Agent answers legal questions in Persian by searching a database of 47,000+ 
 - LLM API credentials (Anthropic or LiteLLM proxy)
 - `uv` package manager
 
-### Setup
+### Development Setup
 
 ```bash
 # 1. Install dependencies
@@ -48,13 +48,23 @@ python3 start_server.py
 # App at http://localhost:7860
 ```
 
-### Using Docker Compose
+### Docker Compose (production)
 
 ```bash
-docker-compose up -d
-# App: http://localhost:7860
-# Phoenix: http://localhost:6006
+# 1. Configure secrets
+cp .env.example .env
+# Edit .env: LLM_AUTH_TOKEN, LLM_BASE_URL, CHAINLIT_AUTH_SECRET
+
+# 2. Build and start all services (postgres + phoenix + app)
+docker compose build
+docker compose up -d
+
+# 3. Verify all services are healthy
+curl http://localhost:8000/health
+# App: http://localhost:8000 | Phoenix: http://localhost:6006
 ```
+
+For full production instructions see **[`docs/maintainer/deployment.md`](docs/maintainer/deployment.md)**.
 
 ---
 
@@ -122,9 +132,10 @@ src/law_agent/
 ├── tools/          # search_documents, get_document, get_related_documents
 ├── database/       # SQLAlchemy models, connection pooling
 ├── data/           # LawAgentDataLayer (Chainlit conversation history)
-├── ui/             # app.py (Chainlit handlers), citations.py
+├── ui/             # app.py (Chainlit handlers + health middleware), citations.py
+├── health.py       # /health and /ready check functions
 ├── observability/  # Phoenix tracing and feedback
-├── config/         # Settings (Pydantic)
+├── config/         # Settings (Pydantic) — reads all DB/Phoenix env vars
 └── prompts/        # search.md (system prompt), starters.yaml
 
 tests/
@@ -136,6 +147,7 @@ tests/
 docs/
 ├── architecture/   # design.md, search.md, database.md
 ├── development/    # workflow.md, tasks.md
+├── maintainer/     # deployment.md — production runbook
 ├── best-practices/ # agent-engineering.md, evaluation.md
 └── features/       # One folder per feature: plan.md + progress.md
 ```
@@ -148,5 +160,5 @@ docs/
 - **[docs/architecture/design.md](docs/architecture/design.md)** — System design and product requirements
 - **[docs/architecture/search.md](docs/architecture/search.md)** — Agent search strategy (= system prompt)
 - **[docs/development/workflow.md](docs/development/workflow.md)** — Developer guide
-- **[docs/features/deployment/DEPLOYMENT.md](docs/features/deployment/DEPLOYMENT.md)** — Production deployment
+- **[docs/maintainer/deployment.md](docs/maintainer/deployment.md)** — Production deployment runbook
 - **[docs/features/performance/PERFORMANCE.md](docs/features/performance/PERFORMANCE.md)** — Performance benchmarks

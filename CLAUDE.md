@@ -15,21 +15,12 @@ Project instructions for Claude Code. Read this first, then follow the links.
 - ✅ PostgreSQL + FTS (47K+ legal documents), Arize Phoenix observability
 - ✅ Chainlit UI: RTL, sidebar, thinking steps, feedback 👍/👎, retry button, copy-to-clipboard
 - ✅ RTL polish (11.11): JS direction detection, blockquote/table logical properties, inline code bidi
-- ✅ Response streaming (11.12): `enable_streaming` config flag, `run_streaming(on_delta)` in agent, 304 tests
-- ✅ Phoenix observability fixed: real CHAIN/TOOL/LLM traces, token counts, feedback with message context
-- ✅ Docker Compose deployment, CI pipeline
-
-### Phoenix Observability (fixed 2026-05-08/09)
-- Project "law-agent" in Phoenix at `http://localhost:6006` (no "default" pollution)
-- Each chat = `user_turn` CHAIN span: input=question, output=answer, token counts, session.id
-- Tool calls = TOOL spans: search → `[id] title` list; get_document → full content; related → title list
-- LLM calls = `openai.chat` spans (auto-traced via `opentelemetry-instrumentation-openai`)
-- Feedback (👍/👎) → Phoenix annotation (label+score+explanation+metadata) + Notes panel (comment text)
-- DB connections NOT traced (SQLAlchemy explicitly uninstrumented)
-- See `docs/features/observability/` for full architecture and gotchas
+- ✅ Response streaming (11.12): `enable_streaming` config flag, `run_streaming(on_delta)` in agent
+- ✅ Phoenix observability: real CHAIN/TOOL/LLM traces, token counts, feedback with message context
+- ✅ Docker Compose deployment fully working (fixed 2026-05-09) — all three services healthy on `docker compose up -d`
 
 ### What's next
-- 📋 Task 11.9: Browser notifications
+- 📋 Task 11.9: Browser notifications via JS `Notification API` when tab is hidden
 
 Full task list: `docs/development/tasks.md`
 
@@ -38,20 +29,18 @@ Full task list: `docs/development/tasks.md`
 ## Quick Commands
 
 ```bash
-# Start server (use this — avoids .env bash expansion issues)
+# Development server (avoids .env bash expansion issues)
 python3 start_server.py
+
+# Docker deployment
+docker compose build && docker compose up -d
+curl http://localhost:8000/health   # verify all services healthy
 
 # Tests
 .venv/bin/python -m pytest tests/ --ignore=tests/integration -q
 
 # Code quality (run before every commit)
-make all           # format + lint + typecheck + test
-
-# Individual checks
-make format        # Black
-make lint          # Ruff
-make typecheck     # mypy
-make test          # pytest
+.venv/bin/python -m black src/ && .venv/bin/python -m ruff check src/ && .venv/bin/python -m pytest tests/ --ignore=tests/integration -q
 ```
 
 ---
@@ -60,21 +49,20 @@ make test          # pytest
 
 | File | Purpose |
 |---|---|
-| `src/law_agent/ui/app.py` | Chainlit handlers — on_message, on_feedback, action callbacks |
+| `src/law_agent/ui/app.py` | Chainlit handlers — on_message, on_feedback, action callbacks, health middleware |
+| `src/law_agent/health.py` | `/health` and `/ready` check functions |
 | `src/law_agent/agent/core.py` | LawAgent, show_thinking(), tool step wrappers |
 | `src/law_agent/data/data_layer.py` | LawAgentDataLayer (conversation history) |
+| `src/law_agent/config/settings.py` | Settings — reads DB_HOST/DB_USER/DB_PORT/DB_NAME/PHOENIX_ENDPOINT from env |
 | `src/law_agent/prompts/search.md` | Agent system prompt |
-| `src/law_agent/prompts/starters.yaml` | Welcome screen starter questions |
 | `config.yaml` | Application configuration |
 | `.chainlit/config.toml` | UI config: sidebar, language, CSS/JS paths |
-| `.chainlit/translations/fa-IR.json` | Persian UI strings |
-| `public/patch.css` / `public/patch.js` | Custom UI CSS and JavaScript |
+| `docker-compose.yml` | Three services: postgres, phoenix, app |
+| `init-db.sh` | Creates phoenix database (shell script — `CREATE DATABASE` needs to run outside a transaction) |
 
 ---
 
 ## Critical Architecture Facts
-
-Things that cost hours to discover — know them before you start.
 
 **Chainlit**
 - Table columns are **camelCase**: `createdAt` (TEXT), `userId`, `threadId`
@@ -83,6 +71,13 @@ Things that cost hours to discover — know them before you start.
 - `unsafe_allow_html = false` — use markdown `[1](url)`, not `<a>` tags for citations
 - `steps` table needs `"defaultOpen"` BOOLEAN column or Chainlit crashes
 - Sidebar requires `@cl.password_auth_callback` + `CHAINLIT_AUTH_SECRET` in `.env`
+- Chainlit registers `/{full_path:path}` catch-all at import time — **use `BaseHTTPMiddleware`, not route decorators**, for any custom routes on `chainlit.server.app`
+
+**Docker / Deployment**
+- `CREATE DATABASE` cannot run in a PostgreSQL transaction block — put it in a `.sh` init script, not `.sql`
+- Phoenix image is `arizephoenix/phoenix`, health endpoint is `/healthz` (no curl in container — use Python urllib)
+- `settings.py` reads `DB_HOST`, `DB_USER`, `DB_PORT`, `DB_NAME`, `DB_PASSWORD`, `PHOENIX_ENDPOINT` from env — does NOT use `DATABASE_URL`
+- Set `PHOENIX_ENDPOINT=http://phoenix:6006` in docker-compose (not localhost) so the app can reach Phoenix inside Docker
 
 **Phoenix / Feedback**
 - Feedback API: `POST /v1/span_annotations` with `span_id` (not trace_id)
@@ -104,9 +99,8 @@ Things that cost hours to discover — know them before you start.
 | `docs/architecture/design.md` | Understanding product requirements and system design |
 | `docs/architecture/search.md` | Understanding how the agent searches (= system prompt) |
 | `docs/architecture/database.md` | PostgreSQL schema, FTS, DAG relations |
-| `docs/features/{name}/plan.md` | Why a feature was designed a certain way |
+| `docs/maintainer/deployment.md` | Production deployment runbook |
 | `docs/features/{name}/progress.md` | Blockers, solutions, gotchas for a feature |
-| `docs/best-practices/` | Agent engineering and evaluation patterns |
 
 ---
 

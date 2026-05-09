@@ -48,7 +48,7 @@ docs/features/
 ├── ui/                     # Chainlit setup, RTL, citation rendering
 ├── observability/          # Arize Phoenix, OpenTelemetry, token tracking
 ├── testing-cicd/           # pytest, CI pipeline, pre-commit hooks
-├── deployment/             # Docker Compose, Dockerfile, health checks → DEPLOYMENT.md
+├── deployment/             # Docker Compose, Dockerfile, health checks
 ├── performance/            # Indexes, LRU cache, connection pooling → PERFORMANCE.md
 ├── conversation-sidebar/   # LawAgentDataLayer, camelCase schema, auth requirement
 ├── thinking-steps/         # async cl.Step(), dynamic names, step ordering
@@ -79,7 +79,7 @@ docs/features/
 
 ## Deployment & Performance
 
-- **[`features/deployment/DEPLOYMENT.md`](features/deployment/DEPLOYMENT.md)** — Full production deployment guide: Docker Compose, environment setup, health checks, monitoring
+- **[`maintainer/deployment.md`](maintainer/deployment.md)** — Production deployment runbook: Docker Compose, environment setup, health checks, monitoring, troubleshooting
 - **[`features/performance/PERFORMANCE.md`](features/performance/PERFORMANCE.md)** — Performance benchmarks, database indexes, caching strategy, load test results
 
 ---
