@@ -1,5 +1,13 @@
 // ==================== Law Agent UI Enhancements ====================
 
+// ==================== ClipboardItem Polyfill ====================
+// Some browsers expose navigator.clipboard.write but not ClipboardItem.
+// Chainlit uses both together; when ClipboardItem is undefined it throws a
+// ReferenceError. Force Chainlit's fallback path (writeText) in that case.
+if (typeof ClipboardItem === 'undefined' && navigator.clipboard) {
+    navigator.clipboard.write = undefined;
+}
+
 // ==================== Input Placeholder ====================
 
 function changeInputPlaceholder() {
