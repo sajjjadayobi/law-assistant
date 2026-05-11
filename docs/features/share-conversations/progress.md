@@ -50,7 +50,17 @@
 - All screenshots in `docs/features/share-conversations/screenshots/`
 
 **For future developers**:
-- Share requires the viewer to be logged in. If you need truly public links, you'd need middleware that bypasses `UserParam` on `/project/share/{thread_id}`.
-- The share icon in the header (top-right, ~(1105, 30) coordinate) is the primary entry point, not the sidebar context menu. Both work, but the header icon is always visible.
-- `threads.metadata` stores both `is_shared: true` and `shared_at: ISO timestamp`. Unsharing removes `shared_at` and sets `is_shared: false`.
-- The PUT endpoint is at `/project/thread/share` (NOT `/project/thread/{id}/share`) — the thread_id is in the request body.
+
+- **Share requires login** — Chainlit's `UserParam` dependency (`get_current_user → authenticate_user → decode_jwt`) always enforces auth when `password_auth_callback` is configured. `/share/{thread_id}` redirects unauthenticated visitors to login. If you need truly public links, add a `BaseHTTPMiddleware` that intercepts `GET /project/share/{thread_id}` and serves the thread directly — same pattern used for `/health`.
+
+- **Share icon location** — The share button is in the app header (top-right, ~(1105, 30) pixel coordinate). There is also a share entry in the sidebar thread context menu ("..."), but the header icon is always visible regardless of sidebar state. The Playwright `aria-label` selectors don't match in Chromium headless — use the coordinate click or `#sidebar-trigger-button` if needed.
+
+- **PUT endpoint shape** — `PUT /project/thread/share` with body `{threadId, isShared}`. The thread ID is in the body, not the URL path. Chainlit updates `threads.metadata` with `{"is_shared": true, "shared_at": "<ISO>"}` on share and removes `shared_at` + sets `is_shared: false` on unshare.
+
+- **`threadSharing` flag requires both conditions** — `config.features.allow_thread_sharing = true` AND the `@cl.on_shared_thread_view` callback defined. If either is missing, the frontend doesn't show the share button at all (checked via `GET /project/settings` → `threadSharing` boolean).
+
+- **`cl.User` vs `PersistedUser`** — `cl.User` (returned by `password_auth_callback`) has no `id`. `PersistedUser` (returned by `authenticate_user` via WebSocket auth) does. In `create_step`, always use `getattr(user, "id", None)` and fall back to `get_user(identifier)` — don't assume the session user has a UUID.
+
+- **Playwright debugging tip** — When a button is "outside of the viewport" after a modal sequence, navigate back to `BASE_URL` before testing sidebar or header elements. The share dialog shifts layout in a way that pushes the header off-screen in headless mode.
+
+- **Error toast "ایجاد لینک ناموفق بود" can be misleading** — It can appear from a previous failed request cached in the React state, even if the current API call succeeded. Always add network response interception (`page.on("response", ...)`) to confirm the actual status code before assuming the feature is broken.
