@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
-from typing import Dict, List, Optional
 
 import structlog
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
@@ -21,7 +20,7 @@ from law_agent.config.settings import Settings
 
 logger = structlog.get_logger(__name__)
 
-_data_layer: Optional[LawAgentDataLayer] = None
+_data_layer: LawAgentDataLayer | None = None
 
 
 class LawAgentDataLayer(SQLAlchemyDataLayer):
@@ -36,7 +35,7 @@ class LawAgentDataLayer(SQLAlchemyDataLayer):
     # Class-level lock following data-assistant pattern
     step_creation_lock = asyncio.Lock()
 
-    async def create_step(self, step_dict: "StepDict"):
+    async def create_step(self, step_dict: StepDict):
         """Override to auto-create thread from first user message.
 
         Pattern from data-assistant/src/datasource/postgres/chainlit_data_layer.py:
@@ -51,14 +50,22 @@ class LawAgentDataLayer(SQLAlchemyDataLayer):
 
             if thread is None:
                 if step_dict["type"] == "user_message":
-                    # Auto-create thread named after first user message
+                    # Auto-create thread named after first user message.
+                    # cl.User.id is None — only PersistedUser has an id.
+                    # Look up the persisted UUID by identifier so that threads
+                    # get a proper userIdentifier, which is required by
+                    # is_thread_author() (used by the share-thread endpoint).
                     user_id = None
                     try:
                         import chainlit as cl
 
                         user = cl.user_session.get("user")
-                        if user:
+                        if user and getattr(user, "id", None):
                             user_id = user.id
+                        elif user and getattr(user, "identifier", None):
+                            persisted = await self.get_user(user.identifier)
+                            if persisted:
+                                user_id = persisted.id
                     except Exception:
                         pass
 
@@ -88,8 +95,8 @@ class LawAgentDataLayer(SQLAlchemyDataLayer):
         return await super().upsert_feedback(feedback)
 
     async def get_all_user_threads(
-        self, user_id: Optional[str] = None, thread_id: Optional[str] = None
-    ) -> Optional[List[ThreadDict]]:
+        self, user_id: str | None = None, thread_id: str | None = None
+    ) -> list[ThreadDict] | None:
         """Override to sort threads newest-first for Persian sidebar display."""
         threads = await super().get_all_user_threads(user_id=user_id, thread_id=thread_id)
         if not threads:

@@ -3,7 +3,7 @@
 Single source of truth for what has been built, what is in progress, and what comes next. Each entry describes **what was done and why it matters**, not a wish-list.
 
 **Current version**: v0.0.2 (Enhanced UI — in progress)
-**Tests**: 314 passing — `.venv/bin/python -m pytest tests/ --ignore=tests/integration -q`
+**Tests**: 312 passing — `.venv/bin/python -m pytest tests/ --ignore=tests/integration -q`
 
 ---
 
@@ -220,6 +220,18 @@ See `docs/features/thinking-steps/`
 
 See `docs/features/feedback/`
 
+### 11.6 — Share conversations
+
+- `allow_thread_sharing = true` in `.chainlit/config.toml` — enables the share button UI
+- `@cl.on_shared_thread_view` callback in `app.py` — returns `bool(metadata["is_shared"])` to authorize read-only access
+- Chainlit handles everything else: `PUT /project/thread/share` toggle endpoint, `GET /project/share/{thread_id}` read-only route, copy-link button, sidebar UI, and `is_shared`/`shared_at` metadata in the existing `threads` table
+- Persian translations for all share UI strings already present in `fa-IR.json` (no translation work needed)
+- **Both flags must be set**: `allow_thread_sharing = true` AND `on_shared_thread_view` defined — Chainlit checks `threadSharing = allow_thread_sharing AND callback_exists`
+- **Share requires login** — Chainlit's `UserParam` dependency always requires auth when `password_auth_callback` is configured. Share links work for any authenticated user, not truly anonymous viewers. This is by design.
+- **Bug fix in `create_step`** — `cl.User.id` is `None` (only `PersistedUser` has `id`). Fixed by falling back to `get_user(identifier)` to resolve the UUID. Without this fix, threads could lack `userIdentifier`, causing `is_thread_author()` to return 404 and block sharing.
+
+See `docs/features/share-conversations/`
+
 ### 11.8 — Retry failed messages
 - On any exception in `@cl.on_message`: sends error message with `cl.Action(name="retry", label="تلاش مجدد")`
 - Action payload: `{"message_content": original_query}`
@@ -274,7 +286,6 @@ See `docs/features/streaming/`
 
 ### Deferred
 
-- **11.6** Share conversations (read-only public links)
 - **11.7** Export to Markdown
 
 ### Phase 10 — Scalability (not started, no timeline)

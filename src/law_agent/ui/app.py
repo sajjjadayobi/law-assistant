@@ -16,6 +16,7 @@ import chainlit as cl
 import structlog
 import yaml
 from chainlit.server import app as _chainlit_app
+from chainlit.types import ThreadDict
 from opentelemetry import trace as otel_trace
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -446,6 +447,20 @@ async def handle_feedback(feedback: cl.Feedback) -> None:
             logger.debug("feedback_phoenix_unavailable", error=str(e))
     else:
         logger.debug("feedback_no_span_id_available")
+
+
+@cl.on_shared_thread_view
+async def on_shared_thread_view(thread: ThreadDict, viewer: cl.User | None) -> bool:
+    """Allow anyone to view a thread that the owner has explicitly shared."""
+    metadata = thread.get("metadata") or {}
+    if isinstance(metadata, str):
+        import json as _json
+
+        try:
+            metadata = _json.loads(metadata)
+        except Exception:
+            metadata = {}
+    return bool(metadata.get("is_shared"))
 
 
 # The app is automatically created by Chainlit when decorators are used
