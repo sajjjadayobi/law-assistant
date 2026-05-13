@@ -4,6 +4,20 @@ This is the only document a new developer needs to read before starting work. It
 
 ---
 
+## ⚠️ When You Hit a Blocker
+
+**Before asking for help or spending hours debugging**, read `docs/maintainer/learning.md`.
+
+This file consolidates lessons from every developer who has worked on this project. It contains:
+- **Blockers & Solutions**: 15+ known hard problems with root causes and fixes
+- **Key Insights**: Patterns for agent design, Chainlit, OpenTelemetry, Docker, testing, etc.
+- **Gotchas**: Subtle issues (Phoenix project naming, DB noise, RTL text handling, etc.)
+- **Rapid Reference**: Lookup table for quick problem solving
+
+If your problem isn't in learning.md, it's new — and after you solve it, **please add it to learning.md** so the next developer doesn't hit the same blocker.
+
+---
+
 ## 1. Orientation (First Day)
 
 ### Read these first
@@ -14,8 +28,9 @@ This is the only document a new developer needs to read before starting work. It
 | `docs/architecture/search.md` | How the agent searches — this file IS the agent's system prompt |
 | `docs/architecture/database.md` | PostgreSQL schema: `documents`, `relations`, FTS config |
 | `docs/development/tasks.md` | What's built, what's pending, key implementation facts |
+| `docs/maintainer/learning.md` | **Blockers, solutions, and hard-won lessons from all previous developers** |
 
-Do not skip these. They explain *why* the system is designed the way it is.
+Do not skip these. They explain *why* the system is designed the way it is. **learning.md especially** — it will save you hours when you hit a tricky problem.
 
 ### Understand the codebase
 
@@ -110,7 +125,8 @@ Before writing a single line of code, establish exactly where you are:
 
 ```bash
 git log --oneline -10              # What changed recently — always start here
-cat CLAUDE.md                      # Current status and the next task
+cat CLAUDE.md                      # Quick reference (must-dos, don'ts, key files)
+cat docs/development/tasks.md      # Status and scope: what's done, what's pending
 make test                          # Confirm you start from green (all tests passing)
 ```
 
@@ -207,7 +223,10 @@ Update progress.md as you work — not after. Decisions and blockers captured in
 - **Write tests alongside code**, not after
 - Keep functions small and focused
 - Use `structlog` for all significant operations: `logger.info("event", key=value, ...)`
-- No comments unless the WHY is non-obvious
+- **Never write docstrings** — function/class names are self-documenting
+- **Comments only if WHY is non-obvious** — not WHAT the code does (well-named code explains that)
+  - Example ❌: `# Increment counter by 1` (obvious from code)
+  - Example ✅: `# Skip rows with null timestamps; data quality issue from 2026-05-01` (why, not what)
 
 ### Step 5b — For UI/UX features: verify visually BEFORE writing tests
 
@@ -253,33 +272,9 @@ make all
 .venv/bin/python -m pytest --cov=src/law_agent --cov-report=html tests/
 ```
 
-### Step 7 — Update docs, then commit
+### Step 7 — Merge to main
 
-**Before running `git commit`, update these documents:**
-
-| Document | What to update |
-|---|---|
-| `CLAUDE.md` | Mark the feature complete in the status section; update "What's next" |
-| `docs/development/tasks.md` | Move the task from 📋 Pending to ✅ Completed; add implementation facts |
-| `docs/features/{name}/progress.md` | Write the final summary: total time, key learnings, "for future developers" advice |
-| `docs/features/{name}/plan.md` | Check all success criteria; note any deviations from the original plan |
-
-**CLAUDE.md is the most important one.** It is what the next developer (or next Claude session) reads first. If it says a task is pending when it's done, or points to the wrong next task, the next developer starts from a false map. Always update it.
-
-**CLAUDE.md pruning rule**: every time you update CLAUDE.md, also prune it. For each line ask: *"Would removing this cause Claude to make mistakes?"* If not, cut it or move it to `docs/features/`. A bloated CLAUDE.md is worse than a short one — Claude ignores instructions buried in noise. Target: 2–3 pages maximum.
-
-Then commit — including all doc changes in the same commit as the code:
-
-```bash
-git add src/ tests/ docs/features/my-feature-name/ docs/development/tasks.md CLAUDE.md
-git commit -m "feat(scope): short description
-
-Longer explanation of what and why.
-
-Co-Authored-By: Claude Sonnet 4.6 (1M context) <noreply@anthropic.com>"
-```
-
-### Step 8 — Merge to main
+When all work is complete, all tests pass, and code is ready:
 
 ```bash
 git checkout main
@@ -288,6 +283,39 @@ git branch -d feature/my-feature-name
 ```
 
 All work is local — there is no remote. Merge to main when the feature is complete and all tests pass.
+
+### Step 8 — Update docs, then commit (FINAL STEP)
+
+This is the absolute last step. Everything else must be done before this.
+
+**Update these documents:**
+
+| Document | What to update |
+|---|---|
+| `docs/development/tasks.md` | Move the task from 📋 Pending to ✅ Completed; add implementation facts |
+| `docs/features/{name}/progress.md` | Write the final summary: total time, key learnings, "for future developers" advice |
+| `docs/features/{name}/plan.md` | Check all success criteria; note any deviations from the original plan |
+| `CLAUDE.md` | Only if you discover new must-dos, don'ts, or critical facts to add |
+
+**tasks.md is the primary status tracker.** It is what the next developer reads first to understand scope. Always update it.
+
+**docs/maintainer/learning.md** — If you solved a new blocker, add it to the Rapid Reference table and the relevant section so future developers don't hit the same problem.
+
+**Then commit — this is your final commit:**
+
+```bash
+git add src/ tests/ docs/features/my-feature-name/ docs/development/tasks.md
+# Add CLAUDE.md only if you added new must-dos/don'ts
+# git add CLAUDE.md
+
+git commit -m "feat(scope): short description
+
+Longer explanation of what and why.
+
+Co-Authored-By: Claude Sonnet 4.6 (1M context) <noreply@anthropic.com>"
+```
+
+You're done! The feature is merged, documented, and committed.
 
 ---
 
@@ -341,10 +369,20 @@ All checks must pass before committing. The CI pipeline (`.github/workflows/ci.y
 
 **Style rules**:
 - Type hints on all function signatures
-- **No docstrings** — function/class names are self-documenting
-- **Comments only if WHY is non-obvious** — not what the code does
+- **No docstrings** — ever. Function/class names are self-documenting. If you need a docstring, rename the function.
+- **Comments only if WHY is non-obvious** — never explain WHAT the code does (well-named identifiers do that)
+  - Hidden constraints (why this specific value, why this order matters)
+  - Subtle invariants (conditions that must be true)
+  - Workarounds for specific bugs
+  - Links to external context (ticket, RFC, data quality issue)
 - No dead code, no commented-out code
 - structlog with structured data: `logger.info("search_executed", query=q, result_count=n)`
+
+**Why no docstrings?**
+- Docstrings rot. They diverge from code and become lies.
+- Good function names say what the function does. Bad function names need docstrings — rename instead.
+- Readers understand code by reading code, not by reading prose about the code.
+- Type hints are better documentation than "Args:" sections.
 
 ---
 
@@ -389,9 +427,10 @@ timeout_seconds = _settings.observability.http_timeout
 |---|---|
 | Starting a feature | `docs/features/{name}/plan.md` |
 | While developing | `docs/features/{name}/progress.md` (continuously) |
-| Completing a feature | Final summary in `progress.md`, update `CLAUDE.md` status |
+| Completing a feature | Final summary in `progress.md`, mark task complete in `tasks.md` |
+| Hit a new blocker | Add to `docs/maintainer/learning.md` so next dev avoids it |
 | Architecture changes | Update `docs/architecture/` |
-| New dev patterns discovered | Update this file (`workflow.md`) |
+| New dev patterns discovered | Update this file (`workflow.md`) or `CLAUDE.md` must-dos/don'ts |
 
 ### plan.md rules
 
