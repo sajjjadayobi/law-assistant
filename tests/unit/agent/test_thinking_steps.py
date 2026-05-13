@@ -14,10 +14,10 @@ from unittest.mock import AsyncMock, MagicMock, patch, call
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # show_thinking helper
 # ---------------------------------------------------------------------------
+
 
 class TestShowThinking:
     @pytest.mark.asyncio
@@ -85,6 +85,7 @@ class TestShowThinking:
 # Tool step — search documents
 # ---------------------------------------------------------------------------
 
+
 class TestSearchDocumentToolStep:
     @pytest.mark.asyncio
     async def test_step_name_updated_with_result_count(self) -> None:
@@ -93,18 +94,34 @@ class TestSearchDocumentToolStep:
         from law_agent.tools.search import DocSummary
 
         mock_results = [
-            DocSummary(doc_id=1, title="ماده ۷۶ قانون کار", doc_type="law",
-                      date="1369", summary="مرخصی زایمان", tags=[], relevance_score=0.95),
-            DocSummary(doc_id=2, title="قانون حمایت خانواده", doc_type="law",
-                      date="1400", summary="خانواده", tags=[], relevance_score=0.85),
+            DocSummary(
+                doc_id=1,
+                title="ماده ۷۶ قانون کار",
+                doc_type="law",
+                date="1369",
+                summary="مرخصی زایمان",
+                tags=[],
+                relevance_score=0.95,
+            ),
+            DocSummary(
+                doc_id=2,
+                title="قانون حمایت خانواده",
+                doc_type="law",
+                date="1400",
+                summary="خانواده",
+                tags=[],
+                relevance_score=0.85,
+            ),
         ]
 
         step_mock = MagicMock()
         step_mock.__aenter__ = AsyncMock(return_value=step_mock)
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("law_agent.agent.core.cl.Step", return_value=step_mock), \
-             patch("law_agent.agent.core.search_documents", return_value=mock_results):
+        with (
+            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
+            patch("law_agent.agent.core.search_documents", return_value=mock_results),
+        ):
             ctx = MagicMock()
             result = await LawAgent._search_documents_tool(ctx, query="مرخصی")
 
@@ -122,8 +139,10 @@ class TestSearchDocumentToolStep:
         step_mock.__aenter__ = AsyncMock(return_value=step_mock)
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("law_agent.agent.core.cl.Step", return_value=step_mock), \
-             patch("law_agent.agent.core.search_documents", return_value=[]):
+        with (
+            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
+            patch("law_agent.agent.core.search_documents", return_value=[]),
+        ):
             ctx = MagicMock()
             await LawAgent._search_documents_tool(ctx, query="query")
 
@@ -136,16 +155,25 @@ class TestSearchDocumentToolStep:
         from law_agent.tools.search import DocSummary
 
         mock_results = [
-            DocSummary(doc_id=1, title="قانون", doc_type="law",
-                      date="1369", summary="خلاصه", tags=[], relevance_score=0.8),
+            DocSummary(
+                doc_id=1,
+                title="قانون",
+                doc_type="law",
+                date="1369",
+                summary="خلاصه",
+                tags=[],
+                relevance_score=0.8,
+            ),
         ]
 
         step_mock = MagicMock()
         step_mock.__aenter__ = AsyncMock(return_value=step_mock)
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("law_agent.agent.core.cl.Step", return_value=step_mock), \
-             patch("law_agent.agent.core.search_documents", return_value=mock_results):
+        with (
+            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
+            patch("law_agent.agent.core.search_documents", return_value=mock_results),
+        ):
             ctx = MagicMock()
             result = await LawAgent._search_documents_tool(ctx, query="query")
 
@@ -164,8 +192,10 @@ class TestSearchDocumentToolStep:
         step_mock.__aenter__ = AsyncMock(return_value=step_mock)
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("law_agent.agent.core.cl.Step", return_value=step_mock) as mock_step, \
-             patch("law_agent.agent.core.search_documents", return_value=[]):
+        with (
+            patch("law_agent.agent.core.cl.Step", return_value=step_mock) as mock_step,
+            patch("law_agent.agent.core.search_documents", return_value=[]),
+        ):
             ctx = MagicMock()
             await LawAgent._search_documents_tool(ctx, query="query")
 
@@ -175,6 +205,7 @@ class TestSearchDocumentToolStep:
 # ---------------------------------------------------------------------------
 # Tool step — get document
 # ---------------------------------------------------------------------------
+
 
 class TestGetDocumentToolStep:
     @pytest.mark.asyncio
@@ -196,8 +227,10 @@ class TestGetDocumentToolStep:
         step_mock.__aenter__ = AsyncMock(return_value=step_mock)
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("law_agent.agent.core.cl.Step", return_value=step_mock), \
-             patch("law_agent.agent.core.get_document", return_value=mock_doc):
+        with (
+            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
+            patch("law_agent.agent.core.get_document", return_value=mock_doc),
+        ):
             ctx = MagicMock()
             await LawAgent._get_document_tool(ctx, doc_id=4068325)
 
@@ -221,8 +254,10 @@ class TestGetDocumentToolStep:
         step_mock.__aenter__ = AsyncMock(return_value=step_mock)
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("law_agent.agent.core.cl.Step", return_value=step_mock), \
-             patch("law_agent.agent.core.get_document", return_value=mock_doc):
+        with (
+            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
+            patch("law_agent.agent.core.get_document", return_value=mock_doc),
+        ):
             ctx = MagicMock()
             await LawAgent._get_document_tool(ctx, doc_id=1)
 
@@ -238,8 +273,10 @@ class TestGetDocumentToolStep:
         step_mock.__aenter__ = AsyncMock(return_value=step_mock)
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("law_agent.agent.core.cl.Step", return_value=step_mock), \
-             patch("law_agent.agent.core.get_document", side_effect=DocumentNotFoundError()):
+        with (
+            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
+            patch("law_agent.agent.core.get_document", side_effect=DocumentNotFoundError()),
+        ):
             ctx = MagicMock()
             result = await LawAgent._get_document_tool(ctx, doc_id=99999)
 
@@ -265,8 +302,10 @@ class TestGetDocumentToolStep:
         step_mock.__aenter__ = AsyncMock(return_value=step_mock)
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("law_agent.agent.core.cl.Step", return_value=step_mock), \
-             patch("law_agent.agent.core.get_document", return_value=mock_doc):
+        with (
+            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
+            patch("law_agent.agent.core.get_document", return_value=mock_doc),
+        ):
             ctx = MagicMock()
             result = await LawAgent._get_document_tool(ctx, doc_id=1)
 
@@ -279,6 +318,7 @@ class TestGetDocumentToolStep:
 # Tool step — related documents
 # ---------------------------------------------------------------------------
 
+
 class TestRelatedDocumentsToolStep:
     @pytest.mark.asyncio
     async def test_step_name_includes_count(self) -> None:
@@ -286,18 +326,34 @@ class TestRelatedDocumentsToolStep:
         from law_agent.tools.search import DocSummary
 
         mock_results = [
-            DocSummary(doc_id=2, title="آیین‌نامه", doc_type="regulation",
-                      date="1370", summary="خلاصه", tags=[], relevance_score=0.7),
-            DocSummary(doc_id=3, title="نظریه", doc_type="advisory_opinion",
-                      date="1380", summary="خلاصه", tags=[], relevance_score=0.6),
+            DocSummary(
+                doc_id=2,
+                title="آیین‌نامه",
+                doc_type="regulation",
+                date="1370",
+                summary="خلاصه",
+                tags=[],
+                relevance_score=0.7,
+            ),
+            DocSummary(
+                doc_id=3,
+                title="نظریه",
+                doc_type="advisory_opinion",
+                date="1380",
+                summary="خلاصه",
+                tags=[],
+                relevance_score=0.6,
+            ),
         ]
 
         step_mock = MagicMock()
         step_mock.__aenter__ = AsyncMock(return_value=step_mock)
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("law_agent.agent.core.cl.Step", return_value=step_mock), \
-             patch("law_agent.agent.core.get_related_documents", return_value=mock_results):
+        with (
+            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
+            patch("law_agent.agent.core.get_related_documents", return_value=mock_results),
+        ):
             ctx = MagicMock()
             await LawAgent._get_related_documents_tool(ctx, doc_id=1)
 
@@ -311,8 +367,10 @@ class TestRelatedDocumentsToolStep:
         step_mock.__aenter__ = AsyncMock(return_value=step_mock)
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("law_agent.agent.core.cl.Step", return_value=step_mock), \
-             patch("law_agent.agent.core.get_related_documents", return_value=[]):
+        with (
+            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
+            patch("law_agent.agent.core.get_related_documents", return_value=[]),
+        ):
             ctx = MagicMock()
             await LawAgent._get_related_documents_tool(ctx, doc_id=1)
 
@@ -323,17 +381,20 @@ class TestRelatedDocumentsToolStep:
 # Tool label mapping in thinking step
 # ---------------------------------------------------------------------------
 
+
 class TestThinkingToolLabels:
     def test_search_tool_has_persian_label(self) -> None:
         """The _tool_label dict in core.py must have Persian names."""
         # Check that the agent code contains the Persian label mapping
         import inspect
         from law_agent.agent import core
+
         source = inspect.getsource(core.LawAgent.run)
         assert "جستجو در قوانین" in source or "جستجوی اسناد" in source
 
     def test_get_document_tool_has_persian_label(self) -> None:
         import inspect
         from law_agent.agent import core
+
         source = inspect.getsource(core.LawAgent.run)
         assert "مطالعه سند" in source or "خواندن سند" in source or "دریافت سند" in source

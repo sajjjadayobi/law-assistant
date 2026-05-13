@@ -19,10 +19,10 @@ import pytest
 
 from law_agent.data.data_layer import LawAgentDataLayer, _parse_thread_date
 
-
 # ---------------------------------------------------------------------------
 # _parse_thread_date helper
 # ---------------------------------------------------------------------------
+
 
 class TestParseThreadDate:
     def test_iso_string_with_z(self) -> None:
@@ -53,6 +53,7 @@ class TestParseThreadDate:
 # LawAgentDataLayer — initialization
 # ---------------------------------------------------------------------------
 
+
 class TestDataLayerInit:
     def test_has_step_creation_lock(self) -> None:
         """Class-level lock must exist for thread safety."""
@@ -70,6 +71,7 @@ class TestDataLayerInit:
 # ---------------------------------------------------------------------------
 # Thread sorting in get_all_user_threads
 # ---------------------------------------------------------------------------
+
 
 class TestThreadSorting:
     """Test that get_all_user_threads sorts threads newest-first."""
@@ -121,6 +123,7 @@ class TestThreadSorting:
 # create_step — thread auto-creation logic
 # ---------------------------------------------------------------------------
 
+
 class TestCreateStepLogic:
     """Test the thread auto-creation guard in create_step()."""
 
@@ -155,10 +158,12 @@ class TestCreateStepLogic:
         mock_update = AsyncMock()
         mock_super_create = AsyncMock()
 
-        with patch.object(layer, "get_thread", new=AsyncMock(return_value=None)), \
-             patch.object(layer, "update_thread", mock_update), \
-             patch("law_agent.data.data_layer.SQLAlchemyDataLayer.create_step", mock_super_create), \
-             patch("chainlit.user_session", MagicMock(get=MagicMock(return_value=None))):
+        with (
+            patch.object(layer, "get_thread", new=AsyncMock(return_value=None)),
+            patch.object(layer, "update_thread", mock_update),
+            patch("law_agent.data.data_layer.SQLAlchemyDataLayer.create_step", mock_super_create),
+            patch("chainlit.user_session", MagicMock(get=MagicMock(return_value=None))),
+        ):
             await layer.create_step(step_dict)
 
         mock_update.assert_called_once()
@@ -180,8 +185,10 @@ class TestCreateStepLogic:
 
         mock_super_create = AsyncMock()
 
-        with patch.object(layer, "get_thread", new=AsyncMock(return_value=existing_thread)), \
-             patch("law_agent.data.data_layer.SQLAlchemyDataLayer.create_step", mock_super_create):
+        with (
+            patch.object(layer, "get_thread", new=AsyncMock(return_value=existing_thread)),
+            patch("law_agent.data.data_layer.SQLAlchemyDataLayer.create_step", mock_super_create),
+        ):
             await layer.create_step(step_dict)
 
         mock_super_create.assert_called_once_with(step_dict)
@@ -190,6 +197,7 @@ class TestCreateStepLogic:
 # ---------------------------------------------------------------------------
 # upsert_feedback — logging and delegation
 # ---------------------------------------------------------------------------
+
 
 class TestUpsertFeedback:
     def _make_layer(self) -> LawAgentDataLayer:
@@ -223,8 +231,13 @@ class TestUpsertFeedback:
         feedback.comment = "عالی بود"
         feedback.threadId = "t1"
 
-        with patch("law_agent.data.data_layer.SQLAlchemyDataLayer.upsert_feedback", AsyncMock(return_value="id")), \
-             patch("law_agent.data.data_layer.logger") as mock_log:
+        with (
+            patch(
+                "law_agent.data.data_layer.SQLAlchemyDataLayer.upsert_feedback",
+                AsyncMock(return_value="id"),
+            ),
+            patch("law_agent.data.data_layer.logger") as mock_log,
+        ):
             await layer.upsert_feedback(feedback)
 
         logged_kwargs = mock_log.info.call_args[1]
@@ -241,8 +254,13 @@ class TestUpsertFeedback:
         feedback.comment = "پاسخ نادرست"
         feedback.threadId = "t1"
 
-        with patch("law_agent.data.data_layer.SQLAlchemyDataLayer.upsert_feedback", AsyncMock(return_value="id")), \
-             patch("law_agent.data.data_layer.logger") as mock_log:
+        with (
+            patch(
+                "law_agent.data.data_layer.SQLAlchemyDataLayer.upsert_feedback",
+                AsyncMock(return_value="id"),
+            ),
+            patch("law_agent.data.data_layer.logger") as mock_log,
+        ):
             await layer.upsert_feedback(feedback)
 
         logged_kwargs = mock_log.info.call_args[1]
@@ -253,24 +271,29 @@ class TestUpsertFeedback:
 # Singleton factory
 # ---------------------------------------------------------------------------
 
+
 class TestDataLayerFactory:
     def test_get_data_layer_raises_if_not_initialized(self) -> None:
         """get_data_layer() raises RuntimeError when module failed to init."""
         import law_agent.data.data_layer as dl_module
+
         original = dl_module._data_layer
         try:
             dl_module._data_layer = None
             with pytest.raises(RuntimeError, match="not initialized"):
                 from law_agent.data.data_layer import get_data_layer
+
                 get_data_layer()
         finally:
             dl_module._data_layer = original
 
     def test_reset_data_layer_sets_to_none(self) -> None:
         import law_agent.data.data_layer as dl_module
+
         original = dl_module._data_layer
         try:
             from law_agent.data.data_layer import reset_data_layer
+
             reset_data_layer()
             assert dl_module._data_layer is None
         finally:

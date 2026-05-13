@@ -13,7 +13,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -148,7 +147,9 @@ class TestStreamingPath:
 
         with (
             patch("law_agent.ui.app.cl.user_session", session),
-            patch("law_agent.ui.app.get_settings", return_value=_make_settings(enable_streaming=True)),
+            patch(
+                "law_agent.ui.app.get_settings", return_value=_make_settings(enable_streaming=True)
+            ),
             patch("law_agent.ui.app.get_agent") as mock_get_agent,
             patch("law_agent.ui.app.get_conversation_manager") as mock_conv,
             patch("law_agent.ui.app.get_citation_formatter") as mock_fmt,
@@ -156,11 +157,15 @@ class TestStreamingPath:
             patch("law_agent.ui.app.cl.Message", return_value=streaming_msg_mock),
             patch("law_agent.ui.app.otel_trace") as mock_trace,
         ):
-            mock_trace.get_tracer.return_value.start_as_current_span.return_value.__enter__ = MagicMock(
-                return_value=MagicMock(get_span_context=MagicMock(return_value=MagicMock(is_valid=False)))
+            mock_trace.get_tracer.return_value.start_as_current_span.return_value.__enter__ = (
+                MagicMock(
+                    return_value=MagicMock(
+                        get_span_context=MagicMock(return_value=MagicMock(is_valid=False))
+                    )
+                )
             )
-            mock_trace.get_tracer.return_value.start_as_current_span.return_value.__exit__ = MagicMock(
-                return_value=False
+            mock_trace.get_tracer.return_value.start_as_current_span.return_value.__exit__ = (
+                MagicMock(return_value=False)
             )
 
             agent_mock = MagicMock()
@@ -200,7 +205,9 @@ class TestStreamingPath:
 
         with (
             patch("law_agent.ui.app.cl.user_session", session),
-            patch("law_agent.ui.app.get_settings", return_value=_make_settings(enable_streaming=False)),
+            patch(
+                "law_agent.ui.app.get_settings", return_value=_make_settings(enable_streaming=False)
+            ),
             patch("law_agent.ui.app.get_agent") as mock_get_agent,
             patch("law_agent.ui.app.get_conversation_manager") as mock_conv,
             patch("law_agent.ui.app.get_citation_formatter") as mock_fmt,
@@ -208,11 +215,15 @@ class TestStreamingPath:
             patch("law_agent.ui.app.cl.Message", side_effect=make_msg),
             patch("law_agent.ui.app.otel_trace") as mock_trace,
         ):
-            mock_trace.get_tracer.return_value.start_as_current_span.return_value.__enter__ = MagicMock(
-                return_value=MagicMock(get_span_context=MagicMock(return_value=MagicMock(is_valid=False)))
+            mock_trace.get_tracer.return_value.start_as_current_span.return_value.__enter__ = (
+                MagicMock(
+                    return_value=MagicMock(
+                        get_span_context=MagicMock(return_value=MagicMock(is_valid=False))
+                    )
+                )
             )
-            mock_trace.get_tracer.return_value.start_as_current_span.return_value.__exit__ = MagicMock(
-                return_value=False
+            mock_trace.get_tracer.return_value.start_as_current_span.return_value.__exit__ = (
+                MagicMock(return_value=False)
             )
 
             agent_mock = MagicMock()
@@ -250,7 +261,9 @@ class TestStreamingPath:
 
         with (
             patch("law_agent.ui.app.cl.user_session", session),
-            patch("law_agent.ui.app.get_settings", return_value=_make_settings(enable_streaming=True)),
+            patch(
+                "law_agent.ui.app.get_settings", return_value=_make_settings(enable_streaming=True)
+            ),
             patch("law_agent.ui.app.get_agent") as mock_get_agent,
             patch("law_agent.ui.app.get_conversation_manager") as mock_conv,
             patch("law_agent.ui.app.get_citation_formatter") as mock_fmt,
@@ -258,11 +271,15 @@ class TestStreamingPath:
             patch("law_agent.ui.app.cl.Message", return_value=streaming_msg_mock),
             patch("law_agent.ui.app.otel_trace") as mock_trace,
         ):
-            mock_trace.get_tracer.return_value.start_as_current_span.return_value.__enter__ = MagicMock(
-                return_value=MagicMock(get_span_context=MagicMock(return_value=MagicMock(is_valid=False)))
+            mock_trace.get_tracer.return_value.start_as_current_span.return_value.__enter__ = (
+                MagicMock(
+                    return_value=MagicMock(
+                        get_span_context=MagicMock(return_value=MagicMock(is_valid=False))
+                    )
+                )
             )
-            mock_trace.get_tracer.return_value.start_as_current_span.return_value.__exit__ = MagicMock(
-                return_value=False
+            mock_trace.get_tracer.return_value.start_as_current_span.return_value.__exit__ = (
+                MagicMock(return_value=False)
             )
 
             agent_mock = MagicMock()

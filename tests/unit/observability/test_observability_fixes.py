@@ -22,10 +22,10 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
 from law_agent.observability.feedback import PhoenixFeedbackClient
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_in_memory_tracer() -> tuple[TracerProvider, InMemorySpanExporter]:
     exporter = InMemorySpanExporter()
@@ -41,12 +41,14 @@ def _mock_post_ok(captured: dict[str, Any]):
         resp = MagicMock()
         resp.status_code = 200
         return resp
+
     return _post
 
 
 # ---------------------------------------------------------------------------
 # Feedback: metadata included in Phoenix payload
 # ---------------------------------------------------------------------------
+
 
 class TestFeedbackMetadata:
     @pytest.mark.asyncio
@@ -123,6 +125,7 @@ class TestFeedbackMetadata:
 # Tool spans: output.value format
 # ---------------------------------------------------------------------------
 
+
 class TestSearchDocumentsOutputFormat:
     """Verify search_documents TOOL span output.value lists document titles."""
 
@@ -168,6 +171,7 @@ class TestSearchDocumentsOutputFormat:
         ):
             mock_settings.return_value.search.max_results = 20
             from law_agent.agent.core import LawAgent
+
             result_json = await LawAgent._search_documents_tool(
                 MagicMock(), query="حق مسکن", tags=None, doc_types=None, limit=20
             )
@@ -200,6 +204,7 @@ class TestSearchDocumentsOutputFormat:
         ):
             mock_settings.return_value.search.max_results = 20
             from law_agent.agent.core import LawAgent
+
             await LawAgent._search_documents_tool(
                 MagicMock(), query="چیزی", tags=None, doc_types=None, limit=20
             )
@@ -210,6 +215,7 @@ class TestSearchDocumentsOutputFormat:
     @pytest.mark.asyncio
     async def test_span_kind_is_tool(self) -> None:
         from law_agent.models.document import DocSummary as SearchResult
+
         provider, exporter = _make_in_memory_tracer()
         step_mock = MagicMock()
         step_mock.__aenter__ = AsyncMock(return_value=step_mock)
@@ -223,6 +229,7 @@ class TestSearchDocumentsOutputFormat:
         ):
             mock_settings.return_value.search.max_results = 20
             from law_agent.agent.core import LawAgent
+
             await LawAgent._search_documents_tool(
                 MagicMock(), query="test", tags=None, doc_types=None, limit=5
             )
@@ -262,6 +269,7 @@ class TestGetDocumentOutputFormat:
             patch("law_agent.agent.core.get_tracer", return_value=provider.get_tracer("test")),
         ):
             from law_agent.agent.core import LawAgent
+
             await LawAgent._get_document_tool(MagicMock(), doc_id=555)
 
         span = exporter.get_finished_spans()[0]
@@ -289,6 +297,7 @@ class TestGetDocumentOutputFormat:
             patch("law_agent.agent.core.get_tracer", return_value=provider.get_tracer("test")),
         ):
             from law_agent.agent.core import LawAgent
+
             result = await LawAgent._get_document_tool(MagicMock(), doc_id=99999)
 
         span = exporter.get_finished_spans()[0]
@@ -331,6 +340,7 @@ class TestGetRelatedDocumentsOutputFormat:
         ):
             mock_settings.return_value.search.related_docs_default_limit = 10
             from law_agent.agent.core import LawAgent
+
             await LawAgent._get_related_documents_tool(MagicMock(), doc_id=100)
 
         span = exporter.get_finished_spans()[0]
