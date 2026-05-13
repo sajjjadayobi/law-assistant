@@ -148,6 +148,15 @@ conversation:
   enable_context_history: true
 
 # ============================================================================
+# RATE LIMITING CONFIGURATION
+# ============================================================================
+# Per-user daily request quota for fair usage
+rate_limit:
+  # Maximum requests per user per day (UTC)
+  # 30 = reasonable limit to prevent abuse while allowing real use
+  requests_per_day: 30
+
+# ============================================================================
 # UI CONFIGURATION
 # ============================================================================
 # Chainlit chat interface behavior

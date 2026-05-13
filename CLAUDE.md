@@ -6,9 +6,9 @@ Project instructions for Claude Code. Read this first, then follow the links.
 
 ## Current Status
 
-**Version**: v0.0.2 (Enhanced UI — in progress)
-**Branch**: `feature/phase-11-thinking-steps`
-**Tests**: 312 passing — `.venv/bin/python -m pytest tests/ --ignore=tests/integration -q`
+**Version**: v0.0.3 (Auth & Rate Limiting — complete)
+**Branch**: `feature/login-rate-limit`
+**Tests**: 317 passing — `.venv/bin/python -m pytest tests/ --ignore=tests/integration -q`
 
 ### What's done
 - ✅ Full agent stack: search tools, PydanticAI agent, citations, conversation management
@@ -19,6 +19,7 @@ Project instructions for Claude Code. Read this first, then follow the links.
 - ✅ Phoenix observability: real CHAIN/TOOL/LLM traces, token counts, feedback with message context
 - ✅ Docker Compose deployment fully working (fixed 2026-05-09) — all three services healthy on `docker compose up -d`
 - ✅ Share conversations (11.6): `allow_thread_sharing = true` + `@cl.on_shared_thread_view` — share button in sidebar, read-only public links
+- ✅ Email + Invite Code Login: users log in with email + invite code (no external service); per-user daily rate limiting (30 req/day, configurable)
 
 ### What's next
 - 📋 Task 11.9: Browser notifications via JS `Notification API` when tab is hidden
