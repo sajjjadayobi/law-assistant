@@ -1,6 +1,6 @@
 # Law Assistant — AI Legal Assistant for Iranian Law
 
-A conversational AI assistant built for a law firm's clients. Customers can ask legal questions in Persian and get answers grounded in 47,000+ Iranian legal documents — laws, regulations, advisory opinions, court rulings, and unified precedents — with inline citations linked to the source documents.
+A toy project I built to practice full agentic development on a real problem. A lawyer friend asked me to build this for his clients — it took about 3 days of my time to complete. Customers can ask legal questions in Persian and get answers grounded in 47,000+ Iranian legal documents — laws, regulations, advisory opinions, court rulings, and unified precedents — with inline citations linked to the source documents.
 
 > **Every line of code in this repo was written by [Claude Code](https://claude.ai/code) — I haven't read or written any of it myself.** The models used were Claude Sonnet 4.5 and Claude Haiku 4.5, both running with medium extended thinking enabled.
 
