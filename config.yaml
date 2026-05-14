@@ -17,7 +17,7 @@
 model:
   # Name of the LLM model to use
   # For custom endpoints, use the model name supported by your provider
-  name: "grok-4-1-fast-reasoning"
+  name: "gpt-4.1-mini"
 
   # Temperature controls randomness/creativity (0.0 = deterministic, 2.0 = very creative)
   # 0.0 = always same output

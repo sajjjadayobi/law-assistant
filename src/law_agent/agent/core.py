@@ -20,6 +20,7 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 import chainlit as cl
+import httpx
 import structlog
 import yaml
 from opentelemetry import trace as otel_trace
@@ -27,6 +28,8 @@ from pydantic_ai import Agent, RunContext
 from pydantic_ai.agent import CallToolsNode
 from pydantic_ai.messages import ModelMessage, TextPart, ThinkingPart, ToolCallPart
 from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.profiles.openai import OpenAIModelProfile
+from pydantic_ai.providers.openai import OpenAIProvider
 
 from law_agent.config.settings import get_settings
 from law_agent.observability.tracer import get_tracer
@@ -157,10 +160,19 @@ class LawAgent:
 
     def _create_agent(self) -> None:
         """Create PydanticAI agent with search tools."""
-        # If custom base_url is set, use OpenAI-compatible provider
         if self.settings.model.base_url:
-            # OpenAI provider with custom endpoint (base_url set via OPENAI_BASE_URL env var)
-            model_instance = OpenAIModel(model_name=self.model)
+            http_client = httpx.AsyncClient(timeout=30.0)
+            provider = OpenAIProvider(
+                base_url=self.settings.model.base_url,
+                api_key=self.settings.model.auth_token,
+                http_client=http_client,
+            )
+            # openai_supports_strict_tool_definition=False removes "strict": true
+            # from tool schemas — required for non-OpenAI providers like MetisAI
+            profile = OpenAIModelProfile(openai_supports_strict_tool_definition=False)
+            model_instance = OpenAIModel(
+                model_name=self.model, provider=provider, profile=profile
+            )
         else:
             # Default: let PydanticAI infer the model provider
             model_instance = self.model
@@ -180,8 +192,8 @@ class LawAgent:
     async def _search_documents_tool(
         ctx: RunContext,
         query: str,
-        tags: list[str] | None = None,
-        doc_types: list[str] | None = None,
+        tags: list[str] = [],
+        doc_types: list[str] = [],
         limit: int = 20,
     ) -> str:
         """Tool: Search documents using full-text search."""
@@ -307,7 +319,7 @@ class LawAgent:
     async def _get_related_documents_tool(
         ctx: RunContext,
         doc_id: int,
-        relation_types: list[str] | None = None,
+        relation_types: list[str] = [],
         limit: int = 10,
     ) -> str:
         """Tool: Get related documents via citation graph."""
