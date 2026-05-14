@@ -1,15 +1,23 @@
-# Law Agent — AI Legal Assistant for Iranian Law
+# Law Assistant — AI Legal Assistant for Iranian Law
 
-> **This is a toy project.** Built as an experiment in fully agentic AI-assisted coding — every feature, test, and document in this repo was written collaboratively with Claude Code. The goal was to see how far you can get building real, working software for a non-trivial domain purely through agentic coding sessions. The end user is a lawyer friend who needed a way to search and query 47,000+ Iranian legal documents in Persian.
+A conversational AI assistant built for a law firm's clients. Customers can ask legal questions in Persian and get answers grounded in 47,000+ Iranian legal documents — laws, regulations, advisory opinions, court rulings, and unified precedents — with inline citations linked to the source documents.
 
-[![Tests](https://img.shields.io/badge/tests-317%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-313%20passing-brightgreen)](tests/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 
 ---
 
 ## What It Does
 
-Answers legal questions in Persian by searching a database of 47,000+ Iranian legal documents (laws, regulations, advisory opinions, court rulings, unified precedents). The agent performs multi-step search — reading summaries, following citation chains, and writing answers with inline citations linked to source documents.
+Customers describe their legal situation in plain Persian and the assistant searches the document database, follows citation chains, and writes a clear answer with numbered references. Each citation links directly to the source document.
+
+The agent has three tools and decides its own search strategy at each step:
+
+| Tool | Purpose |
+|---|---|
+| `search_documents(query, tags, doc_types, limit)` | Full-text search on document summaries |
+| `get_document(doc_id)` | Retrieve complete document content |
+| `get_related_documents(doc_id, relation_types, limit)` | Traverse the citation graph |
 
 ---
 
@@ -58,16 +66,6 @@ Full production instructions: **[`docs/maintainer/deployment.md`](docs/maintaine
 
 ## Architecture
 
-### Agent Tools
-
-The agent has three tools and decides its own search strategy at each step:
-
-| Tool | Purpose |
-|---|---|
-| `search_documents(query, tags, doc_types, limit)` | Full-text search on document summaries |
-| `get_document(doc_id)` | Retrieve complete document content |
-| `get_related_documents(doc_id, relation_types, limit)` | Traverse the citation graph |
-
 ### Database
 
 **`documents`** (47,434 rows): `doc_id`, `title`, `doc_type`, `date`, `summary`, `full_content`, `tags`, `search_vector`
@@ -105,10 +103,6 @@ make typecheck   # mypy
 
 Developer guide: **[`docs/development/workflow.md`](docs/development/workflow.md)**
 
-Task list (what's built, what's next): **[`docs/development/tasks.md`](docs/development/tasks.md)**
-
-Hard-won lessons from all sessions: **[`docs/maintainer/learning.md`](docs/maintainer/learning.md)**
-
 ---
 
 ## Project Structure
@@ -128,13 +122,11 @@ src/law_assistant/
 tests/
 ├── unit/           # Pure Python, fast
 ├── ui/             # Chainlit handler behavior (mocked)
-├── integration/    # Require running PostgreSQL
-└── load/           # Locust load tests
+└── integration/    # Require running PostgreSQL
 
 docs/
 ├── architecture/   # design.md, search.md, database.md
 ├── development/    # workflow.md, tasks.md
 ├── maintainer/     # deployment.md, learning.md
-├── best-practices/ # agent-engineering.md
 └── features/       # One folder per feature: plan.md + progress.md
 ```
