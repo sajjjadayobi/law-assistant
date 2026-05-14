@@ -17,7 +17,7 @@
 model:
   # Name of the LLM model to use
   # For custom endpoints, use the model name supported by your provider
-  name: "grok-4-1-fast-reasoning"
+  name: "gpt-4.1-mini"
 
   # Temperature controls randomness/creativity (0.0 = deterministic, 2.0 = very creative)
   # 0.0 = always same output
@@ -148,6 +148,15 @@ conversation:
   enable_context_history: true
 
 # ============================================================================
+# RATE LIMITING CONFIGURATION
+# ============================================================================
+# Per-user daily request quota for fair usage
+rate_limit:
+  # Maximum requests per user per day (UTC)
+  # 30 = reasonable limit to prevent abuse while allowing real use
+  requests_per_day: 30
+
+# ============================================================================
 # UI CONFIGURATION
 # ============================================================================
 # Chainlit chat interface behavior
@@ -190,7 +199,7 @@ ui:
   # Base URL for citation links in agent responses
   # Citations appear as [N](base_url/doc_id) markdown links
   # Change to point to your law portal or documentation service
-  citation_base_url: "https://iran.ir/en/law"
+  citation_base_url: "https://panel.danagoo.com/app?id="
 
 # ============================================================================
 # LOGGING CONFIGURATION

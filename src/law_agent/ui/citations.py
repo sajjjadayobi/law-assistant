@@ -29,6 +29,9 @@ class Citation:
     def url(self) -> str:
         base = _settings.ui.citation_base_url
         target = self.doc_id if self.doc_id else str(self.number)
+        # Support both path-style (/id) and query-param-style (?id=) base URLs
+        if base.endswith("="):
+            return f"{base}{target}"
         return f"{base}/{target}"
 
     def to_markdown_link(self) -> str:
@@ -126,7 +129,8 @@ class CitationFormatter:
             return citation.to_markdown_link()
         # Fallback: link by number even without doc_id
         base_url = _settings.ui.citation_base_url
-        return f"[{num}]({base_url}/{num})"
+        sep = "" if base_url.endswith("=") else "/"
+        return f"[{num}]({base_url}{sep}{num})"
 
     def _clean_ref_section(self, section: str) -> str:
         """Render منابع block with markdown links and no raw [doc_id: X] tags."""

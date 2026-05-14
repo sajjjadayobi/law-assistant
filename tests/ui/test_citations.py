@@ -13,10 +13,10 @@ import pytest
 
 from law_agent.ui.citations import Citation, CitationFormatter
 
-
 # ---------------------------------------------------------------------------
 # Citation dataclass
 # ---------------------------------------------------------------------------
+
 
 class TestCitation:
     def test_url_with_doc_id(self) -> None:
@@ -40,6 +40,7 @@ class TestCitation:
 # Citation extraction
 # ---------------------------------------------------------------------------
 
+
 class TestCitationExtraction:
     def test_single_citation(self) -> None:
         f = CitationFormatter()
@@ -61,6 +62,7 @@ class TestCitationExtraction:
 # ---------------------------------------------------------------------------
 # Reference section parsing — with [doc_id: X]
 # ---------------------------------------------------------------------------
+
 
 class TestReferenceParser:
     RESPONSE_WITH_REFS = """طبق ماده ۷۶ قانون کار [1] مرخصی زایمان ۹۰ روز است.
@@ -105,6 +107,7 @@ class TestReferenceParser:
 # Full format_response — markdown links, no HTML
 # ---------------------------------------------------------------------------
 
+
 class TestFormatResponse:
     def test_inline_citations_become_markdown_links(self) -> None:
         f = CitationFormatter()
@@ -137,7 +140,9 @@ class TestFormatResponse:
 
     def test_multiple_citations_all_replaced(self) -> None:
         f = CitationFormatter()
-        resp = "طبق [1] و [2]\n\nمنابع:\n[1] قانون کار [doc_id: 100]\n[2] قانون مدنی [doc_id: 200]\n"
+        resp = (
+            "طبق [1] و [2]\n\nمنابع:\n[1] قانون کار [doc_id: 100]\n[2] قانون مدنی [doc_id: 200]\n"
+        )
         out = f.format_response(resp)
         assert "[1](https://iran.ir/en/law/100)" in out
         assert "[2](https://iran.ir/en/law/200)" in out
@@ -181,6 +186,7 @@ class TestFormatResponse:
 # Citation validation
 # ---------------------------------------------------------------------------
 
+
 class TestCitationValidation:
     def test_consecutive_valid(self) -> None:
         f = CitationFormatter()
@@ -207,6 +213,7 @@ class TestCitationValidation:
 # Backwards-compat helpers
 # ---------------------------------------------------------------------------
 
+
 class TestBackwardsCompat:
     def test_extract_citation_references_method_exists(self) -> None:
         f = CitationFormatter()
@@ -223,6 +230,7 @@ class TestBackwardsCompat:
 # ---------------------------------------------------------------------------
 # Integration test: real-world agent response format
 # ---------------------------------------------------------------------------
+
 
 class TestRealWorldFormat:
     AGENT_RESPONSE = """طبق ماده ۷۶ قانون کار [1]، مدت مرخصی زایمان برای کارگران زن ۹۰ روز کامل است.

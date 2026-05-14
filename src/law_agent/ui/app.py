@@ -31,6 +31,7 @@ from law_agent.observability import (
     shutdown_tracing,
 )
 from law_agent.ui.citations import CitationFormatter
+from law_agent.ui.rate_limit import check_and_increment
 from law_agent.ui.steps import ToolStepManager
 
 logger = structlog.get_logger(__name__)
@@ -135,10 +136,42 @@ def load_starters() -> list[StarterQuestion]:
     return starters
 
 
+import re
+
+_EMAIL_RE = re.compile(r"^[^@]+@[^@]+\.[^@]+$")
+_INVITE_CODE = os.getenv("INVITE_CODE", "")
+
+
 @cl.password_auth_callback
 async def auth_callback(username: str, password: str) -> cl.User | None:
-    """Accept any username/password to enable per-user conversation history."""
-    return cl.User(identifier=username, metadata={"role": "user"})
+    """Authenticate user by email + invite code.
+
+    Username must be a valid email address.
+    Password must match INVITE_CODE from environment (if set).
+
+    Args:
+        username: Email address to identify the user
+        password: Invite code to verify access
+
+    Returns:
+        Authenticated user or None to reject the login
+    """
+    # Validate email format
+    if not _EMAIL_RE.match(username.strip()):
+        logger.warning("login_invalid_email", username=username)
+        return None
+
+    # Validate invite code if configured
+    if _INVITE_CODE and password != _INVITE_CODE:
+        logger.warning("login_invalid_invite_code", username=username)
+        return None
+
+    logger.info("login_success", email=username.strip().lower())
+    return cl.User(
+        identifier=username.strip().lower(),
+        display_name=username.strip(),
+        metadata={"role": "user"},
+    )
 
 
 @cl.set_chat_profiles
@@ -221,6 +254,22 @@ async def main(message: cl.Message) -> None:
         if not user_query:
             await cl.Message(content="لطفاً یک سوال بپرسید.").send()
             return
+
+        # Check rate limit
+        user = cl.user_session.get("user")  # type: ignore
+        if user:
+            data_layer = get_data_layer()
+            if hasattr(data_layer, "engine"):
+                allowed = await check_and_increment(
+                    data_layer.engine,
+                    user.identifier,
+                    settings.rate_limit.requests_per_day,
+                )
+                if not allowed:
+                    await cl.Message(
+                        content="شما به محدودیت روزانه رسیده‌اید. فردا دوباره تلاش کنید."
+                    ).send()
+                    return
 
         logger.info(
             "message_received",

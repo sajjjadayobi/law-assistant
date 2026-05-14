@@ -140,6 +140,17 @@ class ConversationConfig(BaseModel):
     )
 
 
+class RateLimitConfig(BaseModel):
+    """Configuration for per-user rate limiting."""
+
+    requests_per_day: int = Field(
+        default=30,
+        gt=0,
+        le=10000,
+        description="Maximum requests per user per day (UTC)",
+    )
+
+
 class StarterQuestion(BaseModel):
     """A starter question for the Chainlit welcome screen."""
 
@@ -231,6 +242,7 @@ class Settings(BaseSettings):
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     search: SearchConfig = Field(default_factory=SearchConfig)
     conversation: ConversationConfig = Field(default_factory=ConversationConfig)
+    rate_limit: RateLimitConfig = Field(default_factory=RateLimitConfig)
     ui: UIConfig = Field(default_factory=UIConfig)
     observability: ObservabilityConfig = Field(default_factory=ObservabilityConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)

@@ -18,6 +18,7 @@ import pytest
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_session(session_data: dict | None = None) -> MagicMock:
     """Return a mock cl.user_session that stores values in a dict."""
     data = dict(session_data or {})
@@ -31,6 +32,7 @@ def _make_session(session_data: dict | None = None) -> MagicMock:
 # ---------------------------------------------------------------------------
 # Error handler creates retry action
 # ---------------------------------------------------------------------------
+
 
 class TestRetryActionCreated:
     @pytest.mark.asyncio
@@ -56,11 +58,13 @@ class TestRetryActionCreated:
         async def fake_send(self_msg):
             sent_messages.append(self_msg)
 
-        with patch("law_agent.ui.app.cl.user_session") as mock_session, \
-             patch("law_agent.ui.app.cl.Action", side_effect=capture_action), \
-             patch("law_agent.ui.app.cl.Message") as mock_cl_message, \
-             patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("agent failed")), \
-             patch("law_agent.ui.app.get_settings"):
+        with (
+            patch("law_agent.ui.app.cl.user_session") as mock_session,
+            patch("law_agent.ui.app.cl.Action", side_effect=capture_action),
+            patch("law_agent.ui.app.cl.Message") as mock_cl_message,
+            patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("agent failed")),
+            patch("law_agent.ui.app.get_settings"),
+        ):
 
             mock_session.get = MagicMock(return_value=None)
             mock_session.set = MagicMock()
@@ -71,8 +75,9 @@ class TestRetryActionCreated:
 
             await main(mock_message)
 
-        assert any(a.name == "retry" for a in created_actions), \
-            "No action with name='retry' was created"
+        assert any(
+            a.name == "retry" for a in created_actions
+        ), "No action with name='retry' was created"
 
     @pytest.mark.asyncio
     async def test_action_payload_contains_original_message(self) -> None:
@@ -92,11 +97,13 @@ class TestRetryActionCreated:
             action.name = kwargs.get("name", "")
             return action
 
-        with patch("law_agent.ui.app.cl.user_session") as mock_session, \
-             patch("law_agent.ui.app.cl.Action", side_effect=capture_action), \
-             patch("law_agent.ui.app.cl.Message") as mock_cl_message, \
-             patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("failed")), \
-             patch("law_agent.ui.app.get_settings"):
+        with (
+            patch("law_agent.ui.app.cl.user_session") as mock_session,
+            patch("law_agent.ui.app.cl.Action", side_effect=capture_action),
+            patch("law_agent.ui.app.cl.Message") as mock_cl_message,
+            patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("failed")),
+            patch("law_agent.ui.app.get_settings"),
+        ):
 
             mock_session.get = MagicMock(return_value=None)
             mock_session.set = MagicMock()
@@ -132,11 +139,13 @@ class TestRetryActionCreated:
                 sent_with_actions.append(kwargs["actions"])
             return msg
 
-        with patch("law_agent.ui.app.cl.user_session") as mock_session, \
-             patch("law_agent.ui.app.cl.Action", return_value=retry_action), \
-             patch("law_agent.ui.app.cl.Message", side_effect=capture_message), \
-             patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("fail")), \
-             patch("law_agent.ui.app.get_settings"):
+        with (
+            patch("law_agent.ui.app.cl.user_session") as mock_session,
+            patch("law_agent.ui.app.cl.Action", return_value=retry_action),
+            patch("law_agent.ui.app.cl.Message", side_effect=capture_message),
+            patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("fail")),
+            patch("law_agent.ui.app.get_settings"),
+        ):
 
             mock_session.get = MagicMock(return_value=None)
             mock_session.set = MagicMock()
@@ -165,11 +174,13 @@ class TestRetryActionCreated:
         retry_action = MagicMock()
         retry_action.remove = AsyncMock()
 
-        with patch("law_agent.ui.app.cl.user_session") as mock_session, \
-             patch("law_agent.ui.app.cl.Action", return_value=retry_action), \
-             patch("law_agent.ui.app.cl.Message", side_effect=capture_message), \
-             patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("fail")), \
-             patch("law_agent.ui.app.get_settings"):
+        with (
+            patch("law_agent.ui.app.cl.user_session") as mock_session,
+            patch("law_agent.ui.app.cl.Action", return_value=retry_action),
+            patch("law_agent.ui.app.cl.Message", side_effect=capture_message),
+            patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("fail")),
+            patch("law_agent.ui.app.get_settings"),
+        ):
 
             mock_session.get = MagicMock(return_value=None)
             mock_session.set = MagicMock()
@@ -178,13 +189,15 @@ class TestRetryActionCreated:
 
         error_contents = [c for c in sent_contents if "خطا" in c or "مجدد" in c]
         assert error_contents, "Error message not found in sent content"
-        assert "تلاش مجدد" in error_contents[0], \
-            f"Expected 'تلاش مجدد' in error message, got: {error_contents[0]!r}"
+        assert (
+            "تلاش مجدد" in error_contents[0]
+        ), f"Expected 'تلاش مجدد' in error message, got: {error_contents[0]!r}"
 
 
 # ---------------------------------------------------------------------------
 # Previous retry actions are cleaned up
 # ---------------------------------------------------------------------------
+
 
 class TestRetryActionsCleanup:
     @pytest.mark.asyncio
@@ -213,18 +226,24 @@ class TestRetryActionsCleanup:
 
         step_manager_mock = MagicMock()
 
-        with patch("law_agent.ui.app.cl.user_session") as mock_session, \
-             patch("law_agent.ui.app.cl.Message") as mock_cl_message, \
-             patch("law_agent.ui.app.get_agent", return_value=agent_mock), \
-             patch("law_agent.ui.app.get_conversation_manager", return_value=conv_manager_mock), \
-             patch("law_agent.ui.app.get_citation_formatter", return_value=citation_mock), \
-             patch("law_agent.ui.app.get_step_manager", return_value=step_manager_mock), \
-             patch("law_agent.ui.app.get_settings"), \
-             patch("law_agent.ui.app.otel_trace"):
+        with (
+            patch("law_agent.ui.app.cl.user_session") as mock_session,
+            patch("law_agent.ui.app.cl.Message") as mock_cl_message,
+            patch("law_agent.ui.app.get_agent", return_value=agent_mock),
+            patch("law_agent.ui.app.get_conversation_manager", return_value=conv_manager_mock),
+            patch("law_agent.ui.app.get_citation_formatter", return_value=citation_mock),
+            patch("law_agent.ui.app.get_step_manager", return_value=step_manager_mock),
+            patch("law_agent.ui.app.get_settings"),
+            patch("law_agent.ui.app.otel_trace"),
+        ):
 
             session_data = {"retry_actions": [old_action]}
-            mock_session.get = MagicMock(side_effect=lambda key, *args: session_data.get(key, args[0] if args else None))
-            mock_session.set = MagicMock(side_effect=lambda key, val: session_data.update({key: val}))
+            mock_session.get = MagicMock(
+                side_effect=lambda key, *args: session_data.get(key, args[0] if args else None)
+            )
+            mock_session.set = MagicMock(
+                side_effect=lambda key, val: session_data.update({key: val})
+            )
 
             msg_instance = MagicMock()
             msg_instance.send = AsyncMock()
@@ -250,11 +269,13 @@ class TestRetryActionsCleanup:
         def capture_set(key, val):
             set_calls[key] = val
 
-        with patch("law_agent.ui.app.cl.user_session") as mock_session, \
-             patch("law_agent.ui.app.cl.Action", return_value=retry_action), \
-             patch("law_agent.ui.app.cl.Message") as mock_cl_message, \
-             patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("error")), \
-             patch("law_agent.ui.app.get_settings"):
+        with (
+            patch("law_agent.ui.app.cl.user_session") as mock_session,
+            patch("law_agent.ui.app.cl.Action", return_value=retry_action),
+            patch("law_agent.ui.app.cl.Message") as mock_cl_message,
+            patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("error")),
+            patch("law_agent.ui.app.get_settings"),
+        ):
 
             mock_session.get = MagicMock(return_value=None)
             mock_session.set = MagicMock(side_effect=capture_set)
@@ -275,6 +296,7 @@ class TestRetryActionsCleanup:
 # Retry action callback
 # ---------------------------------------------------------------------------
 
+
 class TestRetryActionCallback:
     @pytest.mark.asyncio
     async def test_callback_removes_error_message(self) -> None:
@@ -294,12 +316,15 @@ class TestRetryActionCallback:
             msg.remove = AsyncMock()
             return msg
 
-        with patch("law_agent.ui.app.cl.Message", side_effect=capture_message), \
-             patch("law_agent.ui.app.main", new_callable=AsyncMock):
+        with (
+            patch("law_agent.ui.app.cl.Message", side_effect=capture_message),
+            patch("law_agent.ui.app.main", new_callable=AsyncMock),
+        ):
             await handle_retry(action)
 
-        assert "error-msg-123" in removed_ids, \
-            f"Error message ID not passed to cl.Message for removal. Got: {removed_ids}"
+        assert (
+            "error-msg-123" in removed_ids
+        ), f"Error message ID not passed to cl.Message for removal. Got: {removed_ids}"
 
     @pytest.mark.asyncio
     async def test_callback_calls_main_with_original_content(self) -> None:
@@ -322,8 +347,10 @@ class TestRetryActionCallback:
             msg.content = content
             return msg
 
-        with patch("law_agent.ui.app.cl.Message", side_effect=capture_message), \
-             patch("law_agent.ui.app.main", side_effect=fake_main):
+        with (
+            patch("law_agent.ui.app.cl.Message", side_effect=capture_message),
+            patch("law_agent.ui.app.main", side_effect=fake_main),
+        ):
             await handle_retry(action)
 
         assert main_calls, "main() was not called from handle_retry"

@@ -21,10 +21,10 @@ from law_agent.observability.feedback import (
 )
 import law_agent.observability.feedback as feedback_module
 
-
 # ---------------------------------------------------------------------------
 # PhoenixFeedbackClient — payload correctness
 # ---------------------------------------------------------------------------
+
 
 class TestPhoenixFeedbackPayload:
     @pytest.mark.asyncio
@@ -128,6 +128,7 @@ class TestPhoenixFeedbackPayload:
 # PhoenixFeedbackClient — error handling
 # ---------------------------------------------------------------------------
 
+
 class TestPhoenixFeedbackErrors:
     @pytest.mark.asyncio
     async def test_returns_false_on_non_200(self) -> None:
@@ -191,6 +192,7 @@ class TestPhoenixFeedbackErrors:
 # Singleton: initialize / get
 # ---------------------------------------------------------------------------
 
+
 class TestFeedbackClientSingleton:
     def setup_method(self) -> None:
         # Reset singleton before each test
@@ -222,6 +224,7 @@ class TestFeedbackClientSingleton:
     @pytest.mark.asyncio
     async def test_send_feedback_to_phoenix_returns_false_when_no_client(self) -> None:
         from law_agent.observability.feedback import send_feedback_to_phoenix
+
         result = await send_feedback_to_phoenix("span-1", "positive")
         assert result is False
 
@@ -232,6 +235,7 @@ class TestFeedbackClientSingleton:
 
         with patch.object(client, "send_feedback", new=AsyncMock(return_value=True)) as mock_send:
             from law_agent.observability.feedback import send_feedback_to_phoenix
+
             result = await send_feedback_to_phoenix("span-1", "positive", comment="good")
 
         assert result is True
