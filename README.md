@@ -2,6 +2,8 @@
 
 A conversational AI assistant built for a law firm's clients. Customers can ask legal questions in Persian and get answers grounded in 47,000+ Iranian legal documents — laws, regulations, advisory opinions, court rulings, and unified precedents — with inline citations linked to the source documents.
 
+> **Every line of code in this repo was written by [Claude Code](https://claude.ai/code) — I haven't read or written any of it myself.** The models used were Claude Sonnet 4.5 and Claude Haiku 4.5, both running with medium extended thinking enabled.
+
 [![Tests](https://img.shields.io/badge/tests-313%20passing-brightgreen)](tests/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 
