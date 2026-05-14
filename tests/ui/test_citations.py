@@ -21,19 +21,19 @@ from law_agent.ui.citations import Citation, CitationFormatter
 class TestCitation:
     def test_url_with_doc_id(self) -> None:
         c = Citation(number=1, doc_id="4068325")
-        assert c.url == "https://iran.ir/en/law/4068325"
+        assert c.url == "https://panel.danagoo.com/app?id=4068325"
 
     def test_url_fallback_to_number(self) -> None:
         c = Citation(number=2, doc_id=None)
-        assert c.url == "https://iran.ir/en/law/2"
+        assert c.url == "https://panel.danagoo.com/app?id=2"
 
     def test_markdown_link(self) -> None:
         c = Citation(number=1, doc_id="4068325")
-        assert c.to_markdown_link() == "[1](https://iran.ir/en/law/4068325)"
+        assert c.to_markdown_link() == "[1](https://panel.danagoo.com/app?id=4068325)"
 
     def test_markdown_link_no_doc_id(self) -> None:
         c = Citation(number=3, doc_id=None)
-        assert c.to_markdown_link() == "[3](https://iran.ir/en/law/3)"
+        assert c.to_markdown_link() == "[3](https://panel.danagoo.com/app?id=3)"
 
 
 # ---------------------------------------------------------------------------
@@ -113,7 +113,7 @@ class TestFormatResponse:
         f = CitationFormatter()
         resp = "طبق قانون [1] این‌گونه است.\n\nمنابع:\n[1] ماده ۷۶ [doc_id: 4068325]\n"
         out = f.format_response(resp)
-        assert "[1](https://iran.ir/en/law/4068325)" in out
+        assert "[1](https://panel.danagoo.com/app?id=4068325)" in out
 
     def test_no_html_tags_in_output(self) -> None:
         f = CitationFormatter()
@@ -129,13 +129,13 @@ class TestFormatResponse:
         out = f.format_response(resp)
         assert "[doc_id:" not in out
         # The number 4068325 legitimately appears in the URL — that is correct
-        assert "iran.ir/en/law/4068325" in out
+        assert "panel.danagoo.com/app?id=4068325" in out
 
     def test_reference_line_has_markdown_link(self) -> None:
         f = CitationFormatter()
         resp = "متن [1]\n\nمنابع:\n[1] قانون کار مصوب ۱۳۶۹ [doc_id: 4068325]\n"
         out = f.format_response(resp)
-        assert "[1](https://iran.ir/en/law/4068325)" in out
+        assert "[1](https://panel.danagoo.com/app?id=4068325)" in out
         assert "قانون کار مصوب ۱۳۶۹" in out
 
     def test_multiple_citations_all_replaced(self) -> None:
@@ -144,8 +144,8 @@ class TestFormatResponse:
             "طبق [1] و [2]\n\nمنابع:\n[1] قانون کار [doc_id: 100]\n[2] قانون مدنی [doc_id: 200]\n"
         )
         out = f.format_response(resp)
-        assert "[1](https://iran.ir/en/law/100)" in out
-        assert "[2](https://iran.ir/en/law/200)" in out
+        assert "[1](https://panel.danagoo.com/app?id=100)" in out
+        assert "[2](https://panel.danagoo.com/app?id=200)" in out
 
     def test_no_citations_returns_original(self) -> None:
         f = CitationFormatter()
@@ -156,7 +156,7 @@ class TestFormatResponse:
         f = CitationFormatter()
         resp = "طبق [1]\n\nمنابع:\n[1] قانون کار بدون شناسه\n"
         out = f.format_response(resp)
-        assert "[1](https://iran.ir/en/law/1)" in out
+        assert "[1](https://panel.danagoo.com/app?id=1)" in out
 
     def test_stray_dashes_not_in_reference_output(self) -> None:
         """[doc_id: X] tag is stripped; remaining title text is preserved."""
@@ -249,8 +249,8 @@ class TestRealWorldFormat:
     def test_inline_refs_replaced(self) -> None:
         f = CitationFormatter()
         out = f.format_response(self.AGENT_RESPONSE)
-        assert "[1](https://iran.ir/en/law/4068325)" in out
-        assert "[2](https://iran.ir/en/law/7194230)" in out
+        assert "[1](https://panel.danagoo.com/app?id=4068325)" in out
+        assert "[2](https://panel.danagoo.com/app?id=7194230)" in out
 
     def test_no_html_output(self) -> None:
         f = CitationFormatter()

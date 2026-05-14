@@ -70,7 +70,7 @@ class TestCitation:
         url = citation.get_url()
 
         assert "12345" in url
-        assert "iran.ir" in url
+        assert "danagoo.com" in url
 
 
 class TestCitationExtractor:

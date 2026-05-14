@@ -14,71 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch, call
 
 import pytest
 
-# ---------------------------------------------------------------------------
-# show_thinking helper
-# ---------------------------------------------------------------------------
-
-
-class TestShowThinking:
-    @pytest.mark.asyncio
-    async def test_creates_tool_type_step(self) -> None:
-        """show_thinking must create a cl.Step with type='tool'."""
-        from law_agent.agent.core import show_thinking
-
-        step_mock = MagicMock()
-        step_mock.__aenter__ = AsyncMock(return_value=step_mock)
-        step_mock.__aexit__ = AsyncMock(return_value=False)
-
-        with patch("law_agent.agent.core.cl.Step", return_value=step_mock) as mock_step:
-            await show_thinking(["جستجو در قوانین", "مطالعه سند"])
-
-        mock_step.assert_called_once()
-        call_kwargs = mock_step.call_args[1]
-        assert call_kwargs.get("type") == "tool"
-        assert call_kwargs.get("show_input") is False
-
-    @pytest.mark.asyncio
-    async def test_sets_output_to_joined_text(self) -> None:
-        """Step output should be the lines joined with newlines."""
-        from law_agent.agent.core import show_thinking
-
-        step_mock = MagicMock()
-        step_mock.__aenter__ = AsyncMock(return_value=step_mock)
-        step_mock.__aexit__ = AsyncMock(return_value=False)
-
-        with patch("law_agent.agent.core.cl.Step", return_value=step_mock):
-            await show_thinking(["line 1", "line 2", "line 3"])
-
-        assert step_mock.output == "line 1\nline 2\nline 3"
-
-    @pytest.mark.asyncio
-    async def test_single_line_output(self) -> None:
-        from law_agent.agent.core import show_thinking
-
-        step_mock = MagicMock()
-        step_mock.__aenter__ = AsyncMock(return_value=step_mock)
-        step_mock.__aexit__ = AsyncMock(return_value=False)
-
-        with patch("law_agent.agent.core.cl.Step", return_value=step_mock):
-            await show_thinking(["برای پاسخ به سوال شما:"])
-
-        assert step_mock.output == "برای پاسخ به سوال شما:"
-
-    @pytest.mark.asyncio
-    async def test_step_name_is_persian(self) -> None:
-        """Step name should be in Persian."""
-        from law_agent.agent.core import show_thinking
-
-        step_mock = MagicMock()
-        step_mock.__aenter__ = AsyncMock(return_value=step_mock)
-        step_mock.__aexit__ = AsyncMock(return_value=False)
-
-        with patch("law_agent.agent.core.cl.Step", return_value=step_mock) as mock_step:
-            await show_thinking(["test"])
-
-        name = mock_step.call_args[1].get("name", "")
-        # Should contain Persian characters
-        assert any(ord(c) > 127 for c in name), f"Expected Persian name, got: {name!r}"
+# show_thinking was removed — thinking is displayed inline in each tool via cl.Step
 
 
 # ---------------------------------------------------------------------------
@@ -125,7 +61,7 @@ class TestSearchDocumentToolStep:
             ctx = MagicMock()
             result = await LawAgent._search_documents_tool(ctx, query="مرخصی")
 
-        assert step_mock.name == "جستجو — 2 سند پیدا شد"
+        assert step_mock.name == "🔍 مرخصی — 2 سند یافت شد"
         assert step_mock.output is not None
         # Output should list documents
         assert "ماده ۷۶ قانون کار" in step_mock.output
@@ -146,7 +82,7 @@ class TestSearchDocumentToolStep:
             ctx = MagicMock()
             await LawAgent._search_documents_tool(ctx, query="query")
 
-        assert "نتیجه‌ای پیدا نشد" in step_mock.name
+        assert "نتیجه‌ای یافت نشد" in step_mock.name
 
     @pytest.mark.asyncio
     async def test_returns_json_string(self) -> None:
@@ -384,17 +320,17 @@ class TestRelatedDocumentsToolStep:
 
 class TestThinkingToolLabels:
     def test_search_tool_has_persian_label(self) -> None:
-        """The _tool_label dict in core.py must have Persian names."""
-        # Check that the agent code contains the Persian label mapping
+        """Search tool step must use a Persian step name."""
         import inspect
         from law_agent.agent import core
 
-        source = inspect.getsource(core.LawAgent.run)
-        assert "جستجو در قوانین" in source or "جستجوی اسناد" in source
+        source = inspect.getsource(core.LawAgent._search_documents_tool)
+        assert "جستجو" in source or "یافت شد" in source
 
     def test_get_document_tool_has_persian_label(self) -> None:
+        """Get-document tool step must use a Persian step name."""
         import inspect
         from law_agent.agent import core
 
-        source = inspect.getsource(core.LawAgent.run)
-        assert "مطالعه سند" in source or "خواندن سند" in source or "دریافت سند" in source
+        source = inspect.getsource(core.LawAgent._get_document_tool)
+        assert "خواندن سند" in source
