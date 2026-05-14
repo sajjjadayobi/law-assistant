@@ -1,6 +1,6 @@
 # Garbage Collection: Codebase Cleanup
 
-A guide for cleaning up dead code and unused artifacts from the Law Agent project.
+A guide for cleaning up dead code and unused artifacts from the Law Assistant project.
 
 ---
 
@@ -9,7 +9,7 @@ A guide for cleaning up dead code and unused artifacts from the Law Agent projec
 Use this prompt with Claude Code to identify and remove dead code:
 
 ```
-Analyze the law-agent codebase for dead code and unused artifacts.
+Analyze the law-assistant codebase for dead code and unused artifacts.
 
 For each category below, use grep to find all imports and callers:
 
@@ -53,8 +53,40 @@ User will then:
 
 ## Last Cleanup Session
 
-**Date**: 2026-05-08  
-**Commit**: acc7c2c  
+**Date**: 2026-05-14
+**Commits**: `f8da5cd`, `ed1b393`
+**Changes**: Removed 26 files — debug screenshots, unused translations, empty placeholder
+
+### Removed
+
+**Debug artifacts**:
+- `.chainlit-debug/screenshots/` — 6 tracked debug screenshots from a UI debugging session (+ 7 untracked)
+
+**Translations** (19 files):
+- All locales except `fa-IR.json` (active) and `en-US.json` (fallback)
+- Removed: `bn.json`, `de-DE.json`, `el-GR.json`, `es.json`, `fr-FR.json`, `gu.json`, `he-IL.json`, `hi.json`, `it.json`, `ja.json`, `kn.json`, `ko.json`, `ml.json`, `mr.json`, `nl.json`, `ta.json`, `te.json`, `zh-CN.json`, `zh-TW.json`
+- Note: these had been correctly deleted in the previous session but reappeared on disk (stale working tree); had to remove twice
+
+**Placeholders**:
+- `scripts/.gitkeep` — empty scripts/ directory, no scripts remain
+
+### Also in this session (not GC, but related housekeeping)
+
+- Fixed 19 stale test failures (tests were asserting against old code — `show_thinking` removed, step name strings changed, citation URL changed from `iran.ir` to `panel.danagoo.com`)
+- Renamed package `law_agent` → `law_assistant` across all 80+ files
+- Updated `.env.example` to match actual `.env` structure
+
+### Test Results
+
+- Before: 298 passing, 19 failing
+- After: 313 passing, 0 failing ✓
+
+---
+
+## Previous Cleanup Session
+
+**Date**: 2026-05-08
+**Commit**: acc7c2c
 **Changes**: Removed 22 files, 3,966 lines of dead code
 
 ### Removed
@@ -80,17 +112,15 @@ User will then:
 - `migration/` — database setup (already applied, in .gitignore)
 
 **Translations**:
-- 19 files removed: `bn.json`, `de-DE.json`, `el-GR.json`, `es.json`, `fr-FR.json`, `gu.json`, `he-IL.json`, `hi.json`, `it.json`, `ja.json`, `kn.json`, `ko.json`, `ml.json`, `mr.json`, `nl.json`, `ta.json`, `te.json`, `zh-CN.json`, `zh-TW.json`
-- Kept: `fa-IR.json` (active), `en-US.json` (fallback)
+- 19 files removed (same list as above — they came back, see 2026-05-14 session)
 
 **Dependencies**:
 - `tenacity` from `pyproject.toml`
 
 ### Test Results
 
-- Before: 314 passing tests
-- After: 288 passing tests
-- All 288 tests pass ✓
+- Before: 314 passing
+- After: 288 passing ✓
 
 ---
 
@@ -100,7 +130,7 @@ To identify dead code manually:
 
 ```bash
 # Find all imports of a module
-grep -r "from law_agent.cache import\|import law_agent.cache" src/ tests/
+grep -r "from law_assistant.cache import\|import law_assistant.cache" src/ tests/
 
 # Check if a module is exported/used
 grep -r "response_cache\|cache_agent_response" src/
@@ -124,11 +154,11 @@ done
 ## Preservation Rules
 
 Always keep:
-- All files in `src/law_agent/` that are actively imported
+- All files in `src/law_assistant/` that are actively imported
 - All test files in `tests/unit/`, `tests/ui/`, `tests/integration/` that test active code
 - `docs/` in its entirety (future reference)
 - `config.yaml`, `.env.example`, `Makefile`, `pyproject.toml`
-- `.github/workflows/ci.yml`, `Dockerfile`, `docker-compose.yml`
+- `Dockerfile`, `docker-compose.yml`
 - `chainlit.md` (UI welcome message)
 - `.chainlit/config.toml`, `.chainlit/translations/fa-IR.json`, `.chainlit/translations/en-US.json`
 
