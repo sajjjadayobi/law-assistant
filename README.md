@@ -1,23 +1,15 @@
 # Law Agent — AI Legal Assistant for Iranian Law
 
-An intelligent conversational agent for Iranian legal documents, built with PydanticAI, Claude Sonnet, and PostgreSQL full-text search.
+> **This is a toy project.** Built as an experiment in fully agentic AI-assisted coding — every feature, test, and document in this repo was written collaboratively with Claude Code. The goal was to see how far you can get building real, working software for a non-trivial domain purely through agentic coding sessions. The end user is a lawyer friend who needed a way to search and query 47,000+ Iranian legal documents in Persian.
 
-[![Tests](https://img.shields.io/badge/tests-304%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-317%20passing-brightgreen)](tests/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 
 ---
 
 ## What It Does
 
-Law Agent answers legal questions in Persian by searching a database of 47,000+ legal documents (laws, regulations, advisory opinions, court rulings, unified precedents). It performs multi-hop agentic search — reading summaries, following citation chains, and synthesizing answers with inline citations linked to iran.ir.
-
-**Key behaviors**:
-- Always responds in Persian
-- Inline citations `[1]`, `[2]` linked to source documents on iran.ir
-- Agentic search: agent decides the search strategy at each step
-- Visible thinking steps in the UI (showing search progress)
-- Conversation history per user (persistent sidebar)
-- Thumbs up/down feedback with Phoenix observability
+Answers legal questions in Persian by searching a database of 47,000+ Iranian legal documents (laws, regulations, advisory opinions, court rulings, unified precedents). The agent performs multi-step search — reading summaries, following citation chains, and writing answers with inline citations linked to source documents.
 
 ---
 
@@ -27,7 +19,7 @@ Law Agent answers legal questions in Persian by searching a database of 47,000+ 
 
 - Python 3.10+
 - PostgreSQL 14+ with the migrated law database
-- LLM API credentials (Anthropic or LiteLLM proxy)
+- LLM API credentials (any OpenAI-compatible provider)
 - `uv` package manager
 
 ### Development Setup
@@ -41,44 +33,40 @@ cp .env.example .env
 # Edit .env: LLM_BASE_URL, LLM_AUTH_TOKEN, DB_PASSWORD, CHAINLIT_AUTH_SECRET
 
 # 3. Verify tests pass
-.venv/bin/python -m pytest tests/ --ignore=tests/integration -q
+make test
 
 # 4. Start the server
-python3 start_server.py
+.venv/bin/chainlit run src/law_agent/ui/app.py --port 7860 --headless
 # App at http://localhost:7860
 ```
 
-### Docker Compose (production)
+### Docker Compose
 
 ```bash
-# 1. Configure secrets
 cp .env.example .env
 # Edit .env: LLM_AUTH_TOKEN, LLM_BASE_URL, CHAINLIT_AUTH_SECRET
 
-# 2. Build and start all services (postgres + phoenix + app)
-docker compose build
-docker compose up -d
+docker compose build && docker compose up -d
 
-# 3. Verify all services are healthy
 curl http://localhost:8000/health
 # App: http://localhost:8000 | Phoenix: http://localhost:6006
 ```
 
-For full production instructions see **[`docs/maintainer/deployment.md`](docs/maintainer/deployment.md)**.
+Full production instructions: **[`docs/maintainer/deployment.md`](docs/maintainer/deployment.md)**
 
 ---
 
 ## Architecture
 
-### Three core search tools
+### Agent Tools
 
-The agent has exactly three tools and decides the search strategy at each step:
+The agent has three tools and decides its own search strategy at each step:
 
 | Tool | Purpose |
 |---|---|
 | `search_documents(query, tags, doc_types, limit)` | Full-text search on document summaries |
 | `get_document(doc_id)` | Retrieve complete document content |
-| `get_related_documents(doc_id, relation_types, limit)` | Traverse the citation DAG |
+| `get_related_documents(doc_id, relation_types, limit)` | Traverse the citation graph |
 
 ### Database
 
@@ -93,13 +81,14 @@ Document types: `law`, `regulation`, `advisory_opinion`, `court_ruling`, `unifie
 | Component | Technology |
 |---|---|
 | Agent | PydanticAI |
-| LLM | Claude Sonnet via LiteLLM proxy |
+| LLM | GPT-4.1-mini via MetisAI (`https://api.metisai.ir/openai/v1`) |
 | Database | PostgreSQL 14+ with `persian_custom` FTS config |
 | ORM | SQLAlchemy 2.0 async |
-| UI | Chainlit 2.11 (RTL, sidebar, steps, actions) |
+| UI | Chainlit 2.11 (RTL, sidebar, steps, feedback) |
+| Auth | Email + invite code, per-user rate limiting |
 | Observability | Arize Phoenix (self-hosted Docker) |
 | Config | Pydantic Settings + `config.yaml` |
-| Logging | structlog (JSON in production) |
+| Logging | structlog |
 | Deployment | Docker Compose |
 
 ---
@@ -107,20 +96,18 @@ Document types: `law`, `regulation`, `advisory_opinion`, `court_ruling`, `unifie
 ## Development
 
 ```bash
+make all         # format + lint + typecheck + test
+make test        # pytest only
 make format      # Black
 make lint        # Ruff
 make typecheck   # mypy
-make test        # pytest
-make all         # All four
 ```
 
-For the complete developer guide — how to build features, write tests, commit, and document:
+Developer guide: **[`docs/development/workflow.md`](docs/development/workflow.md)**
 
-→ **[`docs/development/workflow.md`](docs/development/workflow.md)**
+Task list (what's built, what's next): **[`docs/development/tasks.md`](docs/development/tasks.md)**
 
-For what's built and what's next:
-
-→ **[`docs/development/tasks.md`](docs/development/tasks.md)**
+Hard-won lessons from all sessions: **[`docs/maintainer/learning.md`](docs/maintainer/learning.md)**
 
 ---
 
@@ -128,15 +115,15 @@ For what's built and what's next:
 
 ```
 src/law_agent/
-├── agent/          # LawAgent, ConversationManager, show_thinking()
+├── agent/          # LawAgent, tool wrappers
 ├── tools/          # search_documents, get_document, get_related_documents
 ├── database/       # SQLAlchemy models, connection pooling
 ├── data/           # LawAgentDataLayer (Chainlit conversation history)
-├── ui/             # app.py (Chainlit handlers + health middleware), citations.py
-├── health.py       # /health and /ready check functions
+├── ui/             # app.py (Chainlit handlers), citations.py, rate_limit.py
+├── health.py       # /health and /ready endpoints
 ├── observability/  # Phoenix tracing and feedback
-├── config/         # Settings (Pydantic) — reads all DB/Phoenix env vars
-└── prompts/        # search.md (system prompt), starters.yaml
+├── config/         # Settings (Pydantic)
+└── prompts/        # system prompt, starter questions
 
 tests/
 ├── unit/           # Pure Python, fast
@@ -147,18 +134,7 @@ tests/
 docs/
 ├── architecture/   # design.md, search.md, database.md
 ├── development/    # workflow.md, tasks.md
-├── maintainer/     # deployment.md — production runbook
-├── best-practices/ # agent-engineering.md, evaluation.md
+├── maintainer/     # deployment.md, learning.md
+├── best-practices/ # agent-engineering.md
 └── features/       # One folder per feature: plan.md + progress.md
 ```
-
----
-
-## Documentation
-
-- **[docs/README.md](docs/README.md)** — Full documentation index
-- **[docs/architecture/design.md](docs/architecture/design.md)** — System design and product requirements
-- **[docs/architecture/search.md](docs/architecture/search.md)** — Agent search strategy (= system prompt)
-- **[docs/development/workflow.md](docs/development/workflow.md)** — Developer guide
-- **[docs/maintainer/deployment.md](docs/maintainer/deployment.md)** — Production deployment runbook
-- **[docs/features/performance/PERFORMANCE.md](docs/features/performance/PERFORMANCE.md)** — Performance benchmarks
