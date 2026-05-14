@@ -7,6 +7,8 @@ A toy project I built to practice full agentic development on a real problem. A 
 [![Tests](https://img.shields.io/badge/tests-313%20passing-brightgreen)](tests/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 
+![Law Assistant screenshot](public/screenshot.png)
+
 ---
 
 ## What It Does
