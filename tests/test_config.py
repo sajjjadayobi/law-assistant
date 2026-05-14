@@ -5,7 +5,7 @@ import os
 import pytest
 import yaml
 
-from law_agent.config.settings import (
+from law_assistant.config.settings import (
     ConversationConfig,
     DatabaseConfig,
     LoggingConfig,
@@ -58,7 +58,7 @@ class TestDatabaseConfig:
         config = DatabaseConfig()
         assert config.host == "localhost"
         assert config.port == 5432
-        assert config.database == "law_agent"
+        assert config.database == "law_assistant"
         assert config.user == "postgres"
         # Password defaults to empty string
         assert config.password == ""
@@ -68,7 +68,7 @@ class TestDatabaseConfig:
         config = DatabaseConfig(password="secret")
         assert config.host == "localhost"
         assert config.port == 5432
-        assert config.database == "law_agent"
+        assert config.database == "law_assistant"
         assert config.user == "postgres"
         assert config.password == "secret"
 

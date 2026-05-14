@@ -38,7 +38,7 @@ class TestRetryActionCreated:
     @pytest.mark.asyncio
     async def test_action_name_is_retry(self) -> None:
         """Exception handler must create a cl.Action with name='retry'."""
-        from law_agent.ui.app import main
+        from law_assistant.ui.app import main
 
         mock_message = MagicMock()
         mock_message.content = "حقوق مستأجر چیست؟"
@@ -59,11 +59,11 @@ class TestRetryActionCreated:
             sent_messages.append(self_msg)
 
         with (
-            patch("law_agent.ui.app.cl.user_session") as mock_session,
-            patch("law_agent.ui.app.cl.Action", side_effect=capture_action),
-            patch("law_agent.ui.app.cl.Message") as mock_cl_message,
-            patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("agent failed")),
-            patch("law_agent.ui.app.get_settings"),
+            patch("law_assistant.ui.app.cl.user_session") as mock_session,
+            patch("law_assistant.ui.app.cl.Action", side_effect=capture_action),
+            patch("law_assistant.ui.app.cl.Message") as mock_cl_message,
+            patch("law_assistant.ui.app.get_agent", side_effect=RuntimeError("agent failed")),
+            patch("law_assistant.ui.app.get_settings"),
         ):
 
             mock_session.get = MagicMock(return_value=None)
@@ -82,7 +82,7 @@ class TestRetryActionCreated:
     @pytest.mark.asyncio
     async def test_action_payload_contains_original_message(self) -> None:
         """The retry action payload must contain the original user message content."""
-        from law_agent.ui.app import main
+        from law_assistant.ui.app import main
 
         original_query = "مدت مرخصی زایمان چقدر است؟"
         mock_message = MagicMock()
@@ -98,11 +98,11 @@ class TestRetryActionCreated:
             return action
 
         with (
-            patch("law_agent.ui.app.cl.user_session") as mock_session,
-            patch("law_agent.ui.app.cl.Action", side_effect=capture_action),
-            patch("law_agent.ui.app.cl.Message") as mock_cl_message,
-            patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("failed")),
-            patch("law_agent.ui.app.get_settings"),
+            patch("law_assistant.ui.app.cl.user_session") as mock_session,
+            patch("law_assistant.ui.app.cl.Action", side_effect=capture_action),
+            patch("law_assistant.ui.app.cl.Message") as mock_cl_message,
+            patch("law_assistant.ui.app.get_agent", side_effect=RuntimeError("failed")),
+            patch("law_assistant.ui.app.get_settings"),
         ):
 
             mock_session.get = MagicMock(return_value=None)
@@ -121,7 +121,7 @@ class TestRetryActionCreated:
     @pytest.mark.asyncio
     async def test_error_message_has_retry_action_attached(self) -> None:
         """The error cl.Message must be sent with the retry action in its actions list."""
-        from law_agent.ui.app import main
+        from law_assistant.ui.app import main
 
         mock_message = MagicMock()
         mock_message.content = "سوال حقوقی"
@@ -140,11 +140,11 @@ class TestRetryActionCreated:
             return msg
 
         with (
-            patch("law_agent.ui.app.cl.user_session") as mock_session,
-            patch("law_agent.ui.app.cl.Action", return_value=retry_action),
-            patch("law_agent.ui.app.cl.Message", side_effect=capture_message),
-            patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("fail")),
-            patch("law_agent.ui.app.get_settings"),
+            patch("law_assistant.ui.app.cl.user_session") as mock_session,
+            patch("law_assistant.ui.app.cl.Action", return_value=retry_action),
+            patch("law_assistant.ui.app.cl.Message", side_effect=capture_message),
+            patch("law_assistant.ui.app.get_agent", side_effect=RuntimeError("fail")),
+            patch("law_assistant.ui.app.get_settings"),
         ):
 
             mock_session.get = MagicMock(return_value=None)
@@ -158,7 +158,7 @@ class TestRetryActionCreated:
     @pytest.mark.asyncio
     async def test_error_message_mentions_retry_button(self) -> None:
         """Error message content must explicitly mention the retry button."""
-        from law_agent.ui.app import main
+        from law_assistant.ui.app import main
 
         mock_message = MagicMock()
         mock_message.content = "سوال"
@@ -175,11 +175,11 @@ class TestRetryActionCreated:
         retry_action.remove = AsyncMock()
 
         with (
-            patch("law_agent.ui.app.cl.user_session") as mock_session,
-            patch("law_agent.ui.app.cl.Action", return_value=retry_action),
-            patch("law_agent.ui.app.cl.Message", side_effect=capture_message),
-            patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("fail")),
-            patch("law_agent.ui.app.get_settings"),
+            patch("law_assistant.ui.app.cl.user_session") as mock_session,
+            patch("law_assistant.ui.app.cl.Action", return_value=retry_action),
+            patch("law_assistant.ui.app.cl.Message", side_effect=capture_message),
+            patch("law_assistant.ui.app.get_agent", side_effect=RuntimeError("fail")),
+            patch("law_assistant.ui.app.get_settings"),
         ):
 
             mock_session.get = MagicMock(return_value=None)
@@ -203,7 +203,7 @@ class TestRetryActionsCleanup:
     @pytest.mark.asyncio
     async def test_previous_retry_actions_removed_on_new_message(self) -> None:
         """At start of on_message, all previous retry actions must have remove() called."""
-        from law_agent.ui.app import main
+        from law_assistant.ui.app import main
 
         old_action = MagicMock()
         old_action.remove = AsyncMock()
@@ -227,14 +227,14 @@ class TestRetryActionsCleanup:
         step_manager_mock = MagicMock()
 
         with (
-            patch("law_agent.ui.app.cl.user_session") as mock_session,
-            patch("law_agent.ui.app.cl.Message") as mock_cl_message,
-            patch("law_agent.ui.app.get_agent", return_value=agent_mock),
-            patch("law_agent.ui.app.get_conversation_manager", return_value=conv_manager_mock),
-            patch("law_agent.ui.app.get_citation_formatter", return_value=citation_mock),
-            patch("law_agent.ui.app.get_step_manager", return_value=step_manager_mock),
-            patch("law_agent.ui.app.get_settings"),
-            patch("law_agent.ui.app.otel_trace"),
+            patch("law_assistant.ui.app.cl.user_session") as mock_session,
+            patch("law_assistant.ui.app.cl.Message") as mock_cl_message,
+            patch("law_assistant.ui.app.get_agent", return_value=agent_mock),
+            patch("law_assistant.ui.app.get_conversation_manager", return_value=conv_manager_mock),
+            patch("law_assistant.ui.app.get_citation_formatter", return_value=citation_mock),
+            patch("law_assistant.ui.app.get_step_manager", return_value=step_manager_mock),
+            patch("law_assistant.ui.app.get_settings"),
+            patch("law_assistant.ui.app.otel_trace"),
         ):
 
             session_data = {"retry_actions": [old_action]}
@@ -256,7 +256,7 @@ class TestRetryActionsCleanup:
     @pytest.mark.asyncio
     async def test_retry_actions_stored_in_session_on_error(self) -> None:
         """After an error, retry_actions must be stored in cl.user_session."""
-        from law_agent.ui.app import main
+        from law_assistant.ui.app import main
 
         mock_message = MagicMock()
         mock_message.content = "سوال"
@@ -270,11 +270,11 @@ class TestRetryActionsCleanup:
             set_calls[key] = val
 
         with (
-            patch("law_agent.ui.app.cl.user_session") as mock_session,
-            patch("law_agent.ui.app.cl.Action", return_value=retry_action),
-            patch("law_agent.ui.app.cl.Message") as mock_cl_message,
-            patch("law_agent.ui.app.get_agent", side_effect=RuntimeError("error")),
-            patch("law_agent.ui.app.get_settings"),
+            patch("law_assistant.ui.app.cl.user_session") as mock_session,
+            patch("law_assistant.ui.app.cl.Action", return_value=retry_action),
+            patch("law_assistant.ui.app.cl.Message") as mock_cl_message,
+            patch("law_assistant.ui.app.get_agent", side_effect=RuntimeError("error")),
+            patch("law_assistant.ui.app.get_settings"),
         ):
 
             mock_session.get = MagicMock(return_value=None)
@@ -301,7 +301,7 @@ class TestRetryActionCallback:
     @pytest.mark.asyncio
     async def test_callback_removes_error_message(self) -> None:
         """handle_retry must call cl.Message(id=action.forId).remove()."""
-        from law_agent.ui.app import handle_retry
+        from law_assistant.ui.app import handle_retry
 
         action = MagicMock()
         action.forId = "error-msg-123"
@@ -317,8 +317,8 @@ class TestRetryActionCallback:
             return msg
 
         with (
-            patch("law_agent.ui.app.cl.Message", side_effect=capture_message),
-            patch("law_agent.ui.app.main", new_callable=AsyncMock),
+            patch("law_assistant.ui.app.cl.Message", side_effect=capture_message),
+            patch("law_assistant.ui.app.main", new_callable=AsyncMock),
         ):
             await handle_retry(action)
 
@@ -329,7 +329,7 @@ class TestRetryActionCallback:
     @pytest.mark.asyncio
     async def test_callback_calls_main_with_original_content(self) -> None:
         """handle_retry must call main() with a message containing the original content."""
-        from law_agent.ui.app import handle_retry
+        from law_assistant.ui.app import handle_retry
 
         original_content = "حقوق مستأجر چیست؟"
         action = MagicMock()
@@ -348,8 +348,8 @@ class TestRetryActionCallback:
             return msg
 
         with (
-            patch("law_agent.ui.app.cl.Message", side_effect=capture_message),
-            patch("law_agent.ui.app.main", side_effect=fake_main),
+            patch("law_assistant.ui.app.cl.Message", side_effect=capture_message),
+            patch("law_assistant.ui.app.main", side_effect=fake_main),
         ):
             await handle_retry(action)
 

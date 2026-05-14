@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from law_agent.ui.citations import CitationFormatter
-from law_agent.ui.steps import ToolStepManager
+from law_assistant.ui.citations import CitationFormatter
+from law_assistant.ui.steps import ToolStepManager
 
 
 class TestToolStepExtraction:
@@ -117,7 +117,7 @@ class TestConfigIntegration:
 
     def test_settings_load(self) -> None:
         """Test loading UI settings."""
-        from law_agent.config.settings import Settings
+        from law_assistant.config.settings import Settings
 
         settings = Settings()
         assert hasattr(settings, "ui")
@@ -128,7 +128,7 @@ class TestConfigIntegration:
 
     def test_example_questions_config(self) -> None:
         """Test example questions from config."""
-        from law_agent.config.settings import Settings
+        from law_assistant.config.settings import Settings
 
         settings = Settings()
         questions = settings.ui.example_questions
@@ -138,7 +138,7 @@ class TestConfigIntegration:
 
     def test_ui_feature_flags(self) -> None:
         """Test UI feature flag configuration."""
-        from law_agent.config.settings import Settings
+        from law_assistant.config.settings import Settings
 
         settings = Settings()
 
@@ -151,7 +151,7 @@ class TestConfigIntegration:
 @pytest.mark.asyncio
 async def test_ui_module_initialization() -> None:
     """Test UI module can be initialized."""
-    from law_agent.ui.app import (
+    from law_assistant.ui.app import (
         get_citation_formatter,
         get_settings,
         get_step_manager,

@@ -7,7 +7,7 @@ from datetime import datetime
 
 import pytest
 
-from law_agent.agent.conversation import ConversationManager, ConversationState
+from law_assistant.agent.conversation import ConversationManager, ConversationState
 
 
 class TestConversationState:

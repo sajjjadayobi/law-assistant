@@ -67,4 +67,4 @@ HEALTHCHECK --interval=10s --timeout=5s --retries=5 --start-period=30s \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Run Chainlit application
-CMD ["chainlit", "run", "src/law_agent/ui/app.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["chainlit", "run", "src/law_assistant/ui/app.py", "--host", "0.0.0.0", "--port", "8000"]

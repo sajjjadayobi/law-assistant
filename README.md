@@ -36,7 +36,7 @@ cp .env.example .env
 make test
 
 # 4. Start the server
-.venv/bin/chainlit run src/law_agent/ui/app.py --port 7860 --headless
+.venv/bin/chainlit run src/law_assistant/ui/app.py --port 7860 --headless
 # App at http://localhost:7860
 ```
 
@@ -114,7 +114,7 @@ Hard-won lessons from all sessions: **[`docs/maintainer/learning.md`](docs/maint
 ## Project Structure
 
 ```
-src/law_agent/
+src/law_assistant/
 ├── agent/          # LawAgent, tool wrappers
 ├── tools/          # search_documents, get_document, get_related_documents
 ├── database/       # SQLAlchemy models, connection pooling

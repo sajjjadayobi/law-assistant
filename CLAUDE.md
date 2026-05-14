@@ -48,12 +48,12 @@ docker compose down -v      # Stop services + remove volumes
 
 | File | Purpose |
 |---|---|
-| `src/law_agent/ui/app.py` | Chainlit handlers — on_message, on_feedback, action callbacks, health middleware |
-| `src/law_agent/health.py` | `/health` and `/ready` check functions |
-| `src/law_agent/agent/core.py` | LawAgent, show_thinking(), tool step wrappers |
-| `src/law_agent/data/data_layer.py` | LawAgentDataLayer (conversation history) |
-| `src/law_agent/config/settings.py` | Settings — reads DB_HOST/DB_USER/DB_PORT/DB_NAME/PHOENIX_ENDPOINT from env |
-| `src/law_agent/prompts/search.md` | Agent system prompt |
+| `src/law_assistant/ui/app.py` | Chainlit handlers — on_message, on_feedback, action callbacks, health middleware |
+| `src/law_assistant/health.py` | `/health` and `/ready` check functions |
+| `src/law_assistant/agent/core.py` | LawAgent, show_thinking(), tool step wrappers |
+| `src/law_assistant/data/data_layer.py` | LawAgentDataLayer (conversation history) |
+| `src/law_assistant/config/settings.py` | Settings — reads DB_HOST/DB_USER/DB_PORT/DB_NAME/PHOENIX_ENDPOINT from env |
+| `src/law_assistant/prompts/search.md` | Agent system prompt |
 | `config.yaml` | Application configuration |
 | `.chainlit/config.toml` | UI config: sidebar, language, CSS/JS paths |
 | `docker-compose.yml` | Three services: postgres, phoenix, app |

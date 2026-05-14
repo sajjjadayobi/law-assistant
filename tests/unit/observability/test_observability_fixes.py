@@ -20,7 +20,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
-from law_agent.observability.feedback import PhoenixFeedbackClient
+from law_assistant.observability.feedback import PhoenixFeedbackClient
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -131,7 +131,7 @@ class TestSearchDocumentsOutputFormat:
 
     @pytest.mark.asyncio
     async def test_output_contains_doc_id_and_title(self) -> None:
-        from law_agent.models.document import DocSummary as SearchResult
+        from law_assistant.models.document import DocSummary as SearchResult
 
         mock_results = [
             SearchResult(
@@ -164,13 +164,13 @@ class TestSearchDocumentsOutputFormat:
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("law_agent.agent.core.search_documents", return_value=mock_results),
-            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
-            patch("law_agent.agent.core.get_tracer", return_value=provider.get_tracer("test")),
-            patch("law_agent.agent.core.get_settings") as mock_settings,
+            patch("law_assistant.agent.core.search_documents", return_value=mock_results),
+            patch("law_assistant.agent.core.cl.Step", return_value=step_mock),
+            patch("law_assistant.agent.core.get_tracer", return_value=provider.get_tracer("test")),
+            patch("law_assistant.agent.core.get_settings") as mock_settings,
         ):
             mock_settings.return_value.search.max_results = 20
-            from law_agent.agent.core import LawAgent
+            from law_assistant.agent.core import LawAgent
 
             result_json = await LawAgent._search_documents_tool(
                 MagicMock(), query="حق مسکن", tags=None, doc_types=None, limit=20
@@ -197,13 +197,13 @@ class TestSearchDocumentsOutputFormat:
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("law_agent.agent.core.search_documents", return_value=[]),
-            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
-            patch("law_agent.agent.core.get_tracer", return_value=provider.get_tracer("test")),
-            patch("law_agent.agent.core.get_settings") as mock_settings,
+            patch("law_assistant.agent.core.search_documents", return_value=[]),
+            patch("law_assistant.agent.core.cl.Step", return_value=step_mock),
+            patch("law_assistant.agent.core.get_tracer", return_value=provider.get_tracer("test")),
+            patch("law_assistant.agent.core.get_settings") as mock_settings,
         ):
             mock_settings.return_value.search.max_results = 20
-            from law_agent.agent.core import LawAgent
+            from law_assistant.agent.core import LawAgent
 
             await LawAgent._search_documents_tool(
                 MagicMock(), query="چیزی", tags=None, doc_types=None, limit=20
@@ -214,7 +214,7 @@ class TestSearchDocumentsOutputFormat:
 
     @pytest.mark.asyncio
     async def test_span_kind_is_tool(self) -> None:
-        from law_agent.models.document import DocSummary as SearchResult
+        from law_assistant.models.document import DocSummary as SearchResult
 
         provider, exporter = _make_in_memory_tracer()
         step_mock = MagicMock()
@@ -222,13 +222,13 @@ class TestSearchDocumentsOutputFormat:
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("law_agent.agent.core.search_documents", return_value=[]),
-            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
-            patch("law_agent.agent.core.get_tracer", return_value=provider.get_tracer("test")),
-            patch("law_agent.agent.core.get_settings") as mock_settings,
+            patch("law_assistant.agent.core.search_documents", return_value=[]),
+            patch("law_assistant.agent.core.cl.Step", return_value=step_mock),
+            patch("law_assistant.agent.core.get_tracer", return_value=provider.get_tracer("test")),
+            patch("law_assistant.agent.core.get_settings") as mock_settings,
         ):
             mock_settings.return_value.search.max_results = 20
-            from law_agent.agent.core import LawAgent
+            from law_assistant.agent.core import LawAgent
 
             await LawAgent._search_documents_tool(
                 MagicMock(), query="test", tags=None, doc_types=None, limit=5
@@ -244,7 +244,7 @@ class TestGetDocumentOutputFormat:
 
     @pytest.mark.asyncio
     async def test_output_contains_title_type_date_summary(self) -> None:
-        from law_agent.models.document import FullDocument
+        from law_assistant.models.document import FullDocument
 
         mock_doc = FullDocument(
             doc_id=555,
@@ -264,11 +264,11 @@ class TestGetDocumentOutputFormat:
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("law_agent.agent.core.get_document", return_value=mock_doc),  # type: ignore[arg-type]
-            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
-            patch("law_agent.agent.core.get_tracer", return_value=provider.get_tracer("test")),
+            patch("law_assistant.agent.core.get_document", return_value=mock_doc),  # type: ignore[arg-type]
+            patch("law_assistant.agent.core.cl.Step", return_value=step_mock),
+            patch("law_assistant.agent.core.get_tracer", return_value=provider.get_tracer("test")),
         ):
-            from law_agent.agent.core import LawAgent
+            from law_assistant.agent.core import LawAgent
 
             await LawAgent._get_document_tool(MagicMock(), doc_id=555)
 
@@ -284,7 +284,7 @@ class TestGetDocumentOutputFormat:
 
     @pytest.mark.asyncio
     async def test_output_value_for_not_found(self) -> None:
-        from law_agent.tools.search import DocumentNotFoundError
+        from law_assistant.tools.search import DocumentNotFoundError
 
         provider, exporter = _make_in_memory_tracer()
         step_mock = MagicMock()
@@ -292,11 +292,11 @@ class TestGetDocumentOutputFormat:
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("law_agent.agent.core.get_document", side_effect=DocumentNotFoundError()),
-            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
-            patch("law_agent.agent.core.get_tracer", return_value=provider.get_tracer("test")),
+            patch("law_assistant.agent.core.get_document", side_effect=DocumentNotFoundError()),
+            patch("law_assistant.agent.core.cl.Step", return_value=step_mock),
+            patch("law_assistant.agent.core.get_tracer", return_value=provider.get_tracer("test")),
         ):
-            from law_agent.agent.core import LawAgent
+            from law_assistant.agent.core import LawAgent
 
             result = await LawAgent._get_document_tool(MagicMock(), doc_id=99999)
 
@@ -311,7 +311,7 @@ class TestGetRelatedDocumentsOutputFormat:
 
     @pytest.mark.asyncio
     async def test_output_contains_titles(self) -> None:
-        from law_agent.models.document import DocSummary as SearchResult
+        from law_assistant.models.document import DocSummary as SearchResult
 
         related = [
             SearchResult(
@@ -333,13 +333,13 @@ class TestGetRelatedDocumentsOutputFormat:
         step_mock.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("law_agent.agent.core.get_related_documents", return_value=related),
-            patch("law_agent.agent.core.cl.Step", return_value=step_mock),
-            patch("law_agent.agent.core.get_tracer", return_value=provider.get_tracer("test")),
-            patch("law_agent.agent.core.get_settings") as mock_settings,
+            patch("law_assistant.agent.core.get_related_documents", return_value=related),
+            patch("law_assistant.agent.core.cl.Step", return_value=step_mock),
+            patch("law_assistant.agent.core.get_tracer", return_value=provider.get_tracer("test")),
+            patch("law_assistant.agent.core.get_settings") as mock_settings,
         ):
             mock_settings.return_value.search.related_docs_default_limit = 10
-            from law_agent.agent.core import LawAgent
+            from law_assistant.agent.core import LawAgent
 
             await LawAgent._get_related_documents_tool(MagicMock(), doc_id=100)
 

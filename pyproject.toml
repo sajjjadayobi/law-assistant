@@ -1,10 +1,10 @@
 [project]
-name = "law-agent"
+name = "law-assistant"
 version = "0.1.0"
 description = "AI assistant for Iranian law using PydanticAI and PostgreSQL"
 readme = "README.md"
 requires-python = ">=3.9"
-packages = [{include = "law_agent", from = "src"}]
+packages = [{include = "law_assistant", from = "src"}]
 dependencies = [
     # Database
     "psycopg2-binary>=2.9.9",

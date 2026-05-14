@@ -3,7 +3,7 @@
 Tests citation extraction, formatting, and response post-processing.
 """
 
-from law_agent.agent.citations import (
+from law_assistant.agent.citations import (
     Citation,
     CitationExtractor,
     ResponsePostProcessor,

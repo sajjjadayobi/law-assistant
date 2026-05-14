@@ -9,9 +9,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from law_agent.database.models import Document
-from law_agent.models.document import DocSummary, FullDocument
-from law_agent.tools.search import (
+from law_assistant.database.models import Document
+from law_assistant.models.document import DocSummary, FullDocument
+from law_assistant.tools.search import (
     DocumentNotFoundError,
     get_document,
     get_related_documents,
@@ -22,7 +22,7 @@ from law_agent.tools.search import (
 class TestSearchDocuments:
     """Tests for search_documents tool."""
 
-    @patch("law_agent.tools.search.queries.search_documents_fts")
+    @patch("law_assistant.tools.search.queries.search_documents_fts")
     def test_search_documents_simple_query(self, mock_search):
         """Test basic search with simple query."""
         # Mock database response
@@ -48,7 +48,7 @@ class TestSearchDocuments:
         assert results[0].doc_type == "law"
         assert results[0].relevance_score > 0
 
-    @patch("law_agent.tools.search.queries.search_documents_fts")
+    @patch("law_assistant.tools.search.queries.search_documents_fts")
     def test_search_documents_with_tag_filter(self, mock_search):
         """Test search with tag filtering."""
         # Mock multiple documents
@@ -88,7 +88,7 @@ class TestSearchDocuments:
         assert len(results) == 1
         assert results[0].doc_id == 1
 
-    @patch("law_agent.tools.search.queries.search_documents_fts")
+    @patch("law_assistant.tools.search.queries.search_documents_fts")
     def test_search_documents_with_doc_type_filter(self, mock_search):
         """Test search with document type filtering."""
         docs = [
@@ -127,7 +127,7 @@ class TestSearchDocuments:
         assert len(results) == 2
         assert all(r.doc_type in ["law", "regulation"] for r in results)
 
-    @patch("law_agent.tools.search.queries.search_documents_fts")
+    @patch("law_assistant.tools.search.queries.search_documents_fts")
     def test_search_documents_empty_results(self, mock_search):
         """Test search with no results."""
         mock_search.return_value = []
@@ -137,7 +137,7 @@ class TestSearchDocuments:
         assert len(results) == 0
         assert isinstance(results, list)
 
-    @patch("law_agent.tools.search.queries.search_documents_fts")
+    @patch("law_assistant.tools.search.queries.search_documents_fts")
     def test_search_documents_limit(self, mock_search):
         """Test that limit parameter is enforced."""
         # Create 25 mock documents
@@ -164,7 +164,7 @@ class TestSearchDocuments:
         call_args = mock_search.call_args
         assert call_args[1]["limit"] <= 100
 
-    @patch("law_agent.tools.search.queries.search_documents_fts")
+    @patch("law_assistant.tools.search.queries.search_documents_fts")
     def test_search_documents_relevance_score(self, mock_search):
         """Test that relevance scores are assigned in descending order."""
         docs = [
@@ -187,7 +187,7 @@ class TestSearchDocuments:
         for i in range(len(results) - 1):
             assert results[i].relevance_score >= results[i + 1].relevance_score
 
-    @patch("law_agent.tools.search.queries.search_documents_fts")
+    @patch("law_assistant.tools.search.queries.search_documents_fts")
     def test_search_documents_tag_limit(self, mock_search):
         """Test that only first 3 tags are included."""
         doc = Document(
@@ -210,8 +210,8 @@ class TestSearchDocuments:
 class TestGetDocument:
     """Tests for get_document tool."""
 
-    @patch("law_agent.tools.search.queries.get_relations")
-    @patch("law_agent.tools.search.queries.get_document")
+    @patch("law_assistant.tools.search.queries.get_relations")
+    @patch("law_assistant.tools.search.queries.get_document")
     def test_get_document_success(self, mock_get, mock_relations):
         """Test successfully fetching a document."""
         mock_doc = Document(
@@ -234,7 +234,7 @@ class TestGetDocument:
         assert result.full_content == "محتوای کامل..."
         assert result.relations_count == 2
 
-    @patch("law_agent.tools.search.queries.get_document")
+    @patch("law_assistant.tools.search.queries.get_document")
     def test_get_document_not_found(self, mock_get):
         """Test fetching non-existent document."""
         mock_get.return_value = None
@@ -242,8 +242,8 @@ class TestGetDocument:
         with pytest.raises(DocumentNotFoundError):
             get_document(999)
 
-    @patch("law_agent.tools.search.queries.get_relations")
-    @patch("law_agent.tools.search.queries.get_document")
+    @patch("law_assistant.tools.search.queries.get_relations")
+    @patch("law_assistant.tools.search.queries.get_document")
     def test_get_document_no_relations(self, mock_get, mock_relations):
         """Test document with no relations."""
         mock_doc = Document(
@@ -262,8 +262,8 @@ class TestGetDocument:
 
         assert result.relations_count == 0
 
-    @patch("law_agent.tools.search.queries.get_relations")
-    @patch("law_agent.tools.search.queries.get_document")
+    @patch("law_assistant.tools.search.queries.get_relations")
+    @patch("law_assistant.tools.search.queries.get_document")
     def test_get_document_relevance_score(self, mock_get, mock_relations):
         """Test that full documents have perfect relevance score."""
         mock_doc = Document(
@@ -280,7 +280,7 @@ class TestGetDocument:
 class TestGetRelatedDocuments:
     """Tests for get_related_documents tool."""
 
-    @patch("law_agent.tools.search.queries.get_related_documents")
+    @patch("law_assistant.tools.search.queries.get_related_documents")
     def test_get_related_documents_simple(self, mock_get_related):
         """Test getting related documents without filters."""
         related_docs = [
@@ -312,7 +312,7 @@ class TestGetRelatedDocuments:
         assert results[0].doc_id == 2
         assert results[1].doc_id == 3
 
-    @patch("law_agent.tools.search.queries.get_related_documents")
+    @patch("law_assistant.tools.search.queries.get_related_documents")
     def test_get_related_documents_with_relation_type_filter(self, mock_get_related):
         """Test filtering by relation type."""
         related_docs = [
@@ -334,7 +334,7 @@ class TestGetRelatedDocuments:
         # Verify that get_related_documents was called with relation_type
         mock_get_related.assert_called()
 
-    @patch("law_agent.tools.search.queries.get_related_documents")
+    @patch("law_assistant.tools.search.queries.get_related_documents")
     def test_get_related_documents_empty(self, mock_get_related):
         """Test document with no related documents."""
         mock_get_related.return_value = []
@@ -343,7 +343,7 @@ class TestGetRelatedDocuments:
 
         assert len(results) == 0
 
-    @patch("law_agent.tools.search.queries.get_related_documents")
+    @patch("law_assistant.tools.search.queries.get_related_documents")
     def test_get_related_documents_limit(self, mock_get_related):
         """Test that limit is enforced."""
         docs = [
@@ -364,7 +364,7 @@ class TestGetRelatedDocuments:
 
         assert len(results) <= 10
 
-    @patch("law_agent.tools.search.queries.get_related_documents")
+    @patch("law_assistant.tools.search.queries.get_related_documents")
     def test_get_related_documents_relevance_score(self, mock_get_related):
         """Test that related documents have high relevance score."""
         doc = Document(
@@ -376,7 +376,7 @@ class TestGetRelatedDocuments:
 
         assert results[0].relevance_score == 0.9
 
-    @patch("law_agent.tools.search.queries.get_related_documents")
+    @patch("law_assistant.tools.search.queries.get_related_documents")
     def test_get_related_documents_multiple_relation_types(self, mock_get_related):
         """Test filtering with multiple relation types."""
         # When multiple relation types are requested, should query each separately
@@ -409,7 +409,7 @@ class TestGetRelatedDocuments:
         # Should have called get_related_documents multiple times (initial query + one per type)
         assert mock_get_related.call_count >= 2
 
-    @patch("law_agent.tools.search.queries.get_related_documents")
+    @patch("law_assistant.tools.search.queries.get_related_documents")
     def test_get_related_documents_deduplication(self, mock_get_related):
         """Test that duplicate related documents are removed."""
         doc = Document(

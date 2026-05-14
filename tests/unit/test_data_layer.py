@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from law_agent.data.data_layer import LawAgentDataLayer, _parse_thread_date
+from law_assistant.data.data_layer import LawAgentDataLayer, _parse_thread_date
 
 # ---------------------------------------------------------------------------
 # _parse_thread_date helper
@@ -87,7 +87,7 @@ class TestThreadSorting:
         with patch.object(LawAgentDataLayer, "__init__", lambda self, **kwargs: None):
             layer = object.__new__(LawAgentDataLayer)
             with patch(
-                "law_agent.data.data_layer.SQLAlchemyDataLayer.get_all_user_threads",
+                "law_assistant.data.data_layer.SQLAlchemyDataLayer.get_all_user_threads",
                 new=AsyncMock(return_value=[older, middle, newer]),
             ):
                 result = await layer.get_all_user_threads(user_id="test-user")
@@ -101,7 +101,7 @@ class TestThreadSorting:
         with patch.object(LawAgentDataLayer, "__init__", lambda self, **kwargs: None):
             layer = object.__new__(LawAgentDataLayer)
             with patch(
-                "law_agent.data.data_layer.SQLAlchemyDataLayer.get_all_user_threads",
+                "law_assistant.data.data_layer.SQLAlchemyDataLayer.get_all_user_threads",
                 new=AsyncMock(return_value=None),
             ):
                 result = await layer.get_all_user_threads(user_id="user")
@@ -112,7 +112,7 @@ class TestThreadSorting:
         with patch.object(LawAgentDataLayer, "__init__", lambda self, **kwargs: None):
             layer = object.__new__(LawAgentDataLayer)
             with patch(
-                "law_agent.data.data_layer.SQLAlchemyDataLayer.get_all_user_threads",
+                "law_assistant.data.data_layer.SQLAlchemyDataLayer.get_all_user_threads",
                 new=AsyncMock(return_value=[]),
             ):
                 result = await layer.get_all_user_threads(user_id="user")
@@ -161,7 +161,7 @@ class TestCreateStepLogic:
         with (
             patch.object(layer, "get_thread", new=AsyncMock(return_value=None)),
             patch.object(layer, "update_thread", mock_update),
-            patch("law_agent.data.data_layer.SQLAlchemyDataLayer.create_step", mock_super_create),
+            patch("law_assistant.data.data_layer.SQLAlchemyDataLayer.create_step", mock_super_create),
             patch("chainlit.user_session", MagicMock(get=MagicMock(return_value=None))),
         ):
             await layer.create_step(step_dict)
@@ -187,7 +187,7 @@ class TestCreateStepLogic:
 
         with (
             patch.object(layer, "get_thread", new=AsyncMock(return_value=existing_thread)),
-            patch("law_agent.data.data_layer.SQLAlchemyDataLayer.create_step", mock_super_create),
+            patch("law_assistant.data.data_layer.SQLAlchemyDataLayer.create_step", mock_super_create),
         ):
             await layer.create_step(step_dict)
 
@@ -215,7 +215,7 @@ class TestUpsertFeedback:
         feedback.threadId = "thread-1"
 
         mock_super = AsyncMock(return_value="feedback-id-123")
-        with patch("law_agent.data.data_layer.SQLAlchemyDataLayer.upsert_feedback", mock_super):
+        with patch("law_assistant.data.data_layer.SQLAlchemyDataLayer.upsert_feedback", mock_super):
             result = await layer.upsert_feedback(feedback)
 
         mock_super.assert_called_once_with(feedback)
@@ -233,10 +233,10 @@ class TestUpsertFeedback:
 
         with (
             patch(
-                "law_agent.data.data_layer.SQLAlchemyDataLayer.upsert_feedback",
+                "law_assistant.data.data_layer.SQLAlchemyDataLayer.upsert_feedback",
                 AsyncMock(return_value="id"),
             ),
-            patch("law_agent.data.data_layer.logger") as mock_log,
+            patch("law_assistant.data.data_layer.logger") as mock_log,
         ):
             await layer.upsert_feedback(feedback)
 
@@ -256,10 +256,10 @@ class TestUpsertFeedback:
 
         with (
             patch(
-                "law_agent.data.data_layer.SQLAlchemyDataLayer.upsert_feedback",
+                "law_assistant.data.data_layer.SQLAlchemyDataLayer.upsert_feedback",
                 AsyncMock(return_value="id"),
             ),
-            patch("law_agent.data.data_layer.logger") as mock_log,
+            patch("law_assistant.data.data_layer.logger") as mock_log,
         ):
             await layer.upsert_feedback(feedback)
 
@@ -275,24 +275,24 @@ class TestUpsertFeedback:
 class TestDataLayerFactory:
     def test_get_data_layer_raises_if_not_initialized(self) -> None:
         """get_data_layer() raises RuntimeError when module failed to init."""
-        import law_agent.data.data_layer as dl_module
+        import law_assistant.data.data_layer as dl_module
 
         original = dl_module._data_layer
         try:
             dl_module._data_layer = None
             with pytest.raises(RuntimeError, match="not initialized"):
-                from law_agent.data.data_layer import get_data_layer
+                from law_assistant.data.data_layer import get_data_layer
 
                 get_data_layer()
         finally:
             dl_module._data_layer = original
 
     def test_reset_data_layer_sets_to_none(self) -> None:
-        import law_agent.data.data_layer as dl_module
+        import law_assistant.data.data_layer as dl_module
 
         original = dl_module._data_layer
         try:
-            from law_agent.data.data_layer import reset_data_layer
+            from law_assistant.data.data_layer import reset_data_layer
 
             reset_data_layer()
             assert dl_module._data_layer is None

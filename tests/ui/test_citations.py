@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from law_agent.ui.citations import Citation, CitationFormatter
+from law_assistant.ui.citations import Citation, CitationFormatter
 
 # ---------------------------------------------------------------------------
 # Citation dataclass

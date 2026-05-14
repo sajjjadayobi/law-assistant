@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from law_agent.ui.rate_limit import check_and_increment, ensure_rate_limits_table
+from law_assistant.ui.rate_limit import check_and_increment, ensure_rate_limits_table
 
 
 @pytest.mark.asyncio
@@ -45,7 +45,7 @@ async def test_check_and_increment_first_request() -> None:
     mock_async_conn.fetchval.return_value = 1
 
     # Mock the table initialization to skip the first check
-    with patch("law_agent.ui.rate_limit._table_initialized", True):
+    with patch("law_assistant.ui.rate_limit._table_initialized", True):
         result = await check_and_increment(mock_engine, "test@example.com", limit=30)
 
     assert result is True
@@ -74,7 +74,7 @@ async def test_check_and_increment_at_limit() -> None:
     # Simulate 30th request: INSERT returns count=30
     mock_async_conn.fetchval.return_value = 30
 
-    with patch("law_agent.ui.rate_limit._table_initialized", True):
+    with patch("law_assistant.ui.rate_limit._table_initialized", True):
         result = await check_and_increment(mock_engine, "test@example.com", limit=30)
 
     assert result is True
@@ -98,7 +98,7 @@ async def test_check_and_increment_exceeds_limit() -> None:
     # Simulate 31st request: INSERT returns count=31
     mock_async_conn.fetchval.return_value = 31
 
-    with patch("law_agent.ui.rate_limit._table_initialized", True):
+    with patch("law_assistant.ui.rate_limit._table_initialized", True):
         result = await check_and_increment(mock_engine, "test@example.com", limit=30)
 
     assert result is False
@@ -110,7 +110,7 @@ async def test_check_and_increment_database_error() -> None:
     mock_engine = MagicMock()
     mock_engine.begin.side_effect = Exception("Database connection failed")
 
-    with patch("law_agent.ui.rate_limit._table_initialized", True):
+    with patch("law_assistant.ui.rate_limit._table_initialized", True):
         result = await check_and_increment(mock_engine, "test@example.com", limit=30)
 
     # Fail open: return True on error

@@ -12,7 +12,7 @@ from datetime import date
 
 import pytest
 
-from law_agent.database import (
+from law_assistant.database import (
     Document,
     Relation,
     check_connection,
@@ -25,7 +25,7 @@ from law_agent.database import (
     get_session,
     search_documents_fts,
 )
-from law_agent.database.connection import (
+from law_assistant.database.connection import (
     _get_engine,
     _get_scoped_session,
     _get_session_factory,
@@ -278,7 +278,7 @@ class TestDatabaseModuleExports:
 
     def test_all_exports_are_available(self):
         """Test that all expected classes and functions are exported."""
-        from law_agent import database
+        from law_assistant import database
 
         # Connection management
         assert hasattr(database, "get_session")
@@ -302,7 +302,7 @@ class TestDatabaseModuleExports:
 
     def test_imports_from_database_submodules(self):
         """Test that submodules can be imported directly."""
-        from law_agent.database import connection, models, queries
+        from law_assistant.database import connection, models, queries
 
         assert hasattr(connection, "get_session")
         assert hasattr(models, "Document")

@@ -10,15 +10,15 @@ Tests cover:
 import json
 import logging
 
-from law_agent.config.settings import LoggingConfig
-from law_agent.logging import (
+from law_assistant.config.settings import LoggingConfig
+from law_assistant.logging import (
     clear_context,
     configure_logging,
     get_context,
     get_logger,
     set_context,
 )
-from law_agent.logging.formatters import JSONFormatter, TextFormatter
+from law_assistant.logging.formatters import JSONFormatter, TextFormatter
 
 
 class TestContextManagement:

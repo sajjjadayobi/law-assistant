@@ -13,7 +13,7 @@ class TestRTLStyles:
         from pathlib import Path
 
         rtl_css_path = (
-            Path(__file__).parent.parent.parent / "src" / "law_agent" / "ui" / "static" / "rtl.css"
+            Path(__file__).parent.parent.parent / "src" / "law_assistant" / "ui" / "static" / "rtl.css"
         )
         assert rtl_css_path.exists(), f"RTL CSS not found at {rtl_css_path}"
 
@@ -22,7 +22,7 @@ class TestRTLStyles:
         from pathlib import Path
 
         rtl_css_path = (
-            Path(__file__).parent.parent.parent / "src" / "law_agent" / "ui" / "static" / "rtl.css"
+            Path(__file__).parent.parent.parent / "src" / "law_assistant" / "ui" / "static" / "rtl.css"
         )
 
         with open(rtl_css_path, encoding="utf-8") as f:
@@ -35,7 +35,7 @@ class TestRTLStyles:
         from pathlib import Path
 
         rtl_css_path = (
-            Path(__file__).parent.parent.parent / "src" / "law_agent" / "ui" / "static" / "rtl.css"
+            Path(__file__).parent.parent.parent / "src" / "law_assistant" / "ui" / "static" / "rtl.css"
         )
 
         with open(rtl_css_path, encoding="utf-8") as f:
@@ -48,7 +48,7 @@ class TestRTLStyles:
         from pathlib import Path
 
         rtl_css_path = (
-            Path(__file__).parent.parent.parent / "src" / "law_agent" / "ui" / "static" / "rtl.css"
+            Path(__file__).parent.parent.parent / "src" / "law_assistant" / "ui" / "static" / "rtl.css"
         )
 
         with open(rtl_css_path, encoding="utf-8") as f:
@@ -70,7 +70,7 @@ class TestPersianTextHandling:
     def test_persian_citations(self) -> None:
         """Test Persian citations in response."""
         response = "طبق قانون [1]"
-        from law_agent.ui.citations import CitationFormatter
+        from law_assistant.ui.citations import CitationFormatter
 
         formatter = CitationFormatter()
         citations = formatter.extract_citations(response)
@@ -78,7 +78,7 @@ class TestPersianTextHandling:
 
     def test_persian_example_questions(self) -> None:
         """Test Persian example questions loading."""
-        from law_agent.config.settings import Settings
+        from law_assistant.config.settings import Settings
 
         settings = Settings()
         assert len(settings.ui.example_questions) > 0
@@ -95,7 +95,7 @@ class TestRTLIntegration:
 
     def test_chainlit_config_module_exists(self) -> None:
         """Test that Chainlit config module exists."""
-        from law_agent.ui import config
+        from law_assistant.ui import config
 
         assert hasattr(config, "setup_chainlit_ui")
         assert hasattr(config, "setup_all")
@@ -103,7 +103,7 @@ class TestRTLIntegration:
     @pytest.mark.asyncio
     async def test_ui_module_imports(self) -> None:
         """Test that UI module can be imported."""
-        from law_agent.ui import CitationFormatter, ToolStepManager, app
+        from law_assistant.ui import CitationFormatter, ToolStepManager, app
 
         assert app is not None
         assert CitationFormatter is not None

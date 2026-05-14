@@ -3,7 +3,7 @@
 Tests custom exceptions and error handlers.
 """
 
-from law_agent.agent.errors import (
+from law_assistant.agent.errors import (
     AmbiguousQueryError,
     DatabaseConnectionError,
     DocumentNotFoundError,
@@ -19,7 +19,7 @@ from law_agent.agent.errors import (
 class TestCustomExceptions:
     """Tests for custom exception classes."""
 
-    def test_law_agent_exception_base(self):
+    def test_law_assistant_exception_base(self):
         """Test base exception."""
         exc = LawAgentException(
             message="test error",
@@ -91,7 +91,7 @@ class TestCustomExceptions:
 class TestErrorHandler:
     """Tests for ErrorHandler class."""
 
-    def test_handle_law_agent_exception(self):
+    def test_handle_law_assistant_exception(self):
         """Test handling LawAgentException."""
         exc = NoDocumentsFoundError("بیمه")
 

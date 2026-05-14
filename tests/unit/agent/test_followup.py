@@ -3,7 +3,7 @@
 Tests follow-up question extraction from responses and formatting.
 """
 
-from law_agent.agent.followup import (
+from law_assistant.agent.followup import (
     FollowupQuestionExtractor,
     FollowupQuestionGenerator,
 )

@@ -14,12 +14,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import httpx
 
-from law_agent.observability.feedback import (
+from law_assistant.observability.feedback import (
     PhoenixFeedbackClient,
     get_feedback_client,
     initialize_feedback_client,
 )
-import law_agent.observability.feedback as feedback_module
+import law_assistant.observability.feedback as feedback_module
 
 # ---------------------------------------------------------------------------
 # PhoenixFeedbackClient — payload correctness
@@ -223,7 +223,7 @@ class TestFeedbackClientSingleton:
 
     @pytest.mark.asyncio
     async def test_send_feedback_to_phoenix_returns_false_when_no_client(self) -> None:
-        from law_agent.observability.feedback import send_feedback_to_phoenix
+        from law_assistant.observability.feedback import send_feedback_to_phoenix
 
         result = await send_feedback_to_phoenix("span-1", "positive")
         assert result is False
@@ -234,7 +234,7 @@ class TestFeedbackClientSingleton:
         client = get_feedback_client()
 
         with patch.object(client, "send_feedback", new=AsyncMock(return_value=True)) as mock_send:
-            from law_agent.observability.feedback import send_feedback_to_phoenix
+            from law_assistant.observability.feedback import send_feedback_to_phoenix
 
             result = await send_feedback_to_phoenix("span-1", "positive", comment="good")
 

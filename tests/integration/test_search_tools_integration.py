@@ -11,9 +11,9 @@ Prerequisites:
 
 import pytest
 
-from law_agent.database import dispose_engine
-from law_agent.models.document import DocSummary, FullDocument
-from law_agent.tools.search import (
+from law_assistant.database import dispose_engine
+from law_assistant.models.document import DocSummary, FullDocument
+from law_assistant.tools.search import (
     DocumentNotFoundError,
     get_document,
     get_related_documents,

@@ -19,7 +19,7 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_shared_thread_is_viewable() -> None:
-    from law_agent.ui.app import on_shared_thread_view
+    from law_assistant.ui.app import on_shared_thread_view
 
     thread = {"id": "t1", "metadata": {"is_shared": True}}
     assert await on_shared_thread_view(thread, None) is True
@@ -27,7 +27,7 @@ async def test_shared_thread_is_viewable() -> None:
 
 @pytest.mark.asyncio
 async def test_unshared_thread_is_not_viewable() -> None:
-    from law_agent.ui.app import on_shared_thread_view
+    from law_assistant.ui.app import on_shared_thread_view
 
     thread = {"id": "t1", "metadata": {"is_shared": False}}
     assert await on_shared_thread_view(thread, None) is False
@@ -35,7 +35,7 @@ async def test_unshared_thread_is_not_viewable() -> None:
 
 @pytest.mark.asyncio
 async def test_missing_metadata_returns_false() -> None:
-    from law_agent.ui.app import on_shared_thread_view
+    from law_assistant.ui.app import on_shared_thread_view
 
     assert await on_shared_thread_view({"id": "t1", "metadata": None}, None) is False
     assert await on_shared_thread_view({"id": "t1"}, None) is False
@@ -43,7 +43,7 @@ async def test_missing_metadata_returns_false() -> None:
 
 @pytest.mark.asyncio
 async def test_string_metadata_parsed_correctly() -> None:
-    from law_agent.ui.app import on_shared_thread_view
+    from law_assistant.ui.app import on_shared_thread_view
 
     shared = json.dumps({"is_shared": True})
     assert await on_shared_thread_view({"id": "t1", "metadata": shared}, None) is True
@@ -54,7 +54,7 @@ async def test_string_metadata_parsed_correctly() -> None:
 
 @pytest.mark.asyncio
 async def test_malformed_string_metadata_returns_false() -> None:
-    from law_agent.ui.app import on_shared_thread_view
+    from law_assistant.ui.app import on_shared_thread_view
 
     assert await on_shared_thread_view({"id": "t1", "metadata": "not-json"}, None) is False
 
@@ -64,7 +64,7 @@ async def test_viewer_arg_is_ignored() -> None:
     """The callback grants access based only on metadata, not who the viewer is."""
     import chainlit as cl
 
-    from law_agent.ui.app import on_shared_thread_view
+    from law_assistant.ui.app import on_shared_thread_view
 
     thread = {"id": "t1", "metadata": {"is_shared": True}}
     viewer = cl.User(identifier="someuser")
@@ -88,7 +88,7 @@ async def test_create_step_resolves_user_id_via_get_user_when_id_is_none() -> No
     """
     from chainlit.user import PersistedUser
 
-    from law_agent.data.data_layer import LawAgentDataLayer
+    from law_assistant.data.data_layer import LawAgentDataLayer
 
     # Build a minimal layer double
     layer = MagicMock(spec=LawAgentDataLayer)
@@ -135,7 +135,7 @@ async def test_create_step_skips_get_user_when_id_already_present() -> None:
     """If user.id is already set (PersistedUser), skip the get_user lookup."""
     from chainlit.user import PersistedUser
 
-    from law_agent.data.data_layer import LawAgentDataLayer
+    from law_assistant.data.data_layer import LawAgentDataLayer
 
     layer = MagicMock(spec=LawAgentDataLayer)
     layer.step_creation_lock = __import__("asyncio").Lock()

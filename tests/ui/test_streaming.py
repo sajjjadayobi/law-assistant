@@ -42,7 +42,7 @@ class TestRunStreamingMethod:
     @pytest.mark.asyncio
     async def test_on_delta_called_per_token(self) -> None:
         """run_streaming() must call on_delta for every text token."""
-        from law_agent.agent.core import LawAgent
+        from law_assistant.agent.core import LawAgent
 
         agent = MagicMock(spec=LawAgent)
         agent.agent = MagicMock()
@@ -77,7 +77,7 @@ class TestRunStreamingMethod:
     @pytest.mark.asyncio
     async def test_full_text_assembled_correctly(self) -> None:
         """run_streaming() must join all deltas into a single string."""
-        from law_agent.agent.core import LawAgent
+        from law_assistant.agent.core import LawAgent
 
         agent = MagicMock(spec=LawAgent)
         agent.agent = MagicMock()
@@ -102,7 +102,7 @@ class TestRunStreamingMethod:
     @pytest.mark.asyncio
     async def test_no_callback_does_not_raise(self) -> None:
         """run_streaming() with on_delta=None must not raise."""
-        from law_agent.agent.core import LawAgent
+        from law_assistant.agent.core import LawAgent
 
         agent = MagicMock(spec=LawAgent)
         agent.agent = MagicMock()
@@ -130,7 +130,7 @@ class TestStreamingPath:
     @pytest.mark.asyncio
     async def test_streaming_sends_empty_message_first(self) -> None:
         """When streaming, an empty cl.Message must be sent before tokens arrive."""
-        from law_agent.ui.app import main
+        from law_assistant.ui.app import main
 
         mock_message = MagicMock()
         mock_message.content = "مرخصی زایمان چقدر است؟"
@@ -146,16 +146,16 @@ class TestStreamingPath:
         session, _ = _make_session({"id": "sess1"})
 
         with (
-            patch("law_agent.ui.app.cl.user_session", session),
+            patch("law_assistant.ui.app.cl.user_session", session),
             patch(
-                "law_agent.ui.app.get_settings", return_value=_make_settings(enable_streaming=True)
+                "law_assistant.ui.app.get_settings", return_value=_make_settings(enable_streaming=True)
             ),
-            patch("law_agent.ui.app.get_agent") as mock_get_agent,
-            patch("law_agent.ui.app.get_conversation_manager") as mock_conv,
-            patch("law_agent.ui.app.get_citation_formatter") as mock_fmt,
-            patch("law_agent.ui.app.get_step_manager"),
-            patch("law_agent.ui.app.cl.Message", return_value=streaming_msg_mock),
-            patch("law_agent.ui.app.otel_trace") as mock_trace,
+            patch("law_assistant.ui.app.get_agent") as mock_get_agent,
+            patch("law_assistant.ui.app.get_conversation_manager") as mock_conv,
+            patch("law_assistant.ui.app.get_citation_formatter") as mock_fmt,
+            patch("law_assistant.ui.app.get_step_manager"),
+            patch("law_assistant.ui.app.cl.Message", return_value=streaming_msg_mock),
+            patch("law_assistant.ui.app.otel_trace") as mock_trace,
         ):
             mock_trace.get_tracer.return_value.start_as_current_span.return_value.__enter__ = (
                 MagicMock(
@@ -189,7 +189,7 @@ class TestStreamingPath:
     @pytest.mark.asyncio
     async def test_non_streaming_sends_complete_message(self) -> None:
         """When streaming is disabled, a single cl.Message with formatted content is sent."""
-        from law_agent.ui.app import main
+        from law_assistant.ui.app import main
 
         mock_message = MagicMock()
         mock_message.content = "مرخصی زایمان چقدر است؟"
@@ -204,16 +204,16 @@ class TestStreamingPath:
         session, _ = _make_session({"id": "sess2"})
 
         with (
-            patch("law_agent.ui.app.cl.user_session", session),
+            patch("law_assistant.ui.app.cl.user_session", session),
             patch(
-                "law_agent.ui.app.get_settings", return_value=_make_settings(enable_streaming=False)
+                "law_assistant.ui.app.get_settings", return_value=_make_settings(enable_streaming=False)
             ),
-            patch("law_agent.ui.app.get_agent") as mock_get_agent,
-            patch("law_agent.ui.app.get_conversation_manager") as mock_conv,
-            patch("law_agent.ui.app.get_citation_formatter") as mock_fmt,
-            patch("law_agent.ui.app.get_step_manager"),
-            patch("law_agent.ui.app.cl.Message", side_effect=make_msg),
-            patch("law_agent.ui.app.otel_trace") as mock_trace,
+            patch("law_assistant.ui.app.get_agent") as mock_get_agent,
+            patch("law_assistant.ui.app.get_conversation_manager") as mock_conv,
+            patch("law_assistant.ui.app.get_citation_formatter") as mock_fmt,
+            patch("law_assistant.ui.app.get_step_manager"),
+            patch("law_assistant.ui.app.cl.Message", side_effect=make_msg),
+            patch("law_assistant.ui.app.otel_trace") as mock_trace,
         ):
             mock_trace.get_tracer.return_value.start_as_current_span.return_value.__enter__ = (
                 MagicMock(
@@ -247,7 +247,7 @@ class TestStreamingPath:
     @pytest.mark.asyncio
     async def test_streaming_calls_run_streaming_not_run(self) -> None:
         """Streaming path must call run_streaming() not run()."""
-        from law_agent.ui.app import main
+        from law_assistant.ui.app import main
 
         mock_message = MagicMock()
         mock_message.content = "سوال حقوقی"
@@ -260,16 +260,16 @@ class TestStreamingPath:
         session, _ = _make_session({"id": "sess3"})
 
         with (
-            patch("law_agent.ui.app.cl.user_session", session),
+            patch("law_assistant.ui.app.cl.user_session", session),
             patch(
-                "law_agent.ui.app.get_settings", return_value=_make_settings(enable_streaming=True)
+                "law_assistant.ui.app.get_settings", return_value=_make_settings(enable_streaming=True)
             ),
-            patch("law_agent.ui.app.get_agent") as mock_get_agent,
-            patch("law_agent.ui.app.get_conversation_manager") as mock_conv,
-            patch("law_agent.ui.app.get_citation_formatter") as mock_fmt,
-            patch("law_agent.ui.app.get_step_manager"),
-            patch("law_agent.ui.app.cl.Message", return_value=streaming_msg_mock),
-            patch("law_agent.ui.app.otel_trace") as mock_trace,
+            patch("law_assistant.ui.app.get_agent") as mock_get_agent,
+            patch("law_assistant.ui.app.get_conversation_manager") as mock_conv,
+            patch("law_assistant.ui.app.get_citation_formatter") as mock_fmt,
+            patch("law_assistant.ui.app.get_step_manager"),
+            patch("law_assistant.ui.app.cl.Message", return_value=streaming_msg_mock),
+            patch("law_assistant.ui.app.otel_trace") as mock_trace,
         ):
             mock_trace.get_tracer.return_value.start_as_current_span.return_value.__enter__ = (
                 MagicMock(

@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from law_agent.observability.tracer import (
+from law_assistant.observability.tracer import (
     OTelConfig,
     get_tracer,
     record_token_usage,
