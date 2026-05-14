@@ -199,7 +199,7 @@ ui:
   # Base URL for citation links in agent responses
   # Citations appear as [N](base_url/doc_id) markdown links
   # Change to point to your law portal or documentation service
-  citation_base_url: "https://iran.ir/en/law"
+  citation_base_url: "https://panel.danagoo.com/app?id="
 
 # ============================================================================
 # LOGGING CONFIGURATION

@@ -64,14 +64,11 @@ class Citation:
         return ref
 
     def get_url(self) -> str:
-        """Get iran.ir URL for this document.
-
-        Returns:
-            URL to document on iran.ir (or placeholder if not available)
-        """
-        # This is a placeholder - in production, would look up actual URLs
-        # For now, return a generic reference format
-        return f"https://iran.ir/doc/{self.doc_id}"
+        from law_agent.config.settings import get_settings
+        base = get_settings().ui.citation_base_url
+        if base.endswith("="):
+            return f"{base}{self.doc_id}"
+        return f"{base}/{self.doc_id}"
 
 
 class CitationExtractor:
